@@ -4,10 +4,22 @@ import {
   BookOpen, 
   MessageCircle, 
   User, 
-  Home
+  Home,
+  AlignRight
 } from 'lucide-react-native';
 import { View, StyleSheet, TouchableOpacity } from 'react-native';
 import BurgerMenu from '../components/BurgerMenu';
+
+const COLORS = {
+  primary: '#5B67CA',     // Основной синий/фиолетовый
+  secondary: '#43C0B4',   // Бирюзовый
+  accent1: '#F98D51',     // Оранжевый
+  accent2: '#EC575B',     // Красный
+  background: '#F2F5FF',  // Светлый фон
+  text: '#25335F',        // Основной текст
+  textSecondary: '#7F8BB7',  // Вторичный текст
+  border: '#EAEDF5'       // Граница
+};
 
 export default function TabLayout() {
   const [menuVisible, setMenuVisible] = useState(false);
@@ -27,12 +39,12 @@ export default function TabLayout() {
         screenOptions={{
           headerShown: true,
           headerStyle: {
-            backgroundColor: '#FFFFFF',
+            backgroundColor: COLORS.background,
           },
           headerTitleStyle: {
             fontWeight: '600',
             fontSize: 18,
-            color: '#333333',
+            color: COLORS.text,
           },
           headerShadowVisible: false,
           tabBarStyle: {
@@ -47,19 +59,15 @@ export default function TabLayout() {
             shadowOpacity: 0.1,
             shadowRadius: 4,
           },
-          tabBarActiveTintColor: '#4A6CFA',
-          tabBarInactiveTintColor: '#9E9E9E',
+          tabBarActiveTintColor: COLORS.primary,
+          tabBarInactiveTintColor: COLORS.textSecondary,
           tabBarLabelStyle: {
             fontSize: 12,
             fontWeight: '500',
           },
           headerRight: () => (
             <TouchableOpacity onPress={toggleMenu} style={styles.headerRight}>
-              <View style={styles.burgerMenu}>
-                <View style={styles.burgerLine} />
-                <View style={styles.burgerLine} />
-                <View style={styles.burgerLine} />
-              </View>
+              <AlignRight size={24} color={COLORS.text} />
             </TouchableOpacity>
           ),
         }}>
@@ -135,16 +143,5 @@ const styles = StyleSheet.create({
   headerRight: {
     marginRight: 16,
     padding: 8,
-  },
-  burgerMenu: {
-    width: 24,
-    height: 18,
-    justifyContent: 'space-between',
-  },
-  burgerLine: {
-    width: '100%',
-    height: 2,
-    backgroundColor: '#333333',
-    borderRadius: 4,
   },
 });

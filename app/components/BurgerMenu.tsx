@@ -1,31 +1,53 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { 
   View, 
   Text, 
+  Modal, 
   StyleSheet, 
   TouchableOpacity, 
-  Modal, 
-  Animated, 
+  SafeAreaView,
+  Animated,
   Dimensions,
   ScrollView
 } from 'react-native';
-import { router } from 'expo-router';
 import { 
-  Settings, 
-  Award, 
-  HelpCircle, 
-  BookMarked, 
-  LogOut,
-  X,
-  Trophy,
-  Calendar,
   GraduationCap,
-  Bell
+  BookOpen, 
+  TrendingUp,
+  Award, 
+  Bookmark,
+  Calendar,
+  Bell,
+  User, 
+  Settings, 
+  HelpCircle, 
+  LogOut, 
+  X,
 } from 'lucide-react-native';
+import { router } from 'expo-router';
+import { useAuth } from '../hooks/useAuth';
+
+const { width, height } = Dimensions.get('window');
+
+interface BurgerMenuProps {
+  visible: boolean;
+  onClose: () => void;
+}
+
+const COLORS = {
+  primary: '#5B67CA',
+  secondary: '#43C0B4',
+  accent1: '#F98D51',
+  background: '#F2F5FF',
+  card: '#FFFFFF',
+  text: '#25335F',
+  textSecondary: '#7F8BB7',
+  border: '#EAEDF5'
+};
 
 interface MenuItem {
-  icon: JSX.Element;
-  title: string;
+  icon: React.ReactNode;
+  label: string;
   onPress: () => void;
   color?: string;
   bgColor?: string;
@@ -36,219 +58,212 @@ interface MenuSection {
   items: MenuItem[];
 }
 
-interface BurgerMenuProps {
-  visible: boolean;
-  onClose: () => void;
-}
-
-// Новая цветовая палитра
-const COLORS = {
-  primary: '#5B67CA',     // Основной синий/фиолетовый
-  secondary: '#43C0B4',   // Бирюзовый
-  accent1: '#F98D51',     // Оранжевый
-  accent2: '#EC575B',     // Красный
-  accent3: '#FFCA42',     // Желтый
-  background: '#F2F5FF',  // Светлый фон
-  card: '#FFFFFF',        // Белый для карточек
-  text: '#25335F',        // Основной текст
-  textSecondary: '#7F8BB7',  // Вторичный текст
-  border: '#EAEDF5'       // Граница
-};
-
 const BurgerMenu: React.FC<BurgerMenuProps> = ({ visible, onClose }) => {
-  const [animation] = useState(new Animated.Value(0));
-  const screenHeight = Dimensions.get('window').height;
+  const { logout } = useAuth();
+  const slideAnim = React.useRef(new Animated.Value(-width)).current;
+  const fadeAnim = React.useRef(new Animated.Value(0)).current;
 
   React.useEffect(() => {
     if (visible) {
-      Animated.timing(animation, {
-        toValue: 1,
-        duration: 300,
-        useNativeDriver: true,
-      }).start();
+      Animated.parallel([
+        Animated.timing(slideAnim, {
+          toValue: 0,
+          duration: 300,
+          useNativeDriver: true
+        }),
+        Animated.timing(fadeAnim, {
+          toValue: 0.5,
+          duration: 300,
+          useNativeDriver: true
+        })
+      ]).start();
     } else {
-      Animated.timing(animation, {
-        toValue: 0,
-        duration: 200,
-        useNativeDriver: true,
-      }).start();
+      Animated.parallel([
+        Animated.timing(slideAnim, {
+          toValue: -width,
+          duration: 300,
+          useNativeDriver: true
+        }),
+        Animated.timing(fadeAnim, {
+          toValue: 0,
+          duration: 300,
+          useNativeDriver: true
+        })
+      ]).start();
     }
-  }, [visible, animation]);
+  }, [visible, slideAnim, fadeAnim]);
 
-  const translateY = animation.interpolate({
-    inputRange: [0, 1],
-    outputRange: [-screenHeight, 0],
-  });
+  const handleLogout = async () => {
+    onClose();
+    await logout();
+  };
 
   const menuSections: MenuSection[] = [
     {
-      title: "Образование",
+      title: 'Образование',
       items: [
         {
           icon: <GraduationCap size={24} color="#FFFFFF" />,
-          title: 'Экзамены',
+          label: 'Экзамены',
           onPress: () => {
             onClose();
-            router.navigate('/exams' as any);
+            router.push('/(tabs)/subjects');
           },
-          color: COLORS.primary,
-          bgColor: COLORS.primary
+          bgColor: '#5B67CA'
         },
         {
-          icon: <Trophy size={24} color="#FFFFFF" />,
-          title: 'Прогресс',
+          icon: <TrendingUp size={24} color="#FFFFFF" />,
+          label: 'Прогресс',
           onPress: () => {
             onClose();
-            router.navigate('/(tabs)/progress' as any);
+            router.push('/(tabs)/progress');
           },
-          color: COLORS.secondary,
-          bgColor: COLORS.secondary
+          bgColor: '#43C0B4'
         },
         {
           icon: <Award size={24} color="#FFFFFF" />,
-          title: 'Достижения',
+          label: 'Достижения',
           onPress: () => {
             onClose();
-            router.navigate('/achievements' as any);
+            router.push('/(tabs)/achievements');
           },
-          color: COLORS.accent1,
-          bgColor: COLORS.accent1
+          bgColor: '#F98D51'
         },
         {
-          icon: <BookMarked size={24} color="#FFFFFF" />,
-          title: 'Сохраненные уроки',
+          icon: <Bookmark size={24} color="#FFFFFF" />,
+          label: 'Сохраненные уроки',
           onPress: () => {
             onClose();
-            router.navigate('/saved-lessons' as any);
+            router.push('/(tabs)/lessons');
           },
-          color: COLORS.primary,
-          bgColor: COLORS.primary
+          bgColor: '#5B67CA'
         },
       ]
     },
     {
-      title: "Организация",
+      title: 'Организация',
       items: [
         {
           icon: <Calendar size={24} color="#FFFFFF" />,
-          title: 'Календарь',
+          label: 'Календарь',
           onPress: () => {
             onClose();
-            router.navigate('/calendar' as any);
+            router.push('/(tabs)');
           },
-          color: COLORS.accent3,
-          bgColor: COLORS.accent3
+          bgColor: '#F98D51'
         },
         {
           icon: <Bell size={24} color="#FFFFFF" />,
-          title: 'Напоминания',
+          label: 'Уведомления',
           onPress: () => {
             onClose();
-            router.navigate('/reminders' as any);
+            router.push('/(tabs)');
           },
-          color: COLORS.secondary,
-          bgColor: COLORS.secondary
+          bgColor: '#43C0B4'
         },
       ]
     },
     {
-      title: "Аккаунт",
+      title: 'Аккаунт',
       items: [
         {
           icon: <Settings size={24} color="#FFFFFF" />,
-          title: 'Настройки',
+          label: 'Настройки',
           onPress: () => {
             onClose();
-            router.navigate('/settings' as any);
+            router.push('/(tabs)/profile');
           },
-          color: COLORS.textSecondary,
-          bgColor: COLORS.textSecondary
+          bgColor: '#5B67CA'
         },
         {
           icon: <HelpCircle size={24} color="#FFFFFF" />,
-          title: 'Помощь',
+          label: 'Помощь',
           onPress: () => {
             onClose();
-            router.navigate('/help' as any);
+            router.push('/(tabs)');
           },
-          color: COLORS.primary,
-          bgColor: COLORS.primary
+          bgColor: '#43C0B4'
         },
         {
           icon: <LogOut size={24} color="#FFFFFF" />,
-          title: 'Выйти',
-          onPress: () => {
-            onClose();
-            // Логика выхода из аккаунта
-          },
-          color: COLORS.accent2,
-          bgColor: COLORS.accent2
+          label: 'Выйти',
+          onPress: handleLogout,
+          color: '#EC575B',
+          bgColor: '#EC575B'
         },
       ]
-    },
+    }
   ];
+
+  if (!visible) return null;
 
   return (
     <Modal
-      transparent
       visible={visible}
+      transparent={true}
       animationType="none"
       onRequestClose={onClose}
     >
-      <View style={styles.overlay}>
+      <View style={styles.container}>
+        <Animated.View 
+          style={[
+            styles.backdrop, 
+            { opacity: fadeAnim }
+          ]} 
+        >
+          <TouchableOpacity 
+            style={{ flex: 1 }} 
+            activeOpacity={1} 
+            onPress={onClose} 
+          />
+        </Animated.View>
+
         <Animated.View 
           style={[
             styles.menuContainer,
-            { transform: [{ translateY }] }
+            { transform: [{ translateX: slideAnim }] }
           ]}
         >
-          <View style={styles.header}>
-            <Text style={styles.title}>Меню</Text>
-            <TouchableOpacity onPress={onClose} style={styles.closeButton}>
-              <X size={24} color={COLORS.text} />
-            </TouchableOpacity>
-          </View>
-          
-          <View style={styles.divider} />
-          
-          <ScrollView 
-            style={styles.scrollView}
-            showsVerticalScrollIndicator={false}
-          >
-            {menuSections.map((section, sectionIndex) => (
-              <View key={sectionIndex} style={styles.section}>
-                <Text style={styles.sectionTitle}>{section.title}</Text>
-                
-                {section.items.map((item, itemIndex) => (
-                  <TouchableOpacity
-                    key={itemIndex}
-                    style={[
-                      styles.menuItem,
-                      item.title === 'Выйти' && styles.logoutItem
-                    ]}
-                    onPress={item.onPress}
-                  >
-                    <View style={[styles.iconContainer, { backgroundColor: item.bgColor }]}>
-                      {item.icon}
-                    </View>
-                    <Text 
-                      style={[
-                        styles.menuItemText,
-                        item.title === 'Выйти' ? styles.logoutText : { color: COLORS.text }
-                      ]}
-                    >
-                      {item.title}
-                    </Text>
-                  </TouchableOpacity>
+          <SafeAreaView style={styles.safeArea}>
+            <View style={styles.header}>
+              <Text style={styles.headerTitle}>Меню</Text>
+              <TouchableOpacity 
+                style={styles.closeButton} 
+                onPress={onClose}
+              >
+                <X size={24} color={COLORS.text} />
+              </TouchableOpacity>
+            </View>
+            
+            <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
+              <View style={styles.menuSections}>
+                {menuSections.map((section, sectionIndex) => (
+                  <View key={sectionIndex} style={styles.section}>
+                    <Text style={styles.sectionTitle}>{section.title}</Text>
+                    
+                    {section.items.map((item, itemIndex) => (
+                      <TouchableOpacity
+                        key={itemIndex}
+                        style={styles.menuItem}
+                        onPress={item.onPress}
+                      >
+                        <View style={[styles.iconContainer, { backgroundColor: item.bgColor }]}>
+                          {item.icon}
+                        </View>
+                        <Text style={[
+                          styles.menuItemLabel, 
+                          item.color ? { color: item.color } : null
+                        ]}>
+                          {item.label}
+                        </Text>
+                      </TouchableOpacity>
+                    ))}
+                  </View>
                 ))}
-                
-                {sectionIndex < menuSections.length - 1 && (
-                  <View style={styles.sectionDivider} />
-                )}
+                <View style={styles.bottomPadding} />
               </View>
-            ))}
-            <View style={styles.scrollBottomPadding} />
-          </ScrollView>
+            </ScrollView>
+          </SafeAreaView>
         </Animated.View>
       </View>
     </Modal>
@@ -256,98 +271,86 @@ const BurgerMenu: React.FC<BurgerMenuProps> = ({ visible, onClose }) => {
 };
 
 const styles = StyleSheet.create({
-  overlay: {
+  container: {
     flex: 1,
-    backgroundColor: 'rgba(37, 51, 95, 0.5)',
-    justifyContent: 'flex-end',
+    flexDirection: 'row',
+  },
+  backdrop: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: '#000',
   },
   menuContainer: {
-    backgroundColor: '#FFFFFF',
-    borderTopLeftRadius: 28,
-    borderTopRightRadius: 28,
-    paddingHorizontal: 24,
-    paddingTop: 20,
-    maxHeight: '80%',
+    width: width * 0.75,
+    maxWidth: 300,
+    backgroundColor: COLORS.card,
+    height: '100%',
+    shadowColor: '#000',
+    shadowOffset: { width: 2, height: 0 },
+    shadowOpacity: 0.1,
+    shadowRadius: 8,
+    elevation: 5,
+  },
+  safeArea: {
+    flex: 1,
   },
   header: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 16,
+    justifyContent: 'space-between',
+    padding: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: COLORS.border,
   },
-  title: {
-    fontSize: 22,
-    fontWeight: '700',
+  headerTitle: {
+    fontSize: 20,
+    fontWeight: 'bold',
     color: COLORS.text,
-    letterSpacing: -0.5,
   },
   closeButton: {
-    padding: 6,
-    backgroundColor: '#F2F5FF',
-    borderRadius: 12,
-    width: 36,
-    height: 36,
-    alignItems: 'center',
-    justifyContent: 'center',
+    padding: 8,
   },
-  divider: {
-    height: 1,
-    backgroundColor: COLORS.border,
-    marginBottom: 24,
+  scrollView: {
+    flex: 1,
+  },
+  menuSections: {
+    paddingVertical: 16,
   },
   section: {
-    marginBottom: 24,
+    marginBottom: 32,
   },
   sectionTitle: {
     fontSize: 16,
-    fontWeight: '600',
+    fontWeight: '500',
     color: COLORS.textSecondary,
-    marginBottom: 16,
-    paddingLeft: 8,
-    letterSpacing: -0.3,
-  },
-  sectionDivider: {
-    height: 1,
-    backgroundColor: COLORS.border,
-    marginTop: 16,
+    paddingHorizontal: 20,
     marginBottom: 16,
   },
   menuItem: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingVertical: 12,
-    marginBottom: 8,
+    paddingVertical: 10,
+    paddingHorizontal: 20,
+    marginBottom: 4,
   },
   iconContainer: {
-    width: 48,
-    height: 48,
-    borderRadius: 16,
+    width: 42,
+    height: 42,
+    borderRadius: 8,
     justifyContent: 'center',
     alignItems: 'center',
     marginRight: 16,
-    shadowColor: COLORS.text,
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 2,
   },
-  logoutItem: {
-    marginTop: 12,
-  },
-  menuItemText: {
+  menuItemLabel: {
     fontSize: 16,
-    fontWeight: '600',
     color: COLORS.text,
-    letterSpacing: -0.3,
+    fontWeight: '500',
   },
-  logoutText: {
-    color: COLORS.accent2,
-  },
-  scrollView: {
-    flexGrow: 0,
-  },
-  scrollBottomPadding: {
-    height: 32,
+  bottomPadding: {
+    height: 50,
   },
 });
 

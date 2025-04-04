@@ -10,7 +10,7 @@ import {
   SafeAreaView,
 } from 'react-native';
 import { router, useLocalSearchParams } from 'expo-router';
-import { MaterialIcons } from '@expo/vector-icons';
+import { ChevronLeft, ChevronRight } from 'lucide-react-native';
 import { mbtiQuestions } from '../data';
 import QuestionCard from '../components/QuestionCard';
 import ResultsCard from '../components/ResultsCard';
@@ -19,8 +19,17 @@ import { calculateMBTIScores, determineMBTIType, calculateProgress } from '../ut
 import { MBTIScores, mbtiDescriptions } from '../types/personalityTest';
 import { useAuth } from '../hooks/useAuth';
 
-// API configuration
-const API_BASE_URL = 'https://j0cl9aplcsh5.share.zrok.io';
+const COLORS = {
+  primary: '#5B67CA',     // Основной синий/фиолетовый
+  secondary: '#43C0B4',   // Бирюзовый
+  accent1: '#F98D51',     // Оранжевый
+  accent2: '#EC575B',     // Красный
+  background: '#F2F5FF',  // Светлый фон
+  card: '#FFFFFF',        // Белый для карточек
+  text: '#25335F',        // Основной текст
+  textSecondary: '#7F8BB7',  // Вторичный текст
+  border: '#EAEDF5'       // Граница
+};
 
 const PersonalityTestScreen: React.FC = () => {
   const { user, updatePersonalityType } = useAuth();
@@ -133,6 +142,13 @@ const PersonalityTestScreen: React.FC = () => {
     router.back();
   };
 
+  // Navigate to test results
+  const viewResults = () => {
+    if (personalityType) {
+      router.push(`/test-result?type=${personalityType}`);
+    }
+  };
+
   // Calculate current progress
   const progress = calculateProgress(currentQuestionIndex, mbtiQuestions.length);
   
@@ -146,36 +162,46 @@ const PersonalityTestScreen: React.FC = () => {
     <SafeAreaView style={styles.container}>
       <ScrollView 
         ref={scrollViewRef} 
+        style={styles.scrollView}
         contentContainerStyle={styles.scrollContent}
       >
         {loading ? (
           <View style={styles.loadingContainer}>
-            <ActivityIndicator size="large" color="#4CAF50" />
+            <ActivityIndicator size="large" color={COLORS.primary} />
             <Text style={styles.loadingText}>Анализируем ваши ответы...</Text>
           </View>
         ) : testComplete && personalityType && description ? (
-          <>
+          <View style={styles.resultsContainer}>
             <ResultsCard
               personalityType={personalityType}
               description={description}
               scores={scores || undefined}
               onRestart={restartTest}
             />
-            <TouchableOpacity
-              style={styles.returnButton}
-              onPress={returnToProfile}
-            >
-              <MaterialIcons name="arrow-back" size={18} color="#4CAF50" />
-              <Text style={styles.returnButtonText}>Вернуться в профиль</Text>
-            </TouchableOpacity>
-          </>
+            
+            <View style={styles.actionButtonsContainer}>
+              <TouchableOpacity
+                style={[styles.actionButton, styles.viewResultsButton]}
+                onPress={viewResults}
+              >
+                <Text style={styles.buttonText}>Посмотреть результаты</Text>
+              </TouchableOpacity>
+              
+              <TouchableOpacity
+                style={[styles.actionButton, styles.returnButton]}
+                onPress={returnToProfile}
+              >
+                <Text style={styles.buttonText}>Вернуться в профиль</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
         ) : (
           <>
             <View style={styles.progressSection}>
               <Text style={styles.progressText}>
                 Вопрос {currentQuestionIndex + 1} из {mbtiQuestions.length}
               </Text>
-              <ProgressBar progress={progress} height={6} fillColor="#4CAF50" />
+              <ProgressBar progress={progress} height={6} fillColor={COLORS.primary} />
             </View>
 
             {currentQuestion && (
@@ -198,10 +224,9 @@ const PersonalityTestScreen: React.FC = () => {
                 onPress={goToPreviousQuestion}
                 disabled={currentQuestionIndex === 0}
               >
-                <MaterialIcons
-                  name="arrow-back"
-                  size={18}
-                  color={currentQuestionIndex === 0 ? '#bbb' : '#333'}
+                <ChevronLeft
+                  size={20}
+                  color={currentQuestionIndex === 0 ? COLORS.textSecondary : COLORS.text}
                 />
                 <Text
                   style={[
@@ -233,10 +258,9 @@ const PersonalityTestScreen: React.FC = () => {
                     ? 'Завершить тест'
                     : 'Далее'}
                 </Text>
-                <MaterialIcons
-                  name="arrow-forward"
-                  size={18}
-                  color={!isCurrentQuestionAnswered ? '#bbb' : 'white'}
+                <ChevronRight
+                  size={20}
+                  color={!isCurrentQuestionAnswered ? COLORS.textSecondary : '#FFFFFF'}
                 />
               </TouchableOpacity>
             </View>
@@ -250,88 +274,108 @@ const PersonalityTestScreen: React.FC = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f5f5f5',
+    backgroundColor: COLORS.background,
+  },
+  scrollView: {
+    flex: 1,
+    backgroundColor: COLORS.background,
   },
   scrollContent: {
-    padding: 16,
+    padding: 20,
   },
   progressSection: {
-    marginBottom: 16,
+    marginBottom: 20,
   },
   progressText: {
     fontSize: 14,
-    color: '#666',
+    color: COLORS.textSecondary,
     marginBottom: 8,
   },
   categoryBadge: {
     alignSelf: 'flex-start',
-    backgroundColor: '#4CAF50',
-    paddingHorizontal: 12,
-    paddingVertical: 6,
+    backgroundColor: COLORS.primary,
+    paddingHorizontal: 16,
+    paddingVertical: 8,
     borderRadius: 16,
-    marginBottom: 16,
+    marginBottom: 20,
   },
   categoryText: {
-    color: 'white',
-    fontWeight: '500',
-    fontSize: 12,
+    color: '#FFFFFF',
+    fontWeight: '600',
+    fontSize: 14,
   },
   navigationButtons: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    marginTop: 24,
-    marginBottom: 32,
+    marginTop: 32,
+    marginBottom: 24,
   },
   navButton: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingVertical: 10,
-    paddingHorizontal: 16,
-    borderRadius: 8,
+    paddingVertical: 12,
+    paddingHorizontal: 18,
+    borderRadius: 12,
   },
   backButton: {
-    backgroundColor: '#f0f0f0',
+    backgroundColor: COLORS.card,
+    borderWidth: 1,
+    borderColor: COLORS.border,
   },
   nextButton: {
-    backgroundColor: '#4CAF50',
+    backgroundColor: COLORS.primary,
   },
   disabledButton: {
-    backgroundColor: '#e0e0e0',
+    backgroundColor: COLORS.textSecondary,
+    opacity: 0.6,
   },
   navButtonText: {
     fontWeight: '600',
-    fontSize: 15,
-    marginHorizontal: 4,
+    fontSize: 16,
+    marginHorizontal: 8,
+    color: COLORS.text,
   },
   nextButtonText: {
-    color: 'white',
+    color: '#FFFFFF',
   },
   disabledButtonText: {
-    color: '#bbb',
+    color: '#FFFFFF',
+    opacity: 0.7,
   },
   loadingContainer: {
     alignItems: 'center',
     justifyContent: 'center',
-    padding: 32,
+    padding: 40,
   },
   loadingText: {
-    marginTop: 16,
+    marginTop: 20,
     fontSize: 16,
-    color: '#555',
+    color: COLORS.text,
     textAlign: 'center',
   },
-  returnButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginTop: 24,
-    padding: 12,
+  resultsContainer: {
+    padding: 20,
   },
-  returnButtonText: {
-    color: '#4CAF50',
+  actionButtonsContainer: {
+    marginTop: 24,
+  },
+  actionButton: {
+    borderRadius: 12,
+    paddingVertical: 16,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 12,
+  },
+  viewResultsButton: {
+    backgroundColor: COLORS.primary,
+  },
+  returnButton: {
+    backgroundColor: COLORS.accent1,
+  },
+  buttonText: {
+    color: '#FFFFFF',
     fontSize: 16,
     fontWeight: '600',
-    marginLeft: 8,
   },
 });
 

@@ -33,13 +33,15 @@ import {
   Lock,
   Camera,
   Brain,
+  ArrowRightCircle,
+  LockIcon,
 } from 'lucide-react-native';
 import * as ImagePicker from 'expo-image-picker';
 import { router } from 'expo-router';
 import { usePersonalityTest } from '../hooks/usePersonalityTest';
 import { mbtiDescriptions } from '../types/personalityTest';
 import { LinearGradient } from 'expo-linear-gradient';
-import { useAuth } from '../hooks/useAuth';
+import { useAuth, UserProfile } from '../hooks/useAuth';
 import GenderPickerModal from '../components/GenderPickerModal';
 import LanguagePickerModal from '../components/LanguagePickerModal';
 import ThemePickerModal from '../components/ThemePickerModal';
@@ -70,7 +72,8 @@ interface ProfileSettings {
 }
 
 const ProfileScreen: React.FC = () => {
-  const { user, logout, updateProfile, isLoading, error } = useAuth();
+  const auth = useAuth();
+  const { user, logout, updateProfile, isLoading, error, setUser } = auth;
   const [isEditing, setIsEditing] = useState(false);
   const [formData, setFormData] = useState({
     nickname: '',
@@ -80,7 +83,7 @@ const ProfileScreen: React.FC = () => {
     gender: '',
     personalityType: '',
   });
-  const [avatar, setAvatar] = useState<string | null>(null);
+  const [avatar, setAvatar] = useState<string | undefined>(undefined);
   const [settings, setSettings] = useState<ProfileSettings>({
     theme: 'light',
     language: 'ru',
@@ -99,13 +102,6 @@ const ProfileScreen: React.FC = () => {
   
   useEffect(() => {
     if (user) {
-      console.log('=== PROFILE DEBUG ===');
-      console.log('User data:', JSON.stringify({
-        ...user,
-        email: user.email ? `${user.email.substring(0, 3)}***` : null // маскируем email для безопасности
-      }, null, 2));
-      console.log('Personality type:', user.personalityType || 'Not set');
-      
       setFormData({
         nickname: user.nickname || '',
         name: user.name || '',
@@ -114,81 +110,64 @@ const ProfileScreen: React.FC = () => {
         gender: user.gender || '',
         personalityType: user.personalityType || '',
       });
-      setAvatar(user.avatar || null);
-      setImage(user.profileImage || null);
+      setAvatar(user.avatar);
+      setImage(user.profileImage);
       
       if (user.settings) {
         setSettings(user.settings);
       }
-      
-      console.log('FormData after update:', JSON.stringify({
-        ...formData, 
-        email: formData.email ? `${formData.email.substring(0, 3)}***` : null
-      }, null, 2));
-      console.log('personalityType in formData:', formData.personalityType || 'Not set');
-      console.log('=== END PROFILE DEBUG ===');
     }
   }, [user]);
 
-  const getAgeText = () => {
-    if (!formData.age || formData.age === '0') return 'Не указан';
-    return `${formData.age} лет`;
-  };
-
   const handleSaveProfile = async () => {
-    // Валидация обязательных полей
-    if (!formData.nickname || !formData.name || !formData.email) {
-      Alert.alert('Ошибка', 'Пожалуйста, заполните обязательные поля: никнейм, имя и email');
-      return;
-    }
-    
-    setIsSaving(true);
-    
     try {
-      // Приводим gender к нужному типу
-      const gender = (
-        formData.gender === 'male' || 
-        formData.gender === 'female' || 
-        formData.gender === 'other'
-      ) 
-        ? formData.gender as 'male' | 'female' | 'other' 
-        : 'other';
-        
-      await updateProfile({
+      setIsSaving(true);
+      // Проверяем правильность заполнения формы
+      if (!formData.name.trim() || !formData.email.trim()) {
+        Alert.alert("Ошибка", "Имя и Email обязательны для заполнения");
+        return;
+      }
+
+      // Объединяем только необходимые поля для обновления профиля
+      const profileData: Partial<UserProfile> = {
         name: formData.name,
-        email: formData.email,
         nickname: formData.nickname,
+        email: formData.email,
+        gender: formData.gender as 'male' | 'female' | 'other',
+        age: formData.age ? parseInt(formData.age) : undefined,
         personalityType: formData.personalityType,
-        age: formData.age ? parseInt(formData.age, 10) : 0,
-        gender,
-        avatar: avatar || undefined,
-        profileImage: image || undefined,
-        settings,
-      });
+      };
+
+      if (avatar) {
+        profileData.avatar = avatar;
+      }
+
+      const success = await updateProfile(profileData);
       
-      Alert.alert('Успешно', 'Профиль успешно обновлен');
-      setIsEditing(false); // Выходим из режима редактирования после сохранения
-    } catch (err) {
-      Alert.alert('Ошибка', error || 'Не удалось обновить профиль. Попробуйте позже.');
+      if (success) {
+        // Перезагружаем страницу или обновляем UI
+        if (user) {
+          // Просто обновляем отображение после сохранения
+          Alert.alert(
+            'Успешно', 
+            'Профиль обновлен', 
+            [
+              { 
+                text: 'OK', 
+                onPress: () => {
+                  setIsEditing(false);  // Выходим из режима редактирования
+                }
+              }
+            ]
+          );
+        }
+      }
+    } catch (error) {
+      console.error("Error saving profile:", error);
+      Alert.alert("Ошибка", `Не удалось обновить профиль: ${error instanceof Error ? error.message : 'Неизвестная ошибка'}`);
     } finally {
       setIsSaving(false);
     }
-  };
-
-  const handleCancelEdit = () => {
-    // Возвращаем оригинальные данные
-    if (user) {
-      setFormData({
-        nickname: user.nickname || '',
-        name: user.name || '',
-        email: user.email || '',
-        age: user.age ? String(user.age) : '',
-        gender: user.gender || '',
-        personalityType: user.personalityType || '',
-      });
-      setAvatar(user.avatar || null);
-    }
-    setIsEditing(false);
   };
 
   const pickImage = async () => {
@@ -245,62 +224,25 @@ const ProfileScreen: React.FC = () => {
     }
   };
 
-  // Отдельная функция для обработки нажатия на тег типа личности в шапке
-  const handleHeaderPersonalityTagPress = () => {
-    // В шапке показывается тип только если он уже определен,
-    // поэтому всегда переходим на страницу результатов
+  const handlePersonalityTypePress = () => {
     if (formData.personalityType) {
-      router.push(`/test-result?type=${formData.personalityType}`);
-    }
-  };
-
-  // Функция для навигации к тесту личности
-  const navigateToPersonalityTest = () => {
-    router.push('/personality-test');
-  };
-
-  // Функция для навигации к результатам теста
-  const navigateToTestResults = () => {
-    if (formData.personalityType) {
-      router.push(`/test-result?type=${formData.personalityType}`);
+      router.push(`/screens/test-result?type=${formData.personalityType}`);
+    } else {
+      router.push('/screens/personality-test');
     }
   };
 
   const getPersonalityTypeName = () => {
-    // Расширенный список типов личности для правильного отображения
-    const types: {[key: string]: string} = {
-      // Основные 4 типа
+    const types = {
       'analytical': 'Аналитический тип',
       'creative': 'Креативный тип',
       'social': 'Социальный тип',
       'practical': 'Практический тип',
-      
-      // MBTI типы (16 типов)
-      'INTJ': 'Стратег (INTJ)',
-      'INTP': 'Мыслитель (INTP)',
-      'ENTJ': 'Командир (ENTJ)',
-      'ENTP': 'Изобретатель (ENTP)',
-      'INFJ': 'Советник (INFJ)',
-      'INFP': 'Посредник (INFP)',
-      'ENFJ': 'Протагонист (ENFJ)',
-      'ENFP': 'Борец (ENFP)',
-      'ISTJ': 'Логистик (ISTJ)',
-      'ISFJ': 'Защитник (ISFJ)',
-      'ESTJ': 'Руководитель (ESTJ)',
-      'ESFJ': 'Консул (ESFJ)',
-      'ISTP': 'Виртуоз (ISTP)',
-      'ISFP': 'Артист (ISFP)',
-      'ESTP': 'Делец (ESTP)',
-      'ESFP': 'Развлекатель (ESFP)',
     };
     
-    // Проверяем, есть ли тип в списке известных типов
-    if (formData.personalityType && types[formData.personalityType]) {
-      return types[formData.personalityType];
-    }
-    
-    // Если точного совпадения нет, возвращаем сам тип (чтобы ничего не потерялось)
-    return formData.personalityType ? `Тип: ${formData.personalityType}` : 'Не определен';
+    return formData.personalityType ? 
+      types[formData.personalityType as keyof typeof types] : 
+      'Не определен';
   };
 
   const getGenderText = () => {
@@ -329,6 +271,70 @@ const ProfileScreen: React.FC = () => {
     };
     
     return themes[settings.theme] || 'Светлая';
+  };
+
+  // Отображение информации пользователя
+  const renderUserInfo = () => {
+    if (!user) return null;
+    return (
+      <View style={styles.infoContainer}>
+        {/* Базовая информация */}
+        <View style={styles.infoSection}>
+          <View style={styles.infoRow}>
+            <Text style={styles.infoLabel}>Имя:</Text>
+            <Text style={styles.infoValue}>{user.name || 'Не указано'}</Text>
+          </View>
+          <View style={styles.infoRow}>
+            <Text style={styles.infoLabel}>Никнейм:</Text>
+            <Text style={styles.infoValue}>{user.nickname || 'Не указано'}</Text>
+          </View>
+          <View style={styles.infoRow}>
+            <Text style={styles.infoLabel}>Пол:</Text>
+            <Text style={styles.infoValue}>{getGenderText() || 'Не указан'}</Text>
+          </View>
+          <View style={styles.infoRow}>
+            <Text style={styles.infoLabel}>Возраст:</Text>
+            <Text style={styles.infoValue}>{user?.age ? user.age : 'Не указан'}</Text>
+          </View>
+        </View>
+
+        {/* Дополнительная информация */}
+        <View style={styles.infoSection}>
+          <View style={styles.infoRow}>
+            <Text style={styles.infoLabel}>Email:</Text>
+            <Text style={styles.infoValue}>{user.email || 'Не указано'}</Text>
+          </View>
+          <View style={styles.infoRow}>
+            <Text style={styles.infoLabel}>Тип личности:</Text>
+            <Text style={styles.infoValue}>{getPersonalityTypeName() || 'Не определен'}</Text>
+          </View>
+
+          {/* Кнопка перехода к результатам теста */}
+          {user.personalityType && (
+            <TouchableOpacity 
+              style={styles.testResultsButton}
+              onPress={() => {
+              onPress={() => router.push({
+                pathname: "screens/test-result" as any,
+                params: { type: user.personalityType }
+              })}
+            >
+              <Text style={styles.testResultsButtonText}>Посмотреть результаты теста</Text>
+              <ArrowRightCircle size={16} color={COLORS.primary} />
+            </TouchableOpacity>
+          )}
+
+          {/* Кнопка изменения пароля */}
+          <TouchableOpacity 
+            style={styles.changePasswordButton}
+            onPress={() => router.push('/change-password')}
+          >
+            <LockIcon size={16} color={COLORS.primary} style={styles.changePasswordIcon} />
+            <Text style={styles.changePasswordText}>Изменить пароль</Text>
+          </TouchableOpacity>
+        </View>
+      </View>
+    );
   };
 
   if (isLoading) {
@@ -381,7 +387,7 @@ const ProfileScreen: React.FC = () => {
           <Text style={styles.userName}>{formData.name || 'Ваше имя'}</Text>
           <Text style={styles.userNickname}>@{formData.nickname || 'nickname'}</Text>
           {formData.personalityType && (
-            <TouchableOpacity style={styles.personalityTypeTag} onPress={handleHeaderPersonalityTagPress}>
+            <TouchableOpacity style={styles.personalityTypeTag} onPress={handlePersonalityTypePress}>
               <Brain size={16} color="#FFFFFF" style={styles.personalityTypeIcon} />
               <Text style={styles.personalityTypeText}>{getPersonalityTypeName()}</Text>
             </TouchableOpacity>
@@ -494,7 +500,7 @@ const ProfileScreen: React.FC = () => {
             <View style={styles.editButtonsContainer}>
               <TouchableOpacity 
                 style={[styles.editButton, styles.editCancelButton]}
-                onPress={handleCancelEdit}
+                onPress={() => setIsEditing(false)}
               >
                 <Text style={styles.editCancelButtonText}>Отмена</Text>
               </TouchableOpacity>
@@ -520,19 +526,6 @@ const ProfileScreen: React.FC = () => {
                 </View>
                 <View style={styles.settingTextContainer}>
                   <Text style={styles.settingText}>Редактировать профиль</Text>
-                </View>
-                <ChevronRight size={20} color={COLORS.textSecondary} />
-              </TouchableOpacity>
-              
-              <TouchableOpacity 
-                style={styles.settingItem}
-                onPress={() => router.push('/change-password')}
-              >
-                <View style={[styles.settingIconContainer, { backgroundColor: '#EEF0FF' }]}>
-                  <Lock size={20} color={COLORS.primary} />
-                </View>
-                <View style={styles.settingTextContainer}>
-                  <Text style={styles.settingText}>Изменить пароль</Text>
                 </View>
                 <ChevronRight size={20} color={COLORS.textSecondary} />
               </TouchableOpacity>
@@ -563,44 +556,43 @@ const ProfileScreen: React.FC = () => {
                 </View>
                 <View style={styles.settingTextContainer}>
                   <Text style={styles.settingText}>Возраст</Text>
-                  <Text style={styles.settingSubtext}>{getAgeText()}</Text>
+                  <Text style={styles.settingSubtext}>{formData.age ? `${formData.age} лет` : 'Не указан'}</Text>
                 </View>
               </View>
+
+              {/* Кнопка изменения пароля */}
+              <TouchableOpacity 
+                style={styles.settingItem}
+                onPress={() => router.push('/change-password')}
+              >
+                <View style={[styles.settingIconContainer, { backgroundColor: '#FFE8E8' }]}>
+                  <Lock size={20} color={COLORS.accent2} />
+                </View>
+                <View style={styles.settingTextContainer}>
+                  <Text style={styles.settingText}>Изменить пароль</Text>
+                </View>
+                <ChevronRight size={20} color={COLORS.textSecondary} />
+              </TouchableOpacity>
               
               {/* Personality Test Section */}
               {formData.personalityType ? (
-                <View>
-                  <TouchableOpacity 
-                    style={styles.settingItem}
-                    onPress={navigateToTestResults}
-                  >
-                    <View style={[styles.settingIconContainer, { backgroundColor: '#EEF0FF' }]}>
-                      <Star size={20} color={COLORS.primary} />
-                    </View>
-                    <View style={styles.settingTextContainer}>
-                      <Text style={styles.settingText}>Результаты теста личности</Text>
-                      <Text style={styles.settingSubtext}>Ваш тип: {formData.personalityType}</Text>
-                    </View>
-                    <ChevronRight size={20} color={COLORS.textSecondary} />
-                  </TouchableOpacity>
-                  
-                  <TouchableOpacity 
-                    style={[styles.settingItem, { paddingTop: 0 }]}
-                    onPress={navigateToPersonalityTest}
-                  >
-                    <View style={[styles.settingIconContainer, { backgroundColor: '#FFF8E8' }]}>
-                      <Brain size={20} color={COLORS.accent3} />
-                    </View>
-                    <View style={styles.settingTextContainer}>
-                      <Text style={styles.settingText}>Пройти тест заново</Text>
-                    </View>
-                    <ChevronRight size={20} color={COLORS.textSecondary} />
-                  </TouchableOpacity>
-                </View>
+                <TouchableOpacity 
+                  style={styles.settingItem}
+                  onPress={handlePersonalityTypePress}
+                >
+                  <View style={[styles.settingIconContainer, { backgroundColor: '#EEF0FF' }]}>
+                    <Star size={20} color={COLORS.primary} />
+                  </View>
+                  <View style={styles.settingTextContainer}>
+                    <Text style={styles.settingText}>Тест личности MBTI</Text>
+                    <Text style={styles.settingSubtext}>Ваш тип: {formData.personalityType}</Text>
+                  </View>
+                  <ChevronRight size={20} color={COLORS.textSecondary} />
+                </TouchableOpacity>
               ) : (
                 <TouchableOpacity 
                   style={styles.settingItem}
-                  onPress={navigateToPersonalityTest}
+                  onPress={handlePersonalityTypePress}
                 >
                   <View style={[styles.settingIconContainer, { backgroundColor: '#EEF0FF' }]}>
                     <Star size={20} color={COLORS.primary} />
@@ -1089,6 +1081,67 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.background,
     justifyContent: 'center',
     alignItems: 'center',
+  },
+  infoContainer: {
+    padding: 20,
+  },
+  infoSection: {
+    marginBottom: 24,
+    backgroundColor: COLORS.card,
+    borderRadius: 20,
+    padding: 20,
+    shadowColor: COLORS.text,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.05,
+    shadowRadius: 8,
+    elevation: 2,
+  },
+  infoRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 14,
+    borderBottomWidth: 1,
+    borderBottomColor: COLORS.border,
+  },
+  infoLabel: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: COLORS.text,
+    marginRight: 10,
+  },
+  infoValue: {
+    fontSize: 14,
+    color: COLORS.text,
+  },
+  testResultsButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginTop: 16,
+    padding: 10,
+    backgroundColor: 'rgba(91, 103, 202, 0.1)',
+    borderRadius: 8,
+  },
+  testResultsButtonText: {
+    color: COLORS.primary,
+    fontWeight: '500',
+    fontSize: 14,
+    marginRight: 8,
+  },
+  changePasswordButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginTop: 16,
+    padding: 10,
+    backgroundColor: 'rgba(91, 103, 202, 0.1)',
+    borderRadius: 8,
+  },
+  changePasswordIcon: {
+    marginRight: 8,
+  },
+  changePasswordText: {
+    color: COLORS.primary,
+    fontWeight: '500',
+    fontSize: 14,
   },
 });
 
