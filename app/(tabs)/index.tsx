@@ -114,14 +114,14 @@ export default function HomeScreen() {
       title: 'Основы психологии',
       lessons: 12,
       duration: '6 часов',
-      image: require('../../assets/images/logo.png')
+      image: require('@/images/photo_2025-04-05_15-03-42.jpg')
     },
     {
       id: 2,
       title: 'Развитие эмоционального интеллекта',
       lessons: 8,
       duration: '4 часа',
-      image: require('../../assets/images/logo.png')
+      image: require('@/images/chatgpt-maths-1.png')
     }
   ];
 
