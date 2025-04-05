@@ -528,7 +528,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             text: 'OK', 
             onPress: () => {
               router.replace({
-                pathname: '/login',
+                pathname: '/(auth)/login',
                 params: { email: sanitizedEmail, fromRegistration: 'true' }
               });
             }

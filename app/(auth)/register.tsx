@@ -49,12 +49,24 @@ export default function RegisterScreen() {
       return;
     }
 
-    const success = await register({ name, email, password });
-    
-    if (success) {
-      router.replace('/(tabs)');
-    } else if (error) {
-      Alert.alert('Ошибка регистрации', error);
+    try {
+      // Вызываем метод регистрации из хука useAuth
+      // После регистрации хук useAuth сам перенаправит пользователя на страницу входа или панель приложения
+      await register({
+        name,
+        email,
+        password,
+        // Добавляем gender и age с значениями по умолчанию, так как они требуются API
+        gender: 'other',
+        age: 0
+      });
+    } catch (err) {
+      // Ошибка уже будет обработана внутри хука useAuth, но на всякий случай обрабатываем её и здесь
+      console.error('Ошибка регистрации:', err);
+      Alert.alert(
+        'Ошибка регистрации', 
+        error || 'Произошла ошибка при регистрации. Пожалуйста, попробуйте еще раз.'
+      );
     }
   };
 

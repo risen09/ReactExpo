@@ -4,12 +4,10 @@ import { router, Redirect } from 'expo-router';
 import { useAuth } from './hooks/useAuth';
 
 export default function Index() {
-  const { isAuthenticated, isLoading, checkAuth } = useAuth();
+  const { isAuthenticated, isLoading } = useAuth();
 
   useEffect(() => {
-    const checkAuthAndRedirect = async () => {
-      await checkAuth();
-      
+    const redirectBasedOnAuth = async () => {
       if (!isLoading) {
         if (isAuthenticated) {
           router.replace('/(tabs)');
@@ -19,7 +17,7 @@ export default function Index() {
       }
     };
 
-    checkAuthAndRedirect();
+    redirectBasedOnAuth();
   }, [isAuthenticated, isLoading]);
 
   if (isLoading) {

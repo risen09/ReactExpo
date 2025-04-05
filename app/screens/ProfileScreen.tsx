@@ -239,7 +239,7 @@ const ProfileScreen: React.FC = () => {
   const handleLogout = async () => {
     try {
       await logout();
-      router.replace('/login');
+      router.replace('/(auth)/login');
     } catch (err) {
       Alert.alert('Ошибка', 'Не удалось выйти из аккаунта. Попробуйте позже.');
     }
@@ -346,7 +346,7 @@ const ProfileScreen: React.FC = () => {
         <Text style={styles.errorText}>Пользователь не авторизован</Text>
         <TouchableOpacity 
           style={styles.loginButton}
-          onPress={() => router.replace('/login')}
+          onPress={() => router.replace('/(auth)/login')}
         >
           <Text style={styles.loginButtonText}>Войти</Text>
         </TouchableOpacity>

@@ -12,7 +12,7 @@ import {
   Alert,
   ScrollView,
 } from 'react-native';
-import { Link, router } from 'expo-router';
+import { Link, router, useLocalSearchParams } from 'expo-router';
 import { useAuth } from '../hooks/useAuth';
 import { MaterialIcons } from '@expo/vector-icons';
 import { StatusBar } from 'expo-status-bar';
@@ -21,19 +21,31 @@ export default function LoginScreen() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
-  const { login, isLoading, error, checkAuth } = useAuth();
+  const { login, isLoading, error, isAuthenticated } = useAuth();
+  const params = useLocalSearchParams();
 
   useEffect(() => {
     // Проверяем, авторизован ли пользователь
-    const checkAuthentication = async () => {
-      const isAuthenticated = await checkAuth();
-      if (isAuthenticated) {
-        router.replace('/(tabs)');
+    if (isAuthenticated) {
+      router.replace('/(tabs)');
+    }
+  }, [isAuthenticated]);
+
+  useEffect(() => {
+    // Проверяем, пришли ли мы с экрана регистрации
+    if (params.email && typeof params.email === 'string') {
+      const sanitizedEmail = params.email.trim().toLowerCase();
+      setEmail(sanitizedEmail);
+      
+      if (params.fromRegistration === 'true') {
+        Alert.alert(
+          'Регистрация успешна',
+          'Ваша учетная запись создана. Пожалуйста, введите пароль для входа.',
+          [{ text: 'OK' }]
+        );
       }
-    };
-    
-    checkAuthentication();
-  }, []);
+    }
+  }, [params]);
 
   const handleLogin = async () => {
     if (!email.trim() || !password.trim()) {
@@ -41,12 +53,12 @@ export default function LoginScreen() {
       return;
     }
     
-    const success = await login({ email, password });
-    
-    if (success) {
-      router.replace('/(tabs)');
-    } else if (error) {
-      Alert.alert('Ошибка входа', error);
+    try {
+      await login(email.trim(), password.trim());
+      // После успешного входа редирект произойдет автоматически в хуке useEffect
+    } catch (err) {
+      // Ошибка уже будет обработана в хуке useAuth
+      console.error('Ошибка входа:', err);
     }
   };
 
