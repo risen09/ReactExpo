@@ -44,6 +44,7 @@ import GenderPickerModal from '../components/GenderPickerModal';
 import LanguagePickerModal from '../components/LanguagePickerModal';
 import ThemePickerModal from '../components/ThemePickerModal';
 import LogoutConfirmModal from '../components/LogoutConfirmModal';
+import AvatarPickerModal from '../components/AvatarPickerModal';
 
 // Общая цветовая палитра приложения
 const COLORS = {
@@ -88,6 +89,13 @@ const ProfileScreen: React.FC = () => {
     soundEffects: true,
   });
   
+  // Определяем объект с путями к изображениям
+  const avatarMap: {[key: string]: any} = {
+    'photo_2025-04-05_15-03-42.jpg': require('../../images/photo_2025-04-05_15-03-42.jpg'),
+    'photo_2025-04-05_15-04-48.jpg': require('../../images/photo_2025-04-05_15-04-48.jpg'),
+    'photo_2025-04-05_15-20-56.jpg': require('../../images/photo_2025-04-05_15-20-56.jpg'),
+  };
+  
   const { getUserTestResults } = usePersonalityTest();
   
   const [image, setImage] = useState<string | null>(null);
@@ -96,6 +104,7 @@ const ProfileScreen: React.FC = () => {
   const [showThemePicker, setShowThemePicker] = useState(false);
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
+  const [showAvatarPicker, setShowAvatarPicker] = useState(false);
   
   useEffect(() => {
     if (user) {
@@ -191,29 +200,31 @@ const ProfileScreen: React.FC = () => {
     setIsEditing(false);
   };
 
-  const pickImage = async () => {
-    const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+  const handleSelectAvatar = (avatarKey: string) => {
+    console.log('handleSelectAvatar вызван с:', avatarKey);
     
-    if (status !== 'granted') {
-      Alert.alert('Ошибка', 'Для доступа к галерее необходимо предоставить разрешение');
-      return;
-    }
-    
-    let result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ImagePicker.MediaTypeOptions.Images,
-      allowsEditing: true,
-      aspect: [1, 1],
-      quality: 0.7,
-    });
-    
-    if (!result.canceled) {
-      const newAvatar = result.assets[0].uri;
-      setAvatar(newAvatar);
-      
-      if (!isEditing) {
-        // Если не в режиме редактирования, сразу сохраняем аватар
-        await updateProfile({ avatar: newAvatar });
+    try {
+      // Проверяем, есть ли изображение для данного ключа
+      if (avatarMap[avatarKey]) {
+        console.log('Установка аватара из локальных изображений:', avatarKey);
+        setAvatar(avatarKey);
+        
+        if (!isEditing) {
+          // Если не в режиме редактирования, сразу сохраняем аватар
+          updateProfile({ avatar: avatarKey });
+        }
+      } else {
+        // Если ключ не найден в мапе, то это может быть URI из галереи
+        console.log('Установка аватара из галереи:', avatarKey);
+        setAvatar(avatarKey);
+        
+        if (!isEditing) {
+          updateProfile({ avatar: avatarKey });
+        }
       }
+    } catch (error) {
+      console.error('Ошибка при установке аватара:', error);
+      Alert.alert('Ошибка', 'Не удалось установить выбранный аватар');
     }
   };
 
@@ -239,7 +250,7 @@ const ProfileScreen: React.FC = () => {
   const handleLogout = async () => {
     try {
       await logout();
-      router.replace('/(auth)/login');
+      router.replace('/login');
     } catch (err) {
       Alert.alert('Ошибка', 'Не удалось выйти из аккаунта. Попробуйте позже.');
     }
@@ -331,6 +342,33 @@ const ProfileScreen: React.FC = () => {
     return themes[settings.theme] || 'Светлая';
   };
 
+  // Функция для открытия модального окна выбора аватара
+  const pickImage = () => {
+    setShowAvatarPicker(true);
+  };
+  
+  // Функция для выбора изображения из галереи
+  const selectAvatarFromGallery = async () => {
+    const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    
+    if (status !== 'granted') {
+      Alert.alert('Ошибка', 'Для доступа к галерее необходимо предоставить разрешение');
+      return;
+    }
+    
+    let result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      allowsEditing: true,
+      aspect: [1, 1],
+      quality: 0.7,
+    });
+    
+    if (!result.canceled) {
+      const newAvatar = result.assets[0].uri;
+      handleSelectAvatar(newAvatar);
+    }
+  };
+
   if (isLoading) {
     return (
       <View style={styles.loadingContainer}>
@@ -346,7 +384,7 @@ const ProfileScreen: React.FC = () => {
         <Text style={styles.errorText}>Пользователь не авторизован</Text>
         <TouchableOpacity 
           style={styles.loginButton}
-          onPress={() => router.replace('/(auth)/login')}
+          onPress={() => router.replace('/login')}
         >
           <Text style={styles.loginButtonText}>Войти</Text>
         </TouchableOpacity>
@@ -364,11 +402,20 @@ const ProfileScreen: React.FC = () => {
       >
         <View style={styles.headerContent}>
           <View style={styles.avatarContainer}>
-            {image ? (
-              <Image 
-                source={{ uri: image }} 
-                style={styles.avatar} 
-              />
+            {avatar ? (
+              avatar.includes('.jpg') || avatar.includes('.png') ? (
+                // Используем локальные изображения из мапы
+                <Image 
+                  source={avatarMap[avatar]}
+                  style={styles.avatar} 
+                />
+              ) : (
+                // Используем URI из галереи
+                <Image 
+                  source={{ uri: avatar }} 
+                  style={styles.avatar} 
+                />
+              )
             ) : (
               <View style={styles.profileImagePlaceholder}>
                 <User size={60} color={COLORS.textSecondary} />
@@ -777,6 +824,13 @@ const ProfileScreen: React.FC = () => {
         onClose={() => setShowLogoutConfirm(false)}
         onConfirm={handleLogout}
         loading={isLoading}
+      />
+      
+      <AvatarPickerModal
+        visible={showAvatarPicker}
+        onClose={() => setShowAvatarPicker(false)}
+        onSelect={handleSelectAvatar}
+        onSelectFromGallery={selectAvatarFromGallery}
       />
     </ScrollView>
   );

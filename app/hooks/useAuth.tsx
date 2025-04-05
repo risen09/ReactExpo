@@ -563,75 +563,87 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   const updateProfile = async (profileData: Partial<UserProfile>) => {
-    if (!token) {
-      setError('Not authenticated');
-      return;
-    }
-
-    setIsLoading(true);
     setError(null);
-    
+    setIsLoading(true);
+
     try {
-      console.log('Updating profile for user:', user?._id);
+      console.log('Обновление профиля. Данные:', JSON.stringify({
+        ...profileData,
+        // маскируем чувствительные данные в логах
+        email: profileData.email ? `${profileData.email.substring(0, 3)}***` : undefined,
+      }, null, 2));
       
-      // Проверка наличия ID пользователя
-      if (!user || !user._id) {
-        throw new Error('Не удалось определить ID пользователя');
+      // Проверяем наличие токена
+      if (!token) {
+        console.error('Ошибка: отсутствует токен авторизации');
+        throw new Error('Вы не авторизованы. Пожалуйста, войдите в аккаунт снова.');
       }
       
-      // Используем корректный эндпоинт для обновления записи по ID
-      const response = await fetch(`${API_BASE_URL}/api/users/${user._id}`, {
-        method: 'PUT',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify(profileData)
-      });
+      // Проверка и обработка аватара
+      if (profileData.avatar) {
+        console.log('Обработка аватара:', profileData.avatar.substring(0, 20) + '...');
+        
+        // Если путь к аватару начинается с ../images/ или ../../images/, 
+        // значит это путь к изображению в проекте, а не URI
+        if (profileData.avatar.includes('images/')) {
+          console.log('Аватар является внутренним изображением проекта');
+          // Извлекаем имя файла из пути
+          const parts = profileData.avatar.split('/');
+          const filename = parts[parts.length - 1];
+          console.log('Имя файла аватара:', filename);
+          
+          // Обновляем данные, чтобы использовать только имя файла
+          profileData.avatar = filename;
+        }
+      }
       
-      console.log('Profile update response status:', response.status);
+      console.log('Отправка данных на сервер:', profileData.avatar);
+      
+      const response = await fetch(`${API_BASE_URL}/api/users/profile`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify(profileData),
+      });
 
       if (!response.ok) {
-        let errorMessage = 'Failed to update profile';
+        console.error('Ошибка обновления профиля. Статус:', response.status);
+        
+        if (response.status === 401) {
+          console.error('Ошибка авторизации. Токен:', token ? token.substring(0, 10) + '...' : 'null');
+          throw new Error('Ошибка авторизации. Пожалуйста, войдите в аккаунт снова.');
+        }
+        
+        // Попытка получить текст ошибки
         try {
           const errorData = await response.json();
-          errorMessage = errorData.message || errorData.error || errorMessage;
+          console.error('Текст ошибки от сервера:', errorData);
+          throw new Error(errorData.message || 'Не удалось обновить профиль');
         } catch (jsonError) {
-          console.error('Error parsing error response:', jsonError);
-          try {
-            errorMessage = await response.text();
-          } catch (textError) {
-            console.error('Error getting response text:', textError);
-          }
+          console.error('Не удалось прочитать ответ сервера:', jsonError);
+          throw new Error(`Ошибка обновления профиля (${response.status})`);
         }
-        throw new Error(errorMessage);
       }
 
       // Получаем обновленные данные пользователя
       const updatedUserData = await response.json();
-      console.log('Profile updated successfully');
       
-      // Обновляем локальное состояние и хранилище
-      const updatedUser = { ...user, ...profileData };
-      setUser(updatedUser);
-      await AsyncStorage.setItem('user_data', JSON.stringify(updatedUser));
+      console.log('Профиль успешно обновлен. Новые данные:', JSON.stringify({
+        ...updatedUserData,
+        email: updatedUserData.email ? `${updatedUserData.email.substring(0, 3)}***` : null
+      }, null, 2));
       
-      // Показываем пользователю уведомление об успешном обновлении
-      Alert.alert(
-        'Профиль обновлен',
-        'Ваши данные успешно обновлены',
-        [{ text: 'OK' }]
-      );
+      setUser(updatedUserData);
+      await AsyncStorage.setItem('user_data', JSON.stringify(updatedUserData));
     } catch (error) {
-      console.error('Update profile error:', error);
-      setError(error instanceof Error ? error.message : 'Failed to update profile');
-      
-      // Информируем пользователя об ошибке
-      Alert.alert(
-        'Ошибка обновления',
-        error instanceof Error ? error.message : 'Не удалось обновить профиль',
-        [{ text: 'OK' }]
-      );
+      console.error('Ошибка при обновлении профиля:', error);
+      if (error instanceof Error) {
+        setError(error.message);
+      } else {
+        setError('Неизвестная ошибка при обновлении профиля');
+      }
     } finally {
       setIsLoading(false);
     }

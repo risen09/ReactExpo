@@ -61,7 +61,7 @@ export default function LessonsScreen() {
       author: 'Иван Петров',
       duration: '8 недель',
       lessons: 24,
-      image: require('../../assets/images/icon.png'), // Используем доступное изображение
+      image: require('../../images/qwen-maths-2.png'),
       color: '#EEF0FF',
       progress: 65
     },
@@ -71,7 +71,7 @@ export default function LessonsScreen() {
       author: 'Анна Иванова',
       duration: '6 недель',
       lessons: 18,
-      image: require('../../assets/images/icon.png'), // Используем доступное изображение
+      image: require('../../images/qwen-maths-3.png'),
       color: '#FFF0E8',
       progress: 30
     },
@@ -84,7 +84,7 @@ export default function LessonsScreen() {
       author: 'Мария Сидорова',
       duration: '12 недель',
       lessons: 36,
-      image: require('../../assets/images/icon.png'), // Используем доступное изображение
+      image: require('../../images/photo_2025-04-05_15-04-48.jpg'),
       color: '#E6F8F6',
       progress: 45
     },
@@ -94,7 +94,7 @@ export default function LessonsScreen() {
       author: 'Алексей Смирнов',
       duration: '10 недель',
       lessons: 30,
-      image: require('../../assets/images/icon.png'), // Используем доступное изображение
+      image: require('../../images/chatgpt-maths-1.png'),
       color: '#FFF8E8',
       progress: 10
     },
@@ -269,7 +269,7 @@ export default function LessonsScreen() {
             
             <View style={styles.featuredCourseImageContainer}>
               <Image 
-                source={require('../../assets/images/icon.png')} 
+                source={require('../../images/photo_2025-04-05_15-20-56.jpg')} 
                 style={styles.featuredCourseImage} 
               />
             </View>
@@ -422,9 +422,11 @@ const styles = StyleSheet.create({
     marginRight: 16,
   },
   courseImage: {
-    width: 50,
-    height: 50,
+    width: 70,
+    height: 70,
     resizeMode: 'contain',
+    borderRadius: 10,
+    backgroundColor: COLORS.card,
   },
   courseInfo: {
     flex: 1,
