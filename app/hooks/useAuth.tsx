@@ -9,7 +9,7 @@ export interface UserProfile {
   _id?: string;
   email: string;
   name: string;
-  nickname: string;
+  username: string;
   gender: 'male' | 'female' | 'other';
   age: number;
   personalityType?: string;
@@ -42,7 +42,7 @@ interface RegisterData {
   email: string;
   password: string;
   name: string;
-  nickname?: string;
+  username?: string;
   gender?: 'male' | 'female' | 'other';
   age?: number;
 }
@@ -338,7 +338,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         ...userData,
         email: sanitizedEmail,
         password: processedPassword, // Используем обработанный пароль
-        nickname: userData.nickname || userData.name || 'User',
+        username: userData.username || userData.name || 'User',
         gender: userData.gender || 'other',
         age: userData.age || 0
       };
@@ -453,7 +453,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           email: safeUserData.email,
           password: finalPassword,
           name: safeUserData.name,
-          nickname: safeUserData.nickname,
+          username: safeUserData.username,
           registration_date: new Date().toISOString().split('T')[0],
           gender: safeUserData.gender,
           age: safeUserData.age,

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect, useCallback, useMemo } from 'react';
 import {
   View,
   Text,
@@ -10,8 +10,10 @@ import {
   Platform,
   Image,
   SafeAreaView,
+  ActivityIndicator,
 } from 'react-native';
 import { SendHorizontal, Paperclip, Mic, ChevronLeft, MoreVertical } from 'lucide-react-native';
+import logger from '../utils/logger';
 
 // Общая цветовая палитра приложения
 const COLORS = {
@@ -27,74 +29,208 @@ const COLORS = {
   border: '#EAEDF5'       // Граница
 };
 
+const API_BASE_URL = process.env.API_BASE_URL;
+
 interface Message {
   id: string;
   text: string;
   isUser: boolean;
   timestamp: string;
 }
-
 export default function ChatScreen() {
   const [inputText, setInputText] = useState('');
-  const [messages, setMessages] = useState<Message[]>([
+  const [messages, setMessages] = useState<Message[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
+  const flatListRef = useRef<FlatList>(null);
+
+  const defaultWelcomeMessages = useMemo(() => [
     {
       id: '1',
       text: 'Добро пожаловать в образовательный чат! Я ваш AI-ассистент. Как я могу помочь вам сегодня?',
       isUser: false,
-      timestamp: '10:00',
-    },
-    {
-      id: '2',
-      text: 'Привет! Мне нужна помощь с математикой.',
-      isUser: true,
-      timestamp: '10:01',
-    },
-    {
-      id: '3',
-      text: 'Конечно! Какой раздел математики вас интересует?',
-      isUser: false,
-      timestamp: '10:02',
-    },
-    {
-      id: '4',
-      text: 'Я изучаю алгебру, конкретно решение уравнений.',
-      isUser: true,
-      timestamp: '10:03',
-    },
-    {
-      id: '5',
-      text: 'Отлично! Давайте разберемся с решением уравнений. У вас есть конкретный пример, который вызывает затруднения?',
-      isUser: false,
-      timestamp: '10:04',
-    },
-  ]);
+      timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+    }
+  ], []);
 
-  const sendMessage = () => {
+  // Fetch messages from API or use default welcome message
+  const fetchMessages = useCallback(async () => {
+    logger.info('Fetching chat messages');
+    setIsLoading(true);
+    
+    // 1. Получаем админский токен
+    let adminToken;
+    try {
+      const loginResponse = await fetch(`${API_BASE_URL}/api/login`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Basic ' + btoa('admin:admin123')
+        }
+      });
+
+      if (!loginResponse.ok) {
+        console.log('Admin login failed with status:', loginResponse.status);
+        throw new Error('Не удалось получить доступ к системе');
+      }
+
+      const adminData = await loginResponse.json();
+      adminToken = adminData.token;
+      console.log('6. Admin token received for user lookup:', adminToken ? 'YES' : 'NO');
+    } catch (adminLoginError) {
+      console.error('Admin login error:', adminLoginError);
+      throw new Error('Ошибка доступа к системе аутентификации');
+    }
+    
+    // 2. Ищем пользователя в базе данных
+    if (!adminToken) {
+      throw new Error('Не удалось получить токен администратора');
+    }
+    
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/gigachat/chat/67f2aadbfce494ed11a25911`, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: 'Bearer ' + adminToken
+        }
+      });
+      const data = await response.json();
+      logger.debug('Received chat data', data);
+      
+      if (data) {
+        const messagesData = data.messages.map((item: any, index: number) => ({
+          id: index.toString(),
+          text: item.content,
+          isUser: item.role === 'user',
+          timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+        }));
+        setMessages(messagesData.slice(1));
+        logger.info('Messages loaded successfully', { count: messagesData.length });
+      } else {
+        logger.warn('No messages found or invalid data format, using default welcome message');
+        setMessages(defaultWelcomeMessages);
+      }
+    } catch (error) {
+      logger.error('Failed to fetch messages', error);
+      setMessages(defaultWelcomeMessages);
+    } finally {
+      setIsLoading(false);
+    }
+  }, [defaultWelcomeMessages]);
+
+  // Load messages on component mount
+  useEffect(() => {
+    logger.info('Chat screen mounted');
+    fetchMessages();
+    return () => {
+      logger.info('Chat screen unmounted');
+    };
+  }, [fetchMessages]);
+
+  // Scroll to end when messages change
+  const scrollToEnd = useCallback(() => {
+    if (flatListRef.current) {
+      logger.debug('Scrolling to end of messages');
+      flatListRef.current.scrollToEnd({ animated: true });
+    }
+  }, []);
+
+  useEffect(() => {
+    scrollToEnd();
+  }, [messages, scrollToEnd]);
+
+  const sendMessage = useCallback(async () => {
     if (inputText.trim() === '') return;
+    logger.info('Sending message', { messageLength: inputText.length });
 
+    const currentTime = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    
     const newMessage: Message = {
       id: Date.now().toString(),
-      text: inputText,
+      text: inputText.trim(),
       isUser: true,
-      timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+      timestamp: currentTime,
     };
 
-    setMessages([...messages, newMessage]);
+    setMessages(prev => [...prev, newMessage]);
     setInputText('');
+    setIsLoading(true);
 
-    // Имитация ответа бота
-    setTimeout(() => {
+    // 1. Получаем админский токен
+    let adminToken;
+    try {
+      const loginResponse = await fetch(`${API_BASE_URL}/api/login`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Basic ' + btoa('admin:admin123')
+        }
+      });
+
+      if (!loginResponse.ok) {
+        console.log('Admin login failed with status:', loginResponse.status);
+        throw new Error('Не удалось получить доступ к системе');
+      }
+
+      const adminData = await loginResponse.json();
+      adminToken = adminData.token;
+      console.log('6. Admin token received for user lookup:', adminToken ? 'YES' : 'NO');
+    } catch (adminLoginError) {
+      console.error('Admin login error:', adminLoginError);
+      throw new Error('Ошибка доступа к системе аутентификации');
+    }
+    
+    // 2. Ищем пользователя в базе данных
+    if (!adminToken) {
+      throw new Error('Не удалось получить токен администратора');
+    }
+
+    try {
+      logger.debug('Sending request to API', { message: newMessage.text });
+      const response = await fetch(`${API_BASE_URL}/api/gigachat/chat/67f2aadbfce494ed11a25911`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: 'Bearer ' + adminToken
+        },
+        body: JSON.stringify({
+          message: newMessage.text,
+        }),
+      });
+
+      const data = await response.json();
+      logger.debug('Received API response', data);
+      
       const botResponse: Message = {
         id: (Date.now() + 1).toString(),
-        text: 'Я получил ваш запрос и скоро отвечу!',
+        text: data.message || 'Что-то пошло нет так, я не могу сейчас ответить тебе.',
         isUser: false,
         timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
       };
-      setMessages(prevMessages => [...prevMessages, botResponse]);
-    }, 1000);
-  };
 
-  const renderMessage = ({ item }: { item: Message }) => (
+      setMessages(prev => [...prev, botResponse]);
+      logger.info('Bot response added successfully');
+    } catch (error) {
+      logger.error('Failed to get bot response', error);
+      const errorMessage: Message = {
+        id: (Date.now() + 1).toString(),
+        text: 'Извините, произошла ошибка. Попробуйте позже.',
+        isUser: false,
+        timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+      };
+      setMessages(prev => [...prev, errorMessage]);
+    } finally {
+      setIsLoading(false);
+    }
+  }, [inputText]);
+
+  const handleTextChange = useCallback((text: string) => {
+    setInputText(text);
+  }, []);
+
+  const keyExtractor = useCallback((item: Message) => item.id, []);
+
+  const renderMessage = useCallback(({ item }: { item: Message }) => (
     <View
       style={[
         styles.messageContainer,
@@ -124,12 +260,12 @@ export default function ChatScreen() {
         </Text>
       </View>
     </View>
-  );
+  ), []);
 
   return (
     <SafeAreaView style={styles.safeArea}>
       <View style={styles.header}>
-        <TouchableOpacity style={styles.backButton}>
+        <TouchableOpacity style={styles.backButton} onPress={() => logger.debug('Back button pressed')}>
           <ChevronLeft size={24} color={COLORS.text} />
         </TouchableOpacity>
         
@@ -148,7 +284,10 @@ export default function ChatScreen() {
           </View>
         </View>
         
-        <TouchableOpacity style={styles.menuButton}>
+        <TouchableOpacity 
+          style={styles.menuButton} 
+          onPress={() => logger.debug('Menu button pressed')}
+        >
           <MoreVertical size={20} color={COLORS.text} />
         </TouchableOpacity>
       </View>
@@ -159,34 +298,54 @@ export default function ChatScreen() {
         keyboardVerticalOffset={Platform.OS === 'ios' ? 90 : 0}
       >
         <FlatList
+          ref={flatListRef}
           data={messages}
           renderItem={renderMessage}
-          keyExtractor={item => item.id}
+          keyExtractor={keyExtractor}
           contentContainerStyle={styles.messagesList}
           showsVerticalScrollIndicator={false}
-          inverted={false}
+          onContentSizeChange={scrollToEnd}
         />
 
+        {isLoading && (
+          <View style={styles.loadingContainer}>
+            <ActivityIndicator size="small" color={COLORS.primary} />
+            <Text style={styles.loadingText}>AI-ассистент печатает...</Text>
+          </View>
+        )}
+
         <View style={styles.inputContainer}>
-          <TouchableOpacity style={styles.attachButton}>
+          <TouchableOpacity 
+            style={styles.attachButton}
+            onPress={() => logger.debug('Attachment button pressed')}
+          >
             <Paperclip size={22} color={COLORS.primary} />
           </TouchableOpacity>
           
           <TextInput
             style={styles.input}
             value={inputText}
-            onChangeText={setInputText}
+            onChangeText={handleTextChange}
             placeholder="Введите сообщение..."
             multiline
+            maxLength={500}
             placeholderTextColor={COLORS.textSecondary}
+            onFocus={() => logger.debug('Input focused')}
           />
           
           {inputText.trim() === '' ? (
-            <TouchableOpacity style={styles.micButton}>
+            <TouchableOpacity 
+              style={styles.micButton}
+              onPress={() => logger.debug('Mic button pressed')}
+            >
               <Mic size={22} color={COLORS.primary} />
             </TouchableOpacity>
           ) : (
-            <TouchableOpacity style={styles.sendButton} onPress={sendMessage}>
+            <TouchableOpacity 
+              style={[styles.sendButton, isLoading && styles.disabledButton]} 
+              onPress={sendMessage}
+              disabled={isLoading}
+            >
               <SendHorizontal size={22} color="#FFFFFF" />
             </TouchableOpacity>
           )}
@@ -367,5 +526,19 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.1,
     shadowRadius: 4,
     elevation: 2,
+  },
+  disabledButton: {
+    backgroundColor: COLORS.textSecondary,
+  },
+  loadingContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 10,
+    backgroundColor: COLORS.background,
+  },
+  loadingText: {
+    marginLeft: 10,
+    color: COLORS.textSecondary,
+    fontSize: 14,
   },
 }); 
