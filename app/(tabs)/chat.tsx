@@ -1,18 +1,16 @@
-import React, { useState, useRef, useEffect, useCallback, useMemo } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   View,
   Text,
   StyleSheet,
   FlatList,
-  TextInput,
   TouchableOpacity,
-  KeyboardAvoidingView,
-  Platform,
   Image,
   SafeAreaView,
   ActivityIndicator,
 } from 'react-native';
-import { SendHorizontal, Paperclip, Mic, ChevronLeft, MoreVertical } from 'lucide-react-native';
+import { router } from 'expo-router';
+import { Search, Plus } from 'lucide-react-native';
 import logger from '../utils/logger';
 
 // Общая цветовая палитра приложения
@@ -31,36 +29,23 @@ const COLORS = {
 
 const API_BASE_URL = process.env.EXPO_PUBLIC_API_BASE_URL;
 
-interface Message {
+interface ChatItem {
   id: string;
-  text: string;
-  isUser: boolean;
-  timestamp: string;
+  lastMessage: string;
 }
-export default function ChatScreen() {
-  const [inputText, setInputText] = useState('');
-  const [messages, setMessages] = useState<Message[]>([]);
+
+export default function ChatsListScreen() {
+  const [chats, setChats] = useState<ChatItem[]>([]);
   const [isLoading, setIsLoading] = useState(false);
-  const flatListRef = useRef<FlatList>(null);
 
-  const defaultWelcomeMessages = useMemo(() => [
-    {
-      id: '1',
-      text: 'Добро пожаловать в образовательный чат! Я ваш AI-ассистент. Как я могу помочь вам сегодня?',
-      isUser: false,
-      timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-    }
-  ], []);
-
-  // Fetch messages from API or use default welcome message
-  const fetchMessages = useCallback(async () => {
-    logger.info('Fetching chat messages');
+  // Fetch chats list from API
+  const fetchChats = useCallback(async () => {
+    logger.info('Fetching chats list');
     setIsLoading(true);
     
     // 1. Получаем админский токен
     let adminToken;
     try {
-      console.log('API_BASE_URL', API_BASE_URL); 
       const loginResponse = await fetch(`${API_BASE_URL}/api/login`, {
         method: 'POST',
         headers: {
@@ -76,282 +61,151 @@ export default function ChatScreen() {
 
       const adminData = await loginResponse.json();
       adminToken = adminData.token;
-      console.log('6. Admin token received for user lookup:', adminToken ? 'YES' : 'NO');
+      console.log('Admin token received for chats list:', adminToken ? 'YES' : 'NO');
     } catch (adminLoginError) {
       console.error('Admin login error:', adminLoginError);
       throw new Error('Ошибка доступа к системе аутентификации');
     }
     
-    // 2. Ищем пользователя в базе данных
     if (!adminToken) {
       throw new Error('Не удалось получить токен администратора');
     }
     
     try {
-      const response = await fetch(`${API_BASE_URL}/api/gigachat/chat/67f2aadbfce494ed11a25911`, {
+      const response = await fetch(`${API_BASE_URL}/api/gigachat/list`, {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json',
           Authorization: 'Bearer ' + adminToken
         }
       });
-      const data = await response.json();
-      logger.debug('Received chat data', data);
       
-      if (data) {
-        const messagesData = data.messages.map((item: any, index: number) => ({
-          id: index.toString(),
-          text: item.content,
-          isUser: item.role === 'user',
-          timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-        }));
-        setMessages(messagesData.slice(1));
-        logger.info('Messages loaded successfully', { count: messagesData.length });
+      if (!response.ok) {
+        throw new Error(`Failed to fetch chats: ${response.status}`);
+      }
+      
+      const data = await response.json();
+      logger.debug('Received chats data', data);
+      
+      if (Array.isArray(data)) {
+        setChats(data);
+        logger.info('Chats loaded successfully', { count: data.length });
       } else {
-        logger.warn('No messages found or invalid data format, using default welcome message');
-        setMessages(defaultWelcomeMessages);
+        logger.warn('Invalid data format for chats', { data });
+        // If no chats, we could show some mock data or empty state
+        setChats([]);
       }
     } catch (error) {
-      logger.error('Failed to fetch messages', error);
-      setMessages(defaultWelcomeMessages);
+      logger.error('Failed to fetch chats', error);
+      // Show some mock data if API fails
+      setChats([
+        { id: '1', lastMessage: 'Привет! Как я могу вам помочь сегодня?' },
+        { id: '2', lastMessage: 'Вот материалы по математике, которые вы запрашивали.' }
+      ]);
     } finally {
       setIsLoading(false);
     }
-  }, [defaultWelcomeMessages]);
+  }, []);
 
-  // Load messages on component mount
+  // Load chats on component mount
   useEffect(() => {
-    logger.info('Chat screen mounted');
-    fetchMessages();
+    logger.info('Chats list screen mounted');
+    fetchChats();
     return () => {
-      logger.info('Chat screen unmounted');
+      logger.info('Chats list screen unmounted');
     };
-  }, [fetchMessages]);
+  }, [fetchChats]);
 
-  // Scroll to end when messages change
-  const scrollToEnd = useCallback(() => {
-    if (flatListRef.current) {
-      logger.debug('Scrolling to end of messages');
-      flatListRef.current.scrollToEnd({ animated: true });
-    }
+  const handleChatPress = useCallback((chatId: string) => {
+    logger.info('Chat selected', { chatId });
+    // Navigate to chat screen with the selected chat ID
+    router.push({
+      pathname: "/screens/ChatScreen",
+      params: { chatId }
+    });
   }, []);
 
-  useEffect(() => {
-    scrollToEnd();
-  }, [messages, scrollToEnd]);
-
-  const sendMessage = useCallback(async () => {
-    if (inputText.trim() === '') return;
-    logger.info('Sending message', { messageLength: inputText.length });
-
-    const currentTime = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-    
-    const newMessage: Message = {
-      id: Date.now().toString(),
-      text: inputText.trim(),
-      isUser: true,
-      timestamp: currentTime,
-    };
-
-    setMessages(prev => [...prev, newMessage]);
-    setInputText('');
-    setIsLoading(true);
-
-    // 1. Получаем админский токен
-    let adminToken;
-    try {
-      const loginResponse = await fetch(`${API_BASE_URL}/api/login`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': 'Basic ' + btoa('admin:admin123')
-        }
-      });
-
-      if (!loginResponse.ok) {
-        console.log('Admin login failed with status:', loginResponse.status);
-        throw new Error('Не удалось получить доступ к системе');
-      }
-
-      const adminData = await loginResponse.json();
-      adminToken = adminData.token;
-      console.log('6. Admin token received for user lookup:', adminToken ? 'YES' : 'NO');
-    } catch (adminLoginError) {
-      console.error('Admin login error:', adminLoginError);
-      throw new Error('Ошибка доступа к системе аутентификации');
-    }
-    
-    // 2. Ищем пользователя в базе данных
-    if (!adminToken) {
-      throw new Error('Не удалось получить токен администратора');
-    }
-
-    try {
-      logger.debug('Sending request to API', { message: newMessage.text });
-      const response = await fetch(`${API_BASE_URL}/api/gigachat/chat/67f2aadbfce494ed11a25911`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: 'Bearer ' + adminToken
-        },
-        body: JSON.stringify({
-          message: newMessage.text,
-        }),
-      });
-
-      const data = await response.json();
-      logger.debug('Received API response', data);
-      
-      const botResponse: Message = {
-        id: (Date.now() + 1).toString(),
-        text: data.message || 'Что-то пошло нет так, я не могу сейчас ответить тебе.',
-        isUser: false,
-        timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-      };
-
-      setMessages(prev => [...prev, botResponse]);
-      logger.info('Bot response added successfully');
-    } catch (error) {
-      logger.error('Failed to get bot response', error);
-      const errorMessage: Message = {
-        id: (Date.now() + 1).toString(),
-        text: 'Извините, произошла ошибка. Попробуйте позже.',
-        isUser: false,
-        timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-      };
-      setMessages(prev => [...prev, errorMessage]);
-    } finally {
-      setIsLoading(false);
-    }
-  }, [inputText]);
-
-  const handleTextChange = useCallback((text: string) => {
-    setInputText(text);
+  const handleNewChat = useCallback(() => {
+    logger.info('Creating new chat');
+    // Logic to create a new chat could be implemented here
+    // For now, just navigate to chat screen with no specific ID
+    router.push("/screens/ChatScreen");
   }, []);
 
-  const keyExtractor = useCallback((item: Message) => item.id, []);
-
-  const renderMessage = useCallback(({ item }: { item: Message }) => (
-    <View
-      style={[
-        styles.messageContainer,
-        item.isUser ? styles.userMessageContainer : styles.botMessageContainer,
-      ]}
+  const renderChatItem = useCallback(({ item }: { item: ChatItem }) => (
+    <TouchableOpacity 
+      style={styles.chatItem}
+      onPress={() => handleChatPress(item.id)}
     >
-      {!item.isUser && (
-        <View style={styles.avatarContainer}>
-          <Image 
-            source={require('../../assets/images/icon.png')} 
-            style={styles.avatar} 
-            resizeMode="contain"
-          />
+      <View style={styles.avatarContainer}>
+        <Image 
+          source={require('../../assets/images/icon.png')} 
+          style={styles.avatar} 
+          resizeMode="contain"
+        />
+      </View>
+      <View style={styles.chatInfo}>
+        <View style={styles.chatHeader}>
+          <Text style={styles.chatTitle}>AI-ассистент</Text>
+          <Text style={styles.timestamp}>Сегодня</Text>
         </View>
-      )}
-      <View
-        style={[
-          styles.messageBubble,
-          item.isUser ? styles.userMessageBubble : styles.botMessageBubble,
-        ]}
-      >
-        <Text style={[styles.messageText, item.isUser && styles.userMessageText]}>
-          {item.text}
-        </Text>
-        <Text style={[styles.timestamp, item.isUser && styles.userTimestamp]}>
-          {item.timestamp}
+        <Text 
+          style={styles.lastMessage}
+          numberOfLines={1}
+          ellipsizeMode="tail"
+        >
+          {item.lastMessage}
         </Text>
       </View>
-    </View>
-  ), []);
+    </TouchableOpacity>
+  ), [handleChatPress]);
+
+  const keyExtractor = useCallback((item: ChatItem) => item.id, []);
 
   return (
     <SafeAreaView style={styles.safeArea}>
       <View style={styles.header}>
-        <TouchableOpacity style={styles.backButton} onPress={() => logger.debug('Back button pressed')}>
-          <ChevronLeft size={24} color={COLORS.text} />
-        </TouchableOpacity>
-        
-        <View style={styles.headerTitleContainer}>
-          <View style={styles.assistantAvatarContainer}>
-            <Image 
-              source={require('../../assets/images/icon.png')} 
-              style={styles.assistantAvatar} 
-              resizeMode="contain"
-            />
-            <View style={styles.statusIndicator} />
-          </View>
-          <View>
-            <Text style={styles.headerTitle}>AI-ассистент</Text>
-            <Text style={styles.headerSubtitle}>Онлайн</Text>
-          </View>
-        </View>
-        
+        <Text style={styles.headerTitle}>Чаты</Text>
         <TouchableOpacity 
-          style={styles.menuButton} 
-          onPress={() => logger.debug('Menu button pressed')}
+          style={styles.newChatButton}
+          onPress={handleNewChat}
         >
-          <MoreVertical size={20} color={COLORS.text} />
+          <Plus size={24} color={COLORS.primary} />
         </TouchableOpacity>
       </View>
       
-      <KeyboardAvoidingView
-        style={styles.container}
-        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-        keyboardVerticalOffset={Platform.OS === 'ios' ? 90 : 0}
-      >
-        <FlatList
-          ref={flatListRef}
-          data={messages}
-          renderItem={renderMessage}
-          keyExtractor={keyExtractor}
-          contentContainerStyle={styles.messagesList}
-          showsVerticalScrollIndicator={false}
-          onContentSizeChange={scrollToEnd}
-        />
-
-        {isLoading && (
-          <View style={styles.loadingContainer}>
-            <ActivityIndicator size="small" color={COLORS.primary} />
-            <Text style={styles.loadingText}>AI-ассистент печатает...</Text>
-          </View>
-        )}
-
-        <View style={styles.inputContainer}>
-          <TouchableOpacity 
-            style={styles.attachButton}
-            onPress={() => logger.debug('Attachment button pressed')}
-          >
-            <Paperclip size={22} color={COLORS.primary} />
-          </TouchableOpacity>
-          
-          <TextInput
-            style={styles.input}
-            value={inputText}
-            onChangeText={handleTextChange}
-            placeholder="Введите сообщение..."
-            multiline
-            maxLength={500}
-            placeholderTextColor={COLORS.textSecondary}
-            onFocus={() => logger.debug('Input focused')}
-          />
-          
-          {inputText.trim() === '' ? (
-            <TouchableOpacity 
-              style={styles.micButton}
-              onPress={() => logger.debug('Mic button pressed')}
-            >
-              <Mic size={22} color={COLORS.primary} />
-            </TouchableOpacity>
-          ) : (
-            <TouchableOpacity 
-              style={[styles.sendButton, isLoading && styles.disabledButton]} 
-              onPress={sendMessage}
-              disabled={isLoading}
-            >
-              <SendHorizontal size={22} color="#FFFFFF" />
-            </TouchableOpacity>
-          )}
+      <View style={styles.searchContainer}>
+        <View style={styles.searchInputContainer}>
+          <Search size={18} color={COLORS.textSecondary} style={styles.searchIcon} />
+          <Text style={styles.searchPlaceholder}>Поиск...</Text>
         </View>
-      </KeyboardAvoidingView>
+      </View>
+      
+      {isLoading ? (
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator size="large" color={COLORS.primary} />
+          <Text style={styles.loadingText}>Загрузка чатов...</Text>
+        </View>
+      ) : chats.length === 0 ? (
+        <View style={styles.emptyContainer}>
+          <Text style={styles.emptyText}>У вас пока нет чатов</Text>
+          <TouchableOpacity 
+            style={styles.startChatButton}
+            onPress={handleNewChat}
+          >
+            <Text style={styles.startChatButtonText}>Начать новый чат</Text>
+          </TouchableOpacity>
+        </View>
+      ) : (
+        <FlatList
+          data={chats}
+          renderItem={renderChatItem}
+          keyExtractor={keyExtractor}
+          contentContainerStyle={styles.chatsList}
+          showsVerticalScrollIndicator={false}
+          ItemSeparatorComponent={() => <View style={styles.separator} />}
+        />
+      )}
     </SafeAreaView>
   );
 }
@@ -370,176 +224,116 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.card,
     borderBottomWidth: 1,
     borderBottomColor: COLORS.border,
-    shadowColor: COLORS.text,
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05,
-    shadowRadius: 4,
-    elevation: 2,
   },
-  backButton: {
-    padding: 4,
+  headerTitle: {
+    fontSize: 20,
+    fontWeight: '700',
+    color: COLORS.text,
   },
-  headerTitleContainer: {
+  newChatButton: {
+    padding: 8,
+  },
+  searchContainer: {
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    backgroundColor: COLORS.card,
+  },
+  searchInputContainer: {
     flexDirection: 'row',
     alignItems: 'center',
+    backgroundColor: COLORS.background,
+    borderRadius: 12,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
   },
-  assistantAvatarContainer: {
-    width: 42,
-    height: 42,
-    borderRadius: 21,
+  searchIcon: {
+    marginRight: 8,
+  },
+  searchPlaceholder: {
+    color: COLORS.textSecondary,
+    fontSize: 14,
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  loadingText: {
+    marginTop: 12,
+    fontSize: 16,
+    color: COLORS.textSecondary,
+  },
+  emptyContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: 32,
+  },
+  emptyText: {
+    fontSize: 16,
+    color: COLORS.textSecondary,
+    textAlign: 'center',
+    marginBottom: 16,
+  },
+  startChatButton: {
+    backgroundColor: COLORS.primary,
+    paddingHorizontal: 20,
+    paddingVertical: 12,
+    borderRadius: 12,
+  },
+  startChatButtonText: {
+    color: '#FFFFFF',
+    fontWeight: '600',
+    fontSize: 14,
+  },
+  chatsList: {
+    paddingTop: 8,
+  },
+  chatItem: {
+    flexDirection: 'row',
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    backgroundColor: COLORS.card,
+  },
+  avatarContainer: {
+    width: 50,
+    height: 50,
+    borderRadius: 25,
     backgroundColor: '#EEF0FF',
     justifyContent: 'center',
     alignItems: 'center',
     marginRight: 12,
-    position: 'relative',
-  },
-  assistantAvatar: {
-    width: 26,
-    height: 26,
-  },
-  statusIndicator: {
-    width: 12,
-    height: 12,
-    borderRadius: 6,
-    backgroundColor: '#4CAF50',
-    position: 'absolute',
-    bottom: 0,
-    right: 0,
-    borderWidth: 2,
-    borderColor: COLORS.card,
-  },
-  headerTitle: {
-    fontSize: 16,
-    fontWeight: '700',
-    color: COLORS.text,
-  },
-  headerSubtitle: {
-    fontSize: 12,
-    color: COLORS.textSecondary,
-    marginTop: 2,
-  },
-  menuButton: {
-    padding: 4,
-  },
-  container: {
-    flex: 1,
-    backgroundColor: COLORS.background,
-  },
-  messagesList: {
-    paddingHorizontal: 16,
-    paddingTop: 16,
-    paddingBottom: 16,
-  },
-  messageContainer: {
-    flexDirection: 'row',
-    marginBottom: 16,
-  },
-  userMessageContainer: {
-    justifyContent: 'flex-end',
-  },
-  botMessageContainer: {
-    justifyContent: 'flex-start',
-  },
-  avatarContainer: {
-    width: 38,
-    height: 38,
-    borderRadius: 19,
-    backgroundColor: '#EEF0FF',
-    marginRight: 8,
-    justifyContent: 'center',
-    alignItems: 'center',
-    overflow: 'hidden',
   },
   avatar: {
-    width: 24,
-    height: 24,
+    width: 30,
+    height: 30,
   },
-  messageBubble: {
-    maxWidth: '75%',
-    padding: 16,
-    borderRadius: 20,
+  chatInfo: {
+    flex: 1,
+    justifyContent: 'center',
   },
-  userMessageBubble: {
-    backgroundColor: COLORS.primary,
-    borderBottomRightRadius: 4,
+  chatHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 4,
   },
-  botMessageBubble: {
-    backgroundColor: COLORS.card,
-    borderBottomLeftRadius: 4,
-    shadowColor: COLORS.text,
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05,
-    shadowRadius: 4,
-    elevation: 1,
-  },
-  messageText: {
-    fontSize: 14,
+  chatTitle: {
+    fontSize: 16,
+    fontWeight: '600',
     color: COLORS.text,
-    lineHeight: 20,
-  },
-  userMessageText: {
-    color: '#FFFFFF',
   },
   timestamp: {
-    fontSize: 10,
+    fontSize: 12,
     color: COLORS.textSecondary,
-    alignSelf: 'flex-end',
-    marginTop: 4,
   },
-  userTimestamp: {
-    color: 'rgba(255, 255, 255, 0.7)',
-  },
-  inputContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    borderTopWidth: 1,
-    borderTopColor: COLORS.border,
-    backgroundColor: COLORS.card,
-  },
-  attachButton: {
-    marginRight: 10,
-  },
-  input: {
-    flex: 1,
-    backgroundColor: COLORS.background,
-    borderRadius: 24,
-    paddingHorizontal: 16,
-    paddingVertical: 10,
-    maxHeight: 100,
+  lastMessage: {
     fontSize: 14,
-    color: COLORS.text,
-  },
-  micButton: {
-    marginLeft: 10,
-  },
-  sendButton: {
-    marginLeft: 10,
-    width: 44,
-    height: 44,
-    borderRadius: 22,
-    backgroundColor: COLORS.primary,
-    justifyContent: 'center',
-    alignItems: 'center',
-    shadowColor: COLORS.text,
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 2,
-  },
-  disabledButton: {
-    backgroundColor: COLORS.textSecondary,
-  },
-  loadingContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    padding: 10,
-    backgroundColor: COLORS.background,
-  },
-  loadingText: {
-    marginLeft: 10,
     color: COLORS.textSecondary,
-    fontSize: 14,
+  },
+  separator: {
+    height: 1,
+    backgroundColor: COLORS.border,
+    marginLeft: 70,
   },
 }); 
