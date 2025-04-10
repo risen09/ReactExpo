@@ -75,6 +75,7 @@ function RootLayoutNav() {
       <Stack.Screen name="change-password" options={{ headerShown: true, title: 'Изменить пароль' }} />
       <Stack.Screen name="personality-test" options={{ headerShown: true, title: 'Тест личности' }} />
       <Stack.Screen name="test-result" options={{ headerShown: false }} />
+      <Stack.Screen name="screens/ChatScreen" options={{ headerShown: false }} />
     </Stack>
   );
 }
