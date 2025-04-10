@@ -3,7 +3,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { router } from 'expo-router';
 import { Alert } from 'react-native';
 
-const API_BASE_URL = 'https://j0cl9aplcsh5.share.zrok.io';
+const API_BASE_URL = process.env.EXPO_PUBLIC_API_BASE_URL;
 
 export interface UserProfile {
   _id?: string;

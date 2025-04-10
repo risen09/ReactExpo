@@ -29,7 +29,7 @@ const COLORS = {
   border: '#EAEDF5'       // Граница
 };
 
-const API_BASE_URL = process.env.API_BASE_URL;
+const API_BASE_URL = process.env.EXPO_PUBLIC_API_BASE_URL;
 
 interface Message {
   id: string;
@@ -60,6 +60,7 @@ export default function ChatScreen() {
     // 1. Получаем админский токен
     let adminToken;
     try {
+      console.log('API_BASE_URL', API_BASE_URL); 
       const loginResponse = await fetch(`${API_BASE_URL}/api/login`, {
         method: 'POST',
         headers: {
