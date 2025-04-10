@@ -40,11 +40,12 @@ interface Message {
 }
 export default function ChatScreen() {
   const params = useLocalSearchParams<{ chatId: string }>();
-  const chatId = params?.chatId || '67f2aadbfce494ed11a25911'; // Default ID as fallback
+  const [currentChatId, setCurrentChatId] = useState<string>(params?.chatId || ''); // State for current chat ID
   const [inputText, setInputText] = useState('');
   const [messages, setMessages] = useState<Message[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const flatListRef = useRef<FlatList>(null);
+  const [isNewChat, setIsNewChat] = useState(!params?.chatId); // Track if this is a new chat
 
   const defaultWelcomeMessages = useMemo(() => [
     {
@@ -57,7 +58,13 @@ export default function ChatScreen() {
 
   // Fetch messages from API or use default welcome message
   const fetchMessages = useCallback(async () => {
-    logger.info('Fetching chat messages', { chatId });
+    if (!currentChatId) {
+      logger.info('No chat ID available, showing welcome message');
+      setMessages(defaultWelcomeMessages);
+      return;
+    }
+    
+    logger.info('Fetching chat messages', { chatId: currentChatId });
     setIsLoading(true);
     
     // 1. Получаем админский токен
@@ -91,7 +98,7 @@ export default function ChatScreen() {
     }
     
     try {
-      const response = await fetch(`${API_BASE_URL}/api/gigachat/chat/${chatId}`, {
+      const response = await fetch(`${API_BASE_URL}/api/gigachat/chat/${currentChatId}`, {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json',
@@ -120,16 +127,16 @@ export default function ChatScreen() {
     } finally {
       setIsLoading(false);
     }
-  }, [chatId, defaultWelcomeMessages]);
+  }, [currentChatId, defaultWelcomeMessages]);
 
-  // Load messages on component mount
+  // Load messages on component mount or when chat ID changes
   useEffect(() => {
-    logger.info('Chat screen mounted');
+    logger.info('Chat screen mounted or chat ID changed');
     fetchMessages();
     return () => {
       logger.info('Chat screen unmounted');
     };
-  }, [fetchMessages]);
+  }, [fetchMessages, currentChatId]);
 
   // Scroll to end when messages change
   const scrollToEnd = useCallback(() => {
@@ -142,6 +149,57 @@ export default function ChatScreen() {
   useEffect(() => {
     scrollToEnd();
   }, [messages, scrollToEnd]);
+
+  // Helper function to get admin token
+  const getAdminToken = async () => {
+    try {
+      const loginResponse = await fetch(`${API_BASE_URL}/api/login`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Basic ' + btoa('admin:admin123')
+        }
+      });
+
+      if (!loginResponse.ok) {
+        console.log('Admin login failed with status:', loginResponse.status);
+        throw new Error('Не удалось получить доступ к системе');
+      }
+
+      const adminData = await loginResponse.json();
+      return adminData.token;
+    } catch (error) {
+      console.error('Admin login error:', error);
+      throw new Error('Ошибка доступа к системе аутентификации');
+    }
+  };
+
+  // Create a new chat
+  const createNewChat = async (adminToken: string) => {
+    try {
+      logger.info('Creating new chat');
+      const response = await fetch(`${API_BASE_URL}/api/gigachat/new`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: 'Bearer ' + adminToken
+        },
+        // No payload needed as per requirements
+      });
+
+      if (!response.ok) {
+        throw new Error(`Failed to create new chat: ${response.status}`);
+      }
+
+      const data = await response.json();
+      logger.debug('New chat created', data);
+      
+      return data.chat_id;
+    } catch (error) {
+      logger.error('Failed to create new chat', error);
+      throw error;
+    }
+  };
 
   const sendMessage = useCallback(async () => {
     if (inputText.trim() === '') return;
@@ -160,38 +218,33 @@ export default function ChatScreen() {
     setInputText('');
     setIsLoading(true);
 
-    // 1. Получаем админский токен
-    let adminToken;
     try {
-      const loginResponse = await fetch(`${API_BASE_URL}/api/login`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': 'Basic ' + btoa('admin:admin123')
-        }
-      });
-
-      if (!loginResponse.ok) {
-        console.log('Admin login failed with status:', loginResponse.status);
-        throw new Error('Не удалось получить доступ к системе');
+      // 1. Get admin token
+      const adminToken = await getAdminToken();
+      if (!adminToken) {
+        throw new Error('Не удалось получить токен администратора');
       }
 
-      const adminData = await loginResponse.json();
-      adminToken = adminData.token;
-      console.log('6. Admin token received for user lookup:', adminToken ? 'YES' : 'NO');
-    } catch (adminLoginError) {
-      console.error('Admin login error:', adminLoginError);
-      throw new Error('Ошибка доступа к системе аутентификации');
-    }
-    
-    // 2. Ищем пользователя в базе данных
-    if (!adminToken) {
-      throw new Error('Не удалось получить токен администратора');
-    }
+      // 2. Create a new chat if this is a new chat session
+      let chatIdToUse = currentChatId;
+      if (isNewChat) {
+        try {
+          const newChatId = await createNewChat(adminToken);
+          chatIdToUse = newChatId;
+          setCurrentChatId(newChatId);
+          setIsNewChat(false); // No longer a new chat after creation
+          logger.info('New chat created and set as current', { newChatId });
+        } catch (error) {
+          logger.error('Failed in chat creation', error);
+          throw error;
+        }
+      }
 
-    try {
-      logger.debug('Sending request to API', { message: newMessage.text });
-      const response = await fetch(`${API_BASE_URL}/api/gigachat/chat/${chatId}`, {
+      setMessages(prev => [...prev, newMessage]);
+
+      // 3. Send the message to the chat (existing or newly created)
+      logger.debug('Sending request to API', { message: newMessage.text, chatId: chatIdToUse });
+      const response = await fetch(`${API_BASE_URL}/api/gigachat/chat/${chatIdToUse}`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -226,7 +279,7 @@ export default function ChatScreen() {
     } finally {
       setIsLoading(false);
     }
-  }, [inputText, chatId]);
+  }, [inputText, currentChatId, isNewChat]);
 
   const handleTextChange = useCallback((text: string) => {
     setInputText(text);
@@ -287,7 +340,9 @@ export default function ChatScreen() {
           </View>
           <View>
             <Text style={styles.headerTitle}>AI-ассистент</Text>
-            <Text style={styles.headerSubtitle}>Онлайн</Text>
+            <Text style={styles.headerSubtitle}>
+              {currentChatId ? 'Онлайн' : 'Новый чат'}
+            </Text>
           </View>
         </View>
         
@@ -333,7 +388,7 @@ export default function ChatScreen() {
             style={styles.input}
             value={inputText}
             onChangeText={handleTextChange}
-            placeholder="Введите сообщение..."
+            placeholder={isNewChat ? "Начните новый чат..." : "Введите сообщение..."}
             multiline
             maxLength={500}
             placeholderTextColor={COLORS.textSecondary}
