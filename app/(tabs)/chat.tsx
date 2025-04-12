@@ -139,7 +139,7 @@ export default function ChatsListScreen() {
     >
       <View style={styles.avatarContainer}>
         <Image 
-          source={require('../../assets/images/icon.png')} 
+          source={require('../../images/qwen-ai.png')} 
           style={styles.avatar} 
           resizeMode="contain"
         />
