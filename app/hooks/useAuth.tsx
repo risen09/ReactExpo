@@ -3,13 +3,34 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { router } from 'expo-router';
 import { Alert } from 'react-native';
 
-const API_BASE_URL = process.env.EXPO_PUBLIC_API_BASE_URL;
+// Основной URL API из переменных окружения
+const API_BASE_URL = process.env.EXPO_PUBLIC_API_BASE_URL || 'https://j0cl9aplcsh5.share.zrok.io';
+
+// Резервный URL API на случай, если основной недоступен
+const FALLBACK_API_URL = 'https://j0cl9aplcsh5.share.zrok.io';
+
+// Функция для проверки доступности сервера
+const checkServerAvailability = async (url: string): Promise<boolean> => {
+  try {
+    const response = await fetch(`${url}/api/health`, {
+      method: 'GET',
+      headers: { 'Accept': 'application/json' },
+      // Устанавливаем короткий таймаут
+      signal: AbortSignal.timeout(5000)
+    });
+    return response.ok;
+  } catch (error) {
+    console.warn(`Server at ${url} is not available:`, error);
+    return false;
+  }
+};
 
 export interface UserProfile {
   _id?: string;
   email: string;
   name: string;
-  username: string;
+  nickname?: string;
+  username?: string;
   gender: 'male' | 'female' | 'other';
   age: number;
   personalityType?: string;
@@ -42,6 +63,7 @@ interface RegisterData {
   email: string;
   password: string;
   name: string;
+  nickname?: string;
   username?: string;
   gender?: 'male' | 'female' | 'other';
   age?: number;
@@ -82,7 +104,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const fetchUserProfile = async (authToken: string) => {
     try {
-      const response = await fetch(`${API_BASE_URL}/api/users/profile`, {
+      // Используем новый эндпоинт /api/user для получения данных текущего пользователя
+      const response = await fetch(`${API_BASE_URL}/api/user`, {
         headers: {
           'Authorization': `Bearer ${authToken}`,
           'Accept': 'application/json'
@@ -153,30 +176,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         throw new Error('Email не может быть пустым');
       }
       
-      // Очень упрощенная проверка формата (почти любой текст допустим)
-      console.log('4. Email validation check passed');
-      
       // Проверка пароля
       let safePassword = '';
       try {
         safePassword = String(password);
         console.log('5. Password converted to string, length:', safePassword.length);
         
-        // Проверка на непечатаемые символы или специальные символы
-        const containsSpecialChars = /[^\x20-\x7E]/.test(safePassword);
-        if (containsSpecialChars) {
-          console.log('WARNING: Password contains non-printable or special characters');
-        }
-        
-        // Проверка на пробелы в начале и конце
-        const hasLeadingOrTrailingSpaces = safePassword !== safePassword.trim();
-        if (hasLeadingOrTrailingSpaces) {
-          const oldLength = safePassword.length;
-          safePassword = safePassword.trim();
-          console.log(`WARNING: Password had leading/trailing spaces. Length before: ${oldLength}, after: ${safePassword.length}`);
-        }
-        
-        // Дополнительные логи для отладки
+        // Дополнительные проверки пароля
         if (safePassword.length < 1) {
           console.log('WARNING: Password is empty after conversion');
         } else if (safePassword.length < 4) {
@@ -194,99 +200,56 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         throw new Error('Пароль не может быть пустым');
       }
       
-      console.log('5. Password validation check passed');
+      console.log('6. Username/password validation passed, attempting to login');
       
-      // НОВЫЙ ПОДХОД: Проверяем пользователя по коллекции users
-      console.log('6. Attempting to find user using admin auth');
-      
-      // 1. Получаем админский токен
-      let adminToken;
-      try {
-        const loginResponse = await fetch(`${API_BASE_URL}/api/login`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': 'Basic ' + btoa('admin:admin123')
-          }
-        });
+      // Используем новый эндпоинт /api/login, который принимает email и password в теле запроса
+      const loginResponse = await fetch(`${API_BASE_URL}/api/login`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          email: sanitizedEmail,
+          password: safePassword
+        })
+      });
 
-        if (!loginResponse.ok) {
-          console.log('Admin login failed with status:', loginResponse.status);
-          throw new Error('Не удалось получить доступ к системе');
+      console.log('7. Login response status:', loginResponse.status);
+      
+      if (!loginResponse.ok) {
+        let errorMessage = 'Ошибка входа';
+        try {
+          const errorData = await loginResponse.json();
+          errorMessage = errorData.error || errorData.message || errorMessage;
+        } catch (e) {
+          console.error('Error parsing login error response:', e);
         }
+        throw new Error(errorMessage);
+      }
 
-        const adminData = await loginResponse.json();
-        adminToken = adminData.token;
-        console.log('6. Admin token received for user lookup:', adminToken ? 'YES' : 'NO');
-      } catch (adminLoginError) {
-        console.error('Admin login error:', adminLoginError);
-        throw new Error('Ошибка доступа к системе аутентификации');
+      const authData = await loginResponse.json();
+      console.log('8. Login successful, token received:', authData.token ? 'YES' : 'NO');
+      
+      if (!authData.token) {
+        throw new Error('Токен не получен от сервера');
       }
       
-      // 2. Ищем пользователя в базе данных
-      if (!adminToken) {
-        throw new Error('Не удалось получить токен администратора');
+      // Сохраняем токен и данные пользователя
+      await AsyncStorage.setItem('auth_token', authData.token);
+      
+      if (authData.user) {
+        setUser(authData.user);
+        await AsyncStorage.setItem('user_data', JSON.stringify(authData.user));
+      } else {
+        // Если данные пользователя не пришли с токеном, получаем их отдельно
+        await fetchUserProfile(authData.token);
       }
       
-      console.log('7. Searching for user with email:', sanitizedEmail);
-      let userData;
-      try {
-        const usersResponse = await fetch(`${API_BASE_URL}/api/users?email=${encodeURIComponent(sanitizedEmail)}`, {
-          headers: {
-            'Authorization': `Bearer ${adminToken}`,
-            'Accept': 'application/json'
-          }
-        });
-        
-        if (!usersResponse.ok) {
-          console.log('User search failed with status:', usersResponse.status);
-          throw new Error('Не удалось выполнить поиск пользователя');
-        }
-        
-        const users = await usersResponse.json();
-        console.log('Found users:', users.length);
-        
-        // Находим пользователя по email и проверяем пароль
-        const user = users.find((u: any) => 
-          u.email && u.email.toLowerCase() === sanitizedEmail.toLowerCase()
-        );
-        
-        if (!user) {
-          console.log('User not found with email:', sanitizedEmail);
-          throw new Error('Пользователь с указанным email не найден');
-        }
-        
-        console.log('8. User found, checking password');
-        
-        // Проверяем пароль
-        if (!user.password || user.password !== safePassword) {
-          console.log('Password mismatch');
-          throw new Error('Неверный пароль');
-        }
-        
-        // Пользователь найден и пароль верный
-        console.log('9. Password matches, using admin token for authentication');
-        userData = user;
-      } catch (userSearchError) {
-        console.error('User search error:', userSearchError);
-        throw new Error(userSearchError instanceof Error ? userSearchError.message : 'Ошибка поиска пользователя');
-      }
-      
-      // 3. Используем админский токен для фактической авторизации
-      console.log('10. Authentication successful, saving user data');
-      
-      // Сохраняем данные пользователя
-      await AsyncStorage.setItem('auth_token', adminToken);
-      await AsyncStorage.setItem('user_data', JSON.stringify(userData));
-      
-      // Обновляем состояние приложения
-      setToken(adminToken);
-      setUser(userData);
-      
-      console.log('11. Login successful, navigating to home');
+      setToken(authData.token);
+      console.log('9. User data saved, redirecting to home');
       
       // Перенаправляем на главную страницу
-      router.replace('/');
+      router.replace('/(tabs)');
       console.log('=== LOGIN DEBUG END ===');
     } catch (error) {
       console.error('Login error:', error);
@@ -315,12 +278,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       const sanitizedEmail = userData.email?.trim().toLowerCase() || '';
       const sanitizedPassword = userData.password || '';
       
-      // Проверяем пароль
-      console.log('Checking registration password:');
-      console.log('- Password provided:', !!sanitizedPassword);
-      console.log('- Password length:', sanitizedPassword.length);
-      console.log('- Password type:', typeof sanitizedPassword);
-      
       // Проверка на непечатаемые символы
       const containsNonPrintable = /[^\x20-\x7E]/.test(sanitizedPassword);
       console.log('- Contains non-printable characters:', containsNonPrintable);
@@ -330,15 +287,15 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       const hasLeadingOrTrailingSpaces = sanitizedPassword !== trimmedPassword;
       console.log('- Has leading/trailing spaces:', hasLeadingOrTrailingSpaces);
       
-      // Обработанный пароль (обязательно в той же форме, что и при входе)
+      // Обработанный пароль
       const processedPassword = trimmedPassword;
       console.log('- Final password length after processing:', processedPassword.length);
       
       const safeUserData = {
-        ...userData,
         email: sanitizedEmail,
-        password: processedPassword, // Используем обработанный пароль
-        username: userData.username || userData.name || 'User',
+        password: processedPassword,
+        name: userData.name || '',
+        nickname: userData.nickname || userData.name || '',
         gender: userData.gender || 'other',
         age: userData.age || 0
       };
@@ -350,22 +307,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       }));
       
       // Validate email format - упрощенная проверка на наличие @
-      const emailRegex = /@/;
-      
-      console.log('Validating registration email:', sanitizedEmail, 'Symbol @ present:', sanitizedEmail.includes('@'));
-      
-      if (!emailRegex.test(sanitizedEmail)) {
+      if (!sanitizedEmail.includes('@')) {
         console.log('3. Invalid email format:', sanitizedEmail);
-        throw new Error('Пожалуйста, введите email адрес, содержащий символ @');
-      }
-      
-      // Обработка пароля для регистрации/логина
-      let finalPassword = processedPassword;
-      if (__DEV__ && finalPassword.length < 6) {
-        console.log('DEV MODE: Enforcing minimum password length of 6 characters');
-        // Если пароль слишком короткий, добавляем к нему "123" для тестирования
-        finalPassword = finalPassword.length < 3 ? 'test123' : finalPassword + '123';
-        console.log('DEV MODE: Final password length:', finalPassword.length);
+        throw new Error('Пожалуйста, введите корректный email адрес');
       }
       
       // Validate required fields
@@ -377,170 +321,152 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         throw new Error('Пожалуйста, заполните все обязательные поля');
       }
       
-      console.log('3. All required fields present');
+      console.log('4. All required fields present, sending registration request');
       
-      // Шаг 1: Получаем админский токен для создания пользователя
-      console.log('4. Attempting admin login');
-      let adminToken;
-      try {
-        const loginResponse = await fetch(`${API_BASE_URL}/api/login`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': 'Basic ' + btoa('admin:admin123')
-          }
-        });
-
-        console.log('5. Admin login response status:', loginResponse.status);
+      // Выбираем URL API
+      let apiUrl = API_BASE_URL;
+      
+      // Проверяем доступность основного URL
+      console.log('Checking server availability at:', apiUrl);
+      const isMainServerAvailable = await checkServerAvailability(apiUrl);
+      
+      // Если основной сервер недоступен, пробуем использовать резервный URL
+      if (!isMainServerAvailable && apiUrl !== FALLBACK_API_URL) {
+        console.log('Main server not available, trying fallback URL:', FALLBACK_API_URL);
+        const isFallbackAvailable = await checkServerAvailability(FALLBACK_API_URL);
         
-        if (!loginResponse.ok) {
-          let error = await loginResponse.text();
-          console.log('6. Admin login failed:', error);
-          throw new Error(`Admin login failed: ${error}`);
+        if (isFallbackAvailable) {
+          apiUrl = FALLBACK_API_URL;
+          console.log('Using fallback API URL:', apiUrl);
+        } else {
+          console.error('Both main and fallback servers are unavailable');
+          throw new Error('Сервер недоступен. Пожалуйста, попробуйте позже.');
         }
-
-        const adminData = await loginResponse.json();
-        adminToken = adminData.token;
-        console.log('6. Admin token received:', adminToken ? 'YES' : 'NO');
-      } catch (adminLoginError) {
-        console.log('Admin login error:', adminLoginError);
-        throw new Error('Failed to authenticate for user creation');
       }
+      
+      console.log('Using API_BASE_URL:', apiUrl);
+      const fullUrl = `${apiUrl}/api/register`;
+      console.log('Full registration URL:', fullUrl);
+      console.log('Request data:', JSON.stringify({
+        ...safeUserData,
+        password: '***MASKED***'
+      }));
+      
+      // Используем новый публичный эндпоинт /api/register для создания пользователя
+      const response = await fetch(fullUrl, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json'
+        },
+        body: JSON.stringify(safeUserData)
+      });
 
-      // Шаг 2: Проверяем, не существует ли уже пользователь с таким email
-      console.log('7. Checking if user already exists');
-      try {
-        const checkUserResponse = await fetch(`${API_BASE_URL}/api/users?email=${encodeURIComponent(sanitizedEmail)}`, {
-          headers: {
-            'Authorization': `Bearer ${adminToken}`,
-            'Accept': 'application/json'
-          }
-        });
+      console.log('5. Registration response status:', response.status);
+      console.log('Content-Type:', response.headers.get('Content-Type'));
+      
+      // Проверяем успешность регистрации (коды 200-299)
+      if (response.ok) {
+        // Успешная регистрация
+        console.log('6. Registration successful');
         
-        if (checkUserResponse.ok) {
-          const existingUsers = await checkUserResponse.json();
+        try {
+          // Пробуем прочитать данные в формате JSON
+          const responseClone = response.clone();
+          const responseText = await responseClone.text();
+          let registrationData = { token: null, user: null };
           
-          if (Array.isArray(existingUsers) && existingUsers.length > 0) {
-            const existingUser = existingUsers.find((u: any) => 
-              u.email && u.email.toLowerCase() === sanitizedEmail.toLowerCase()
-            );
-            
-            if (existingUser) {
-              console.log('User with this email already exists');
-              throw new Error('Пользователь с таким email уже существует');
-            }
-          }
-        }
-      } catch (checkError) {
-        if (checkError instanceof Error && checkError.message.includes('already exists')) {
-          throw checkError;
-        }
-        // Если ошибка не связана с существованием пользователя, продолжаем
-        console.log('Error checking existing user (continuing):', checkError);
-      }
-
-      // Шаг 3: Создаем пользователя
-      console.log('8. Creating user with admin token');
-      let newUser;
-      try {
-        if (!finalPassword || finalPassword.length < 1) {
-          console.log('КРИТИЧЕСКАЯ ОШИБКА: Пароль пустой перед созданием пользователя');
-          throw new Error('Пароль не может быть пустым');
-        }
-        
-        // Создаем пользователя в коллекции users
-        const userCreatePayload = {
-          email: safeUserData.email,
-          password: finalPassword,
-          name: safeUserData.name,
-          username: safeUserData.username,
-          registration_date: new Date().toISOString().split('T')[0],
-          gender: safeUserData.gender,
-          age: safeUserData.age,
-          role: 'user',
-          created_at: new Date().toISOString()
-        };
-        
-        console.log('9. User creation payload:', JSON.stringify({
-          ...userCreatePayload,
-          password: '***MASKED***'
-        }));
-        
-        // Используем эндпоинт для создания записи в коллекции users
-        const response = await fetch(`${API_BASE_URL}/api/users`, {
-          method: 'POST',
-          headers: {
-            'Authorization': `Bearer ${adminToken}`,
-            'Content-Type': 'application/json'
-          },
-          body: JSON.stringify(userCreatePayload)
-        });
-
-        console.log('10. User creation response status:', response.status);
-
-        if (!response.ok) {
-          let errorText = '';
-          try {
-            const errorData = await response.json();
-            errorText = typeof errorData === 'string' ? errorData :
-                       errorData.message || errorData.error || JSON.stringify(errorData);
-            console.log('11. User creation failed with JSON:', errorText);
-          } catch (jsonError) {
+          // Проверяем, похож ли ответ на JSON
+          if (responseText.trim().startsWith('{') || responseText.trim().startsWith('[')) {
             try {
-              errorText = await response.text();
-              console.log('11. User creation failed with text:', errorText);
-            } catch (textError) {
-              errorText = 'Unknown server error';
-              console.log('11. Failed to get error details');
+              registrationData = JSON.parse(responseText);
+              console.log('Response data structure:', Object.keys(registrationData).join(', '));
+            } catch (parseError) {
+              console.warn('Failed to parse response as JSON, but registration was successful');
+            }
+          } else {
+            console.log('Response is not in JSON format, but registration was successful');
+          }
+          
+          // Если токен получен, сохраняем его
+          if (registrationData.token) {
+            await AsyncStorage.setItem('auth_token', registrationData.token);
+            setToken(registrationData.token);
+            
+            if (registrationData.user) {
+              setUser(registrationData.user);
+              await AsyncStorage.setItem('user_data', JSON.stringify(registrationData.user));
+            }
+          } else {
+            // Даже если токен не получен, пробуем войти с только что созданными данными
+            console.log('No token received, attempting to login with the new credentials');
+            
+            try {
+              await login(sanitizedEmail, processedPassword);
+              // После успешного входа редирект произойдет в функции login
+              return;
+            } catch (loginError) {
+              console.warn('Auto-login after registration failed:', loginError);
+              // Если автологин не сработал, все равно перенаправляем в приложение
+              // так как регистрация прошла успешно
             }
           }
-          throw new Error(`Ошибка создания пользователя: ${errorText}`);
+        } catch (e) {
+          console.warn('Error processing registration response:', e);
+          // Но регистрация все равно считается успешной
         }
-
-        newUser = await response.json();
-        console.log('11. User created successfully:', newUser?._id ? 'YES' : 'NO');
-        console.log('New user ID:', newUser?._id || 'Not available');
-      } catch (userCreateError) {
-        console.log('User creation error:', userCreateError);
-        throw userCreateError;
-      }
-      
-      // Шаг 4: Автоматически пытаемся войти от имени пользователя
-      console.log('12. Registration successful, attempting automatic login');
-      
-      Alert.alert(
-        'Регистрация успешна',
-        'Ваша учетная запись создана успешно.',
-        [{ text: 'OK' }]
-      );
-      
-      try {
-        // Аутентифицируем пользователя через обычный вход
-        await login(sanitizedEmail, finalPassword);
-      } catch (loginError) {
-        console.error('Auto-login after registration failed:', loginError);
         
-        // Если автоматический вход не удался, перенаправляем на страницу входа
+        // В любом случае показываем уведомление об успешной регистрации
         Alert.alert(
-          'Необходим вход',
-          'Пожалуйста, войдите с вашими новыми учетными данными.',
-          [{ 
-            text: 'OK', 
-            onPress: () => {
-              router.replace({
-                pathname: '/(auth)/login',
-                params: { email: sanitizedEmail, fromRegistration: 'true' }
-              });
-            }
-          }]
+          'Регистрация успешна',
+          'Ваша учетная запись успешно создана.',
+          [{ text: 'OK' }]
         );
+        
+        console.log('7. Redirecting to home page');
+        router.replace('/(tabs)');
+        return;
       }
       
-      setIsLoading(false);
-      return;
+      // Если мы дошли до сюда, значит регистрация не удалась
+      let errorMessage = 'Ошибка регистрации';
+      
+      // Клонируем ответ, чтобы иметь возможность прочитать его как текст
+      const responseClone = response.clone();
+      
+      // Логируем полный ответ в виде текста для диагностики
+      try {
+        const responseText = await responseClone.text();
+        console.log('Error response raw text:', responseText.substring(0, 500) + (responseText.length > 500 ? '...' : ''));
+        
+        // Проверяем, похож ли ответ на JSON
+        if (responseText.trim().startsWith('{') || responseText.trim().startsWith('[')) {
+          try {
+            const errorData = JSON.parse(responseText);
+            errorMessage = errorData.error || errorData.message || errorMessage;
+          } catch (parseError) {
+            console.error('Failed to parse error response as JSON:', parseError);
+          }
+        } else {
+          console.log('Response is not in JSON format');
+        }
+      } catch (e) {
+        console.error('Error reading response text:', e);
+      }
+      
+      throw new Error(errorMessage);
     } catch (error) {
       console.error('Registration error:', error);
-      setError(error instanceof Error ? error.message : 'Failed to register');
+      
+      // Выводим дополнительную информацию об ошибке
+      if (error instanceof Error) {
+        console.error('Error message:', error.message);
+        console.error('Error stack:', error.stack);
+        setError(error.message);
+      } else {
+        console.error('Unknown error type:', typeof error);
+        setError('Failed to register: Unknown error');
+      }
     } finally {
       if (isLoading) setIsLoading(false);
     }
@@ -556,7 +482,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       setUser(null);
       
       // Перенаправление на страницу входа
-      router.replace('/');
+      router.replace('/(auth)/login');
     } catch (error) {
       console.error('Logout error:', error);
     }
@@ -597,10 +523,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         }
       }
       
-      console.log('Отправка данных на сервер:', profileData.avatar);
+      console.log('Отправка данных на сервер');
       
-      const response = await fetch(`${API_BASE_URL}/api/users/profile`, {
-        method: 'PATCH',
+      // Используем новый эндпоинт /api/user для обновления данных текущего пользователя
+      const response = await fetch(`${API_BASE_URL}/api/user`, {
+        method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${token}`
@@ -620,7 +547,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         try {
           const errorData = await response.json();
           console.error('Текст ошибки от сервера:', errorData);
-          throw new Error(errorData.message || 'Не удалось обновить профиль');
+          throw new Error(errorData.error || 'Не удалось обновить профиль');
         } catch (jsonError) {
           console.error('Не удалось прочитать ответ сервера:', jsonError);
           throw new Error(`Ошибка обновления профиля (${response.status})`);
@@ -659,15 +586,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setError(null);
     
     try {
-      console.log('Updating personality type for user:', user?._id, 'to type:', type);
+      console.log('Updating personality type to:', type);
       
-      // Проверка наличия ID пользователя
-      if (!user._id) {
-        throw new Error('Не удалось определить ID пользователя');
-      }
-      
-      // Используем тот же эндпоинт, что и для обновления профиля
-      const response = await fetch(`${API_BASE_URL}/api/users/${user._id}`, {
+      // Используем PUT /api/user для обновления типа личности
+      const response = await fetch(`${API_BASE_URL}/api/user`, {
         method: 'PUT',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -682,14 +604,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         let errorMessage = 'Failed to update personality type';
         try {
           const errorData = await response.json();
-          errorMessage = errorData.message || errorData.error || errorMessage;
+          errorMessage = errorData.error || errorData.message || errorMessage;
         } catch (jsonError) {
           console.error('Error parsing error response:', jsonError);
-          try {
-            errorMessage = await response.text();
-          } catch (textError) {
-            console.error('Error getting response text:', textError);
-          }
         }
         throw new Error(errorMessage);
       }
@@ -725,7 +642,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   const changePassword = async (currentPassword: string, newPassword: string): Promise<boolean> => {
-    if (!token || !user || !user._id) {
+    if (!token || !user) {
       setError('Не авторизован');
       return false;
     }
@@ -736,40 +653,15 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     try {
       console.log('Changing password for user:', user.email);
       
-      // Сначала проверяем текущий пароль
-      const checkResponse = await fetch(`${API_BASE_URL}/api/users?email=${encodeURIComponent(user.email)}`, {
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Accept': 'application/json'
-        }
-      });
-      
-      if (!checkResponse.ok) {
-        throw new Error('Не удалось проверить текущие учетные данные');
-      }
-      
-      const users = await checkResponse.json();
-      const currentUser = users.find((u: any) => 
-        u.email && u.email.toLowerCase() === user.email.toLowerCase()
-      );
-      
-      if (!currentUser) {
-        throw new Error('Пользователь не найден');
-      }
-      
-      // Проверяем, что текущий пароль верный
-      if (currentUser.password !== currentPassword) {
-        throw new Error('Текущий пароль введен неверно');
-      }
-      
-      // Обновляем пароль
-      const response = await fetch(`${API_BASE_URL}/api/users/${user._id}`, {
+      // Используем эндпоинт /api/user для обновления пароля
+      const response = await fetch(`${API_BASE_URL}/api/user`, {
         method: 'PUT',
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json'
         },
         body: JSON.stringify({
+          currentPassword: currentPassword,
           password: newPassword
         })
       });
@@ -778,16 +670,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         let errorMessage = 'Не удалось обновить пароль';
         try {
           const errorData = await response.json();
-          errorMessage = errorData.message || errorData.error || errorMessage;
+          errorMessage = errorData.error || errorData.message || errorMessage;
         } catch (error) {
           console.error('Error parsing error response:', error);
         }
         throw new Error(errorMessage);
       }
-      
-      // Обновляем данные пользователя в локальном хранилище
-      const updatedUser = { ...user, password: newPassword };
-      await AsyncStorage.setItem('user_data', JSON.stringify(updatedUser));
       
       Alert.alert(
         'Успех',

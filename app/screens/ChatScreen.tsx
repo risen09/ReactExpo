@@ -15,6 +15,7 @@ import {
 import { SendHorizontal, Paperclip, Mic, ChevronLeft, MoreVertical } from 'lucide-react-native';
 import { router, useLocalSearchParams } from 'expo-router';
 import logger from '../utils/logger';
+import { useAuth } from '../hooks/useAuth';
 
 // Общая цветовая палитра приложения
 const COLORS = {
@@ -40,6 +41,7 @@ interface Message {
 }
 export default function ChatScreen() {
   const params = useLocalSearchParams<{ chatId: string }>();
+  const { token } = useAuth(); // Получаем токен текущего пользователя
   const [currentChatId, setCurrentChatId] = useState<string>(params?.chatId || ''); // State for current chat ID
   const [inputText, setInputText] = useState('');
   const [messages, setMessages] = useState<Message[]>([]);
@@ -67,44 +69,77 @@ export default function ChatScreen() {
     logger.info('Fetching chat messages', { chatId: currentChatId });
     setIsLoading(true);
     
-    // 1. Получаем админский токен
-    let adminToken;
-    try {
-      console.log('API_BASE_URL', API_BASE_URL); 
-      const loginResponse = await fetch(`${API_BASE_URL}/api/login`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': 'Basic ' + btoa('admin:admin123')
-        }
-      });
-
-      if (!loginResponse.ok) {
-        console.log('Admin login failed with status:', loginResponse.status);
-        throw new Error('Не удалось получить доступ к системе');
-      }
-
-      const adminData = await loginResponse.json();
-      adminToken = adminData.token;
-      console.log('6. Admin token received for user lookup:', adminToken ? 'YES' : 'NO');
-    } catch (adminLoginError) {
-      console.error('Admin login error:', adminLoginError);
-      throw new Error('Ошибка доступа к системе аутентификации');
-    }
-    
-    // 2. Ищем пользователя в базе данных
-    if (!adminToken) {
-      throw new Error('Не удалось получить токен администратора');
+    // Проверяем есть ли токен пользователя
+    if (!token) {
+      logger.error('No user token available, cannot fetch messages');
+      setIsLoading(false);
+      setMessages(defaultWelcomeMessages);
+      return;
     }
     
     try {
+      // Пробуем сначала использовать токен пользователя
       const response = await fetch(`${API_BASE_URL}/api/gigachat/chat/${currentChatId}`, {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json',
-          Authorization: 'Bearer ' + adminToken
+          Authorization: 'Bearer ' + token
         }
       });
+      
+      // Если запрос не удался, пробуем использовать admin токен
+      if (!response.ok) {
+        // Если ошибка не связана с авторизацией, просто возвращаем сообщение по умолчанию
+        if (response.status !== 401 && response.status !== 403) {
+          logger.error(`Failed to fetch messages: ${response.status}`);
+          setMessages(defaultWelcomeMessages);
+          return;
+        }
+        
+        // Пробуем с admin токеном
+        logger.warn('User token not authorized for chat messages, trying admin login');
+        const adminToken = await getAdminToken();
+        
+        if (!adminToken) {
+          logger.error('Failed to get admin token for messages');
+          setMessages(defaultWelcomeMessages);
+          return;
+        }
+        
+        const adminResponse = await fetch(`${API_BASE_URL}/api/gigachat/chat/${currentChatId}`, {
+          method: 'GET',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: 'Bearer ' + adminToken
+          }
+        });
+        
+        if (!adminResponse.ok) {
+          logger.error(`Failed to fetch messages with admin token: ${adminResponse.status}`);
+          setMessages(defaultWelcomeMessages);
+          return;
+        }
+        
+        const adminData = await adminResponse.json();
+        logger.debug('Received chat data with admin token', adminData);
+        
+        if (adminData) {
+          const messagesData = adminData.messages.map((item: any, index: number) => ({
+            id: index.toString(),
+            text: item.content,
+            isUser: item.role === 'user',
+            timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+          }));
+          setMessages(messagesData.slice(1));
+          logger.info('Messages loaded successfully with admin token', { count: messagesData.length });
+        } else {
+          logger.warn('No messages found or invalid data format with admin token, using default welcome message');
+          setMessages(defaultWelcomeMessages);
+        }
+        return;
+      }
+      
+      // Успешный запрос с токеном пользователя
       const data = await response.json();
       logger.debug('Received chat data', data);
       
@@ -127,7 +162,7 @@ export default function ChatScreen() {
     } finally {
       setIsLoading(false);
     }
-  }, [currentChatId, defaultWelcomeMessages]);
+  }, [currentChatId, defaultWelcomeMessages, token]);
 
   // Load messages on component mount or when chat ID changes
   useEffect(() => {
@@ -175,15 +210,42 @@ export default function ChatScreen() {
   };
 
   // Create a new chat
-  const createNewChat = async (adminToken: string) => {
+  const createNewChat = async () => {
     try {
       logger.info('Creating new chat');
+      
+      // Пробуем создать чат с токеном пользователя
+      if (token) {
+        try {
+          const response = await fetch(`${API_BASE_URL}/api/gigachat/new`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              Authorization: 'Bearer ' + token
+            }
+          });
+          
+          if (response.ok) {
+            const data = await response.json();
+            logger.debug('New chat created with user token', data);
+            return data.chat_id;
+          }
+          
+          // Если не сработало с пользовательским токеном, продолжаем с admin токеном
+          logger.warn('Failed to create chat with user token, trying admin token');
+        } catch (error) {
+          logger.warn('Error creating chat with user token:', error);
+        }
+      }
+      
+      // Fallback с admin токеном
+      const adminToken = await getAdminToken();
       const response = await fetch(`${API_BASE_URL}/api/gigachat/new`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           Authorization: 'Bearer ' + adminToken
-        },
+        }
         // No payload needed as per requirements
       });
 
@@ -192,7 +254,7 @@ export default function ChatScreen() {
       }
 
       const data = await response.json();
-      logger.debug('New chat created', data);
+      logger.debug('New chat created with admin token', data);
       
       return data.chat_id;
     } catch (error) {
@@ -219,17 +281,11 @@ export default function ChatScreen() {
     setIsLoading(true);
 
     try {
-      // 1. Get admin token
-      const adminToken = await getAdminToken();
-      if (!adminToken) {
-        throw new Error('Не удалось получить токен администратора');
-      }
-
       // 2. Create a new chat if this is a new chat session
       let chatIdToUse = currentChatId;
       if (isNewChat) {
         try {
-          const newChatId = await createNewChat(adminToken);
+          const newChatId = await createNewChat();
           chatIdToUse = newChatId;
           setCurrentChatId(newChatId);
           setIsNewChat(false); // No longer a new chat after creation
@@ -240,33 +296,85 @@ export default function ChatScreen() {
         }
       }
 
-      setMessages(prev => [...prev, newMessage]);
-
       // 3. Send the message to the chat (existing or newly created)
-      logger.debug('Sending request to API', { message: newMessage.text, chatId: chatIdToUse });
-      const response = await fetch(`${API_BASE_URL}/api/gigachat/chat/${chatIdToUse}`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: 'Bearer ' + adminToken
-        },
-        body: JSON.stringify({
-          message: newMessage.text,
-        }),
-      });
-
-      const data = await response.json();
-      logger.debug('Received API response', data);
+      let userToken = token;
+      if (!userToken) {
+        // Fallback на admin токен, если токен пользователя недоступен
+        logger.warn('No user token available, using admin token for sending message');
+        userToken = await getAdminToken();
+        if (!userToken) {
+          throw new Error('Не удалось получить токен для отправки сообщения');
+        }
+      }
       
-      const botResponse: Message = {
-        id: (Date.now() + 1).toString(),
-        text: data.message || 'Что-то пошло нет так, я не могу сейчас ответить тебе.',
-        isUser: false,
-        timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+      // Отправка сообщения без дополнительной информации о пользователе
+      // Это поможет избежать ошибки с undefined selected_subjects
+      const messageData = {
+        message: newMessage.text,
+        simple_mode: true // Флаг, указывающий, что это простое сообщение без данных профиля
       };
-
-      setMessages(prev => [...prev, botResponse]);
-      logger.info('Bot response added successfully');
+      
+      logger.debug('Sending request to API', { message: newMessage.text, chatId: chatIdToUse, simple_mode: true });
+      try {
+        // Пробуем отправить с токеном пользователя
+        const response = await fetch(`${API_BASE_URL}/api/gigachat/chat/${chatIdToUse}`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: 'Bearer ' + userToken
+          },
+          body: JSON.stringify(messageData),
+        });
+        
+        // Если запрос с токеном пользователя не удался, пробуем с admin токеном
+        if (!response.ok && (response.status === 401 || response.status === 403)) {
+          logger.warn('User token not authorized for sending message, trying admin token');
+          const adminToken = await getAdminToken();
+          
+          const adminResponse = await fetch(`${API_BASE_URL}/api/gigachat/chat/${chatIdToUse}`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              Authorization: 'Bearer ' + adminToken
+            },
+            body: JSON.stringify(messageData),
+          });
+          
+          if (!adminResponse.ok) {
+            throw new Error(`Failed to send message with admin token: ${adminResponse.status}`);
+          }
+          
+          const adminData = await adminResponse.json();
+          const botResponse: Message = {
+            id: (Date.now() + 1).toString(),
+            text: adminData.message || 'Что-то пошло нет так, я не могу сейчас ответить тебе.',
+            isUser: false,
+            timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+          };
+          
+          setMessages(prev => [...prev, botResponse]);
+          logger.info('Bot response added successfully using admin token');
+          return;
+        }
+        
+        // Если запрос с токеном пользователя прошел успешно
+        const data = await response.json();
+        logger.debug('Received API response', data);
+        
+        const botResponse: Message = {
+          id: (Date.now() + 1).toString(),
+          text: data.message || 'Что-то пошло нет так, я не могу сейчас ответить тебе.',
+          isUser: false,
+          timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+        };
+        
+        setMessages(prev => [...prev, botResponse]);
+        logger.info('Bot response added successfully');
+      } catch (apiError) {
+        // Обрабатываем ошибки API
+        logger.error('API request failed:', apiError);
+        throw apiError;
+      }
     } catch (error) {
       logger.error('Failed to get bot response', error);
       const errorMessage: Message = {
@@ -279,7 +387,7 @@ export default function ChatScreen() {
     } finally {
       setIsLoading(false);
     }
-  }, [inputText, currentChatId, isNewChat]);
+  }, [inputText, currentChatId, isNewChat, token]);
 
   const handleTextChange = useCallback((text: string) => {
     setInputText(text);

@@ -50,6 +50,8 @@ export default function RegisterScreen() {
     }
 
     try {
+      console.log('Начинаем процесс регистрации...');
+      
       // Вызываем метод регистрации из хука useAuth
       // После регистрации хук useAuth сам перенаправит пользователя на страницу входа или панель приложения
       await register({
@@ -60,12 +62,35 @@ export default function RegisterScreen() {
         gender: 'other',
         age: 0
       });
+      
+      console.log('Регистрация завершена, ожидается редирект...');
     } catch (err) {
       // Ошибка уже будет обработана внутри хука useAuth, но на всякий случай обрабатываем её и здесь
-      console.error('Ошибка регистрации:', err);
+      console.error('Ошибка регистрации в компоненте:', err);
+      
+      // Отображаем детали ошибки
+      let errorMessage = error || 'Произошла ошибка при регистрации.';
+      
+      if (err instanceof Error) {
+        errorMessage = err.message;
+      }
+      
+      // Показываем диалог с ошибкой и опцией перехода на экран входа вручную
       Alert.alert(
         'Ошибка регистрации', 
-        error || 'Произошла ошибка при регистрации. Пожалуйста, попробуйте еще раз.'
+        `${errorMessage}\n\nВозможно, учетная запись уже создана. Хотите перейти на экран входа?`,
+        [
+          { 
+            text: 'Перейти на вход', 
+            onPress: () => {
+              router.replace({
+                pathname: '/(auth)/login',
+                params: { email: email.trim().toLowerCase() }
+              });
+            }
+          },
+          { text: 'Остаться', style: 'cancel' }
+        ]
       );
     }
   };
