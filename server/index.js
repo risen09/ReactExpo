@@ -22,9 +22,24 @@ mongoose
 
 // Import routes
 const personalityTestRoutes = require('./routes/personalityTest');
+const authRoutes = require('./routes/auth');
+const tracksRoutes = require('./routes/tracks');
+const lessonsRoutes = require('./routes/lessons');
+const testsRoutes = require('./routes/tests');
+const gigachatRoutes = require('./routes/gigachat');
+const trackAssistantRoutes = require('./routes/agents/track-assistant');
 
 // Use routes
 app.use('/api/personality-test', personalityTestRoutes);
+app.use('/api/auth', authRoutes);
+app.use('/api/tracks', tracksRoutes);
+app.use('/api/lessons', lessonsRoutes);
+app.use('/api/tests', testsRoutes);
+app.use('/api/gigachat', gigachatRoutes);
+app.use('/api/track-assistants', trackAssistantRoutes);
+
+// Маршрут для админской авторизации
+app.post('/api/login', authRoutes);
 
 // Default route
 app.get('/', (req, res) => {

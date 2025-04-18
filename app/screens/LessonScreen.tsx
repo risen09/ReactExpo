@@ -8,8 +8,8 @@ import {
   TouchableOpacity,
 } from 'react-native';
 import { useDispatch, useSelector } from 'react-redux';
-import { useRouter } from 'expo-router';
-import { MaterialIcons } from '@expo/vector-icons';
+import { useRouter, useNavigation } from 'expo-router';
+import { MaterialIcons, FontAwesome } from '@expo/vector-icons';
 import {
   selectCurrentLesson,
   selectLessonLoading,
@@ -22,6 +22,7 @@ import type { Subject, LearningStyle } from '../types/lesson';
 const LessonScreen: React.FC = () => {
   const dispatch = useDispatch<AppDispatch>();
   const router = useRouter();
+  const navigation = useNavigation();
   const currentLesson = useSelector(selectCurrentLesson);
   const loading = useSelector(selectLessonLoading);
   const error = useSelector(selectLessonError);
@@ -44,6 +45,18 @@ const LessonScreen: React.FC = () => {
   const handlePreviousStep = () => {
     if (currentStep > 0) {
       setCurrentStep(currentStep - 1);
+    }
+  };
+
+  const openTrackAssistant = () => {
+    if (currentLesson) {
+      // Навигация к экрану ассистента трека
+      // @ts-ignore - игнорируем ошибку типа для простоты
+      navigation.navigate('TrackAssistantScreen', {
+        trackId: currentLesson.trackId,
+        lessonId: currentLesson.id,
+        trackName: currentLesson.trackTitle || currentLesson.title
+      });
     }
   };
 
@@ -89,6 +102,14 @@ const LessonScreen: React.FC = () => {
       <View style={styles.header}>
         <Text style={styles.title}>{currentLesson.title}</Text>
         <Text style={styles.subtitle}>{currentLesson.subject}</Text>
+        
+        <TouchableOpacity 
+          style={styles.assistantButton}
+          onPress={openTrackAssistant}
+        >
+          <FontAwesome name="question-circle" size={20} color="#5B67CA" />
+          <Text style={styles.assistantButtonText}>Спросить ассистента</Text>
+        </TouchableOpacity>
       </View>
 
       <ScrollView style={styles.content}>
@@ -154,6 +175,22 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: '#6c757d',
     marginTop: 5,
+  },
+  assistantButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#EFF1FF',
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    borderRadius: 20,
+    marginTop: 10,
+    alignSelf: 'flex-start',
+  },
+  assistantButtonText: {
+    color: '#5B67CA',
+    fontWeight: '600',
+    marginLeft: 8,
+    fontSize: 14,
   },
   content: {
     flex: 1,
