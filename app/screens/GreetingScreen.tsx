@@ -1,0 +1,430 @@
+import React, { useState } from 'react';
+import {
+  View,
+  Text,
+  StyleSheet,
+  SafeAreaView,
+  TouchableOpacity,
+  ScrollView
+} from 'react-native';
+import { StatusBar } from 'expo-status-bar';
+import { Ionicons } from '@expo/vector-icons';
+
+// Reusing COLORS from DiagnosticsScreen for consistency
+const COLORS = {
+  primary: '#5B67CA',
+  secondary: '#43C0B4',
+  background: '#F2F5FF',
+  card: '#FFFFFF',
+  text: '#25335F',
+  textSecondary: '#7F8BB7',
+  border: '#EAEDF5',
+  success: '#4CAF50',
+  danger: '#F44336',
+  warning: '#FF9800',
+};
+
+// Dummy data for subjects and topics (replace with actual data later)
+const SUBJECTS = [
+  { id: 'math', name: 'Математика' },
+  { id: 'physics', name: 'Физика' },
+  { id: 'english', name: 'Английский язык' },
+  { id: 'biology', name: 'Биология' },
+  { id: 'cs', name: 'Информатика' },
+];
+
+const TOPICS: { [key: string]: { id: string; name: string }[] } = {
+  math: [
+    { id: 'algebra', name: 'Алгебра' },
+    { id: 'geometry', name: 'Геометрия' },
+    { id: 'calculus', name: 'Мат. анализ' },
+    { id: 'probability', name: 'Теория вероятностей' },
+    { id: 'trigonometry', name: 'Тригонометрия' },
+    { id: 'equations', name: 'Уравнения' },
+  ],
+  physics: [
+    { id: 'mechanics', name: 'Механика' },
+    { id: 'thermo', name: 'Термодинамика' },
+    { id: 'electricity', name: 'Электричество' },
+    { id: 'optics', name: 'Оптика' },
+    { id: 'nuclear', name: 'Ядерная физика' },
+    { id: 'astrophysics', name: 'Астрофизика' },
+  ],
+  english: [
+    { id: 'grammar', name: 'Грамматика' },
+    { id: 'vocab', name: 'Лексика' },
+    { id: 'speaking', name: 'Разговорная речь' },
+    { id: 'reading', name: 'Чтение' },
+    { id: 'writing', name: 'Письмо' },
+    { id: 'ielts', name: 'Подготовка к IELTS' },
+  ],
+  biology: [
+      { id: 'cells', name: 'Клетки' },
+      { id: 'genetics', name: 'Генетика' },
+      { id: 'ecology', name: 'Экология' },
+      { id: 'anatomy', name: 'Анатомия человека' },
+      { id: 'botany', name: 'Ботаника' },
+      { id: 'evolution', name: 'Эволюция' },
+  ],
+  cs: [
+      { id: 'algorithms', name: 'Алгоритмы' },
+      { id: 'data_structures', name: 'Структуры данных' },
+      { id: 'web_dev', name: 'Веб-разработка' },
+      { id: 'python', name: 'Python' },
+      { id: 'machine_learning', name: 'Машинное обучение' },
+      { id: 'databases', name: 'Базы данных' },
+  ],
+};
+
+const DIFFICULTIES = [
+  { id: 'basic', name: 'Базовый' },
+  { id: 'intermediate', name: 'Средний' },
+  { id: 'advanced', name: 'Продвинутый' },
+];
+
+type Step = 'subject' | 'topic' | 'difficulty' | 'summary';
+
+export const GreetingScreen = () => {
+  const [step, setStep] = useState<Step>('subject');
+  const [selectedSubject, setSelectedSubject] = useState<{ id: string; name: string } | null>(null);
+  const [selectedTopics, setSelectedTopics] = useState<{ id: string; name: string }[]>([]);
+  const [selectedDifficulty, setSelectedDifficulty] = useState<{ id: string; name: string } | null>(null);
+
+  const handleSubjectSelect = (subject: { id: string; name: string }) => {
+    setSelectedSubject(subject);
+    setSelectedTopics([]);
+    setSelectedDifficulty(null);
+    setStep('topic');
+  };
+
+  const handleTopicSelect = (topic: { id: string; name: string }) => {
+    setSelectedTopics(prevTopics => {
+      const isSelected = prevTopics.some(t => t.id === topic.id);
+      if (isSelected) {
+        return prevTopics.filter(t => t.id !== topic.id);
+      } else {
+        return [...prevTopics, topic];
+      }
+    });
+  };
+
+  const handleProceedToDifficulty = () => {
+      if (selectedTopics.length > 0) {
+          setSelectedDifficulty(null);
+          setStep('difficulty');
+      } else {
+          console.warn("Please select at least one topic.");
+      }
+  };
+
+  const handleDifficultySelect = (difficulty: { id: string; name: string }) => {
+    setSelectedDifficulty(difficulty);
+    setStep('summary');
+  };
+
+  const handleReset = () => {
+      setSelectedSubject(null);
+      setSelectedTopics([]);
+      setSelectedDifficulty(null);
+      setStep('subject');
+  };
+
+  const renderStepContent = () => {
+    switch (step) {
+      case 'subject':
+        return (
+          <>
+            <Text style={styles.stepTitle}>1. Выберите предмет:</Text>
+            <View style={styles.buttonContainer}>
+              {SUBJECTS.map((subject) => (
+                <TouchableOpacity
+                  key={subject.id}
+                  style={styles.button}
+                  onPress={() => handleSubjectSelect(subject)}
+                >
+                  <Text style={styles.buttonText}>{subject.name}</Text>
+                </TouchableOpacity>
+              ))}
+            </View>
+          </>
+        );
+      case 'topic':
+        if (!selectedSubject) return null;
+        const availableTopics = TOPICS[selectedSubject.id] || [];
+        return (
+          <>
+            <TouchableOpacity onPress={() => setStep('subject')} style={styles.backButton}>
+               <Ionicons name="arrow-back" size={18} color={COLORS.primary} />
+               <Text style={styles.backButtonText}>{selectedSubject.name}</Text>
+            </TouchableOpacity>
+            <Text style={styles.stepTitle}>2. Выберите темы (можно несколько):</Text>
+            <View style={styles.buttonContainer}>
+              {availableTopics.map((topic) => {
+                const isSelected = selectedTopics.some(t => t.id === topic.id);
+                return (
+                  <TouchableOpacity
+                    key={topic.id}
+                    style={[
+                      styles.button,
+                      isSelected && styles.buttonSelected
+                    ]}
+                    onPress={() => handleTopicSelect(topic)}
+                  >
+                    <Text style={[
+                      styles.buttonText,
+                      isSelected && styles.buttonTextSelected
+                    ]}>
+                      {topic.name}
+                    </Text>
+                  </TouchableOpacity>
+                );
+              })}
+            </View>
+            <TouchableOpacity
+              style={[styles.confirmButton, { marginTop: 20, opacity: selectedTopics.length > 0 ? 1 : 0.5 }]}
+              onPress={handleProceedToDifficulty}
+              disabled={selectedTopics.length === 0}
+            >
+              <Text style={styles.confirmButtonText}>Далее</Text>
+            </TouchableOpacity>
+          </>
+        );
+      case 'difficulty':
+         if (!selectedSubject || selectedTopics.length === 0) return null;
+         return (
+           <>
+             <TouchableOpacity onPress={() => setStep('topic')} style={styles.backButton}>
+                <Ionicons name="arrow-back" size={18} color={COLORS.primary} />
+                <Text style={styles.backButtonText}>{selectedSubject.name} ({selectedTopics.length} тем)</Text>
+             </TouchableOpacity>
+             <Text style={styles.stepTitle}>3. Выберите уровень сложности:</Text>
+             <View style={styles.buttonContainer}>
+               {DIFFICULTIES.map((difficulty) => {
+                   const isSelected = selectedDifficulty?.id === difficulty.id;
+                   return (
+                     <TouchableOpacity
+                       key={difficulty.id}
+                       style={[
+                           styles.button,
+                           isSelected && styles.buttonSelected
+                       ]}
+                       onPress={() => handleDifficultySelect(difficulty)}
+                     >
+                       <Text style={[
+                           styles.buttonText,
+                           isSelected && styles.buttonTextSelected
+                       ]}>{difficulty.name}</Text>
+                     </TouchableOpacity>
+                   );
+               })}
+             </View>
+           </>
+         );
+      case 'summary':
+          if (!selectedSubject || selectedTopics.length === 0 || !selectedDifficulty) return null;
+          return (
+              <>
+                  <TouchableOpacity onPress={() => setStep('difficulty')} style={styles.backButton}>
+                     <Ionicons name="arrow-back" size={18} color={COLORS.primary} />
+                     <Text style={styles.backButtonText}>Выбор уровня</Text>
+                  </TouchableOpacity>
+
+                  <Text style={styles.summaryTitle}>Ваш выбор:</Text>
+                  <View style={styles.summaryItem}>
+                      <Text style={styles.summaryLabel}>Предмет:</Text>
+                      <Text style={styles.summaryValue}>{selectedSubject.name}</Text>
+                  </View>
+                  <View style={styles.summaryItem}>
+                      <Text style={styles.summaryLabel}>Темы:</Text>
+                      <View style={styles.summaryTopicsContainer}>
+                          {selectedTopics.map(topic => (
+                              <Text key={topic.id} style={styles.summaryValueChip}>{topic.name}</Text>
+                          ))}
+                      </View>
+                  </View>
+                  <View style={styles.summaryItem}>
+                      <Text style={styles.summaryLabel}>Уровень:</Text>
+                      <Text style={styles.summaryValue}>{selectedDifficulty.name}</Text>
+                  </View>
+                  <TouchableOpacity
+                    style={styles.confirmButton}
+                    onPress={() => {
+                      const selectionData = {
+                        field: selectedSubject, // Assuming selectedSubject contains { id, name }
+                        subjects: selectedTopics, // Assuming selectedTopics is an array of { id, name }
+                        difficulty: selectedDifficulty, // Assuming selectedDifficulty contains { id, name }
+                      };
+                      const selectionJson = JSON.stringify(selectionData, null, 2); // Pretty print JSON
+                      console.log('User Selection JSON:', selectionJson);
+                      // TODO: Send this JSON data to your backend or navigate
+                    }}
+                  >
+                      <Text style={styles.confirmButtonText}>Начать обучение</Text>
+                  </TouchableOpacity>
+                   <TouchableOpacity style={[styles.button, styles.resetButton]} onPress={handleReset}>
+                        <Text style={[styles.buttonText, styles.resetButtonText]}>Начать заново</Text>
+                    </TouchableOpacity>
+              </>
+          );
+      default:
+        return null;
+    }
+  };
+
+  return (
+    <SafeAreaView style={styles.container}>
+      <StatusBar style="dark" />
+      <View style={styles.header}>
+        <Text style={styles.headerTitle}>Добро пожаловать!</Text>
+        <Text style={styles.headerSubtitle}>Расскажите, чему вы хотите научиться?</Text>
+      </View>
+      <ScrollView contentContainerStyle={styles.scrollContent}>
+        {renderStepContent()}
+      </ScrollView>
+    </SafeAreaView>
+  );
+};
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: COLORS.background,
+  },
+  header: {
+    paddingHorizontal: 20,
+    paddingTop: 20,
+    paddingBottom: 10,
+    backgroundColor: COLORS.card,
+    borderBottomWidth: 1,
+    borderBottomColor: COLORS.border,
+  },
+  headerTitle: {
+    fontSize: 24,
+    fontWeight: 'bold',
+    color: COLORS.text,
+    marginBottom: 4,
+  },
+  headerSubtitle: {
+      fontSize: 16,
+      color: COLORS.textSecondary,
+  },
+  scrollContent: {
+    padding: 20,
+  },
+  stepTitle: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: COLORS.text,
+    marginBottom: 15,
+    marginTop: 10,
+  },
+  buttonContainer: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 10,
+  },
+  button: {
+    backgroundColor: COLORS.card,
+    paddingVertical: 12,
+    paddingHorizontal: 18,
+    borderRadius: 20,
+    borderWidth: 1,
+    borderColor: COLORS.border,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  buttonText: {
+    color: COLORS.primary,
+    fontSize: 15,
+    fontWeight: '500',
+  },
+  backButton: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      marginBottom: 15,
+      alignSelf: 'flex-start',
+      paddingVertical: 5,
+  },
+  backButtonText: {
+      marginLeft: 5,
+      color: COLORS.primary,
+      fontSize: 16,
+      fontWeight: '600',
+  },
+  summaryTitle: {
+      fontSize: 20,
+      fontWeight: 'bold',
+      color: COLORS.text,
+      marginBottom: 20,
+      textAlign: 'center',
+  },
+   summaryItem: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      paddingVertical: 10,
+      borderBottomWidth: 1,
+      borderBottomColor: COLORS.border,
+      marginBottom: 10,
+   },
+   summaryLabel: {
+       fontSize: 16,
+       color: COLORS.textSecondary,
+   },
+   summaryValue: {
+       fontSize: 16,
+       fontWeight: '600',
+       color: COLORS.text,
+       flexShrink: 1,
+       textAlign: 'right',
+   },
+   confirmButton: {
+       backgroundColor: COLORS.primary,
+       paddingVertical: 15,
+       borderRadius: 10,
+       alignItems: 'center',
+       marginTop: 20,
+   },
+   confirmButtonText: {
+       color: '#FFFFFF',
+       fontSize: 16,
+       fontWeight: 'bold',
+   },
+    resetButton: {
+        marginTop: 15,
+        backgroundColor: 'transparent',
+        borderColor: COLORS.secondary,
+    },
+    resetButtonText: {
+        color: COLORS.secondary,
+    },
+  buttonSelected: {
+    backgroundColor: COLORS.primary,
+    borderColor: COLORS.primary,
+  },
+  buttonTextSelected: {
+    color: COLORS.card,
+  },
+  summaryTopicsContainer: {
+      flexDirection: 'row',
+      flexWrap: 'wrap',
+      justifyContent: 'flex-end',
+      flex: 1,
+      marginLeft: 10,
+  },
+  summaryValueChip: {
+      fontSize: 14,
+      fontWeight: '500',
+      color: COLORS.primary,
+      backgroundColor: COLORS.background,
+      paddingVertical: 4,
+      paddingHorizontal: 8,
+      borderRadius: 12,
+      borderWidth: 1,
+      borderColor: COLORS.border,
+      marginLeft: 4,
+      marginBottom: 4,
+      textAlign: 'center',
+  },
+});
+
+export default GreetingScreen; 
