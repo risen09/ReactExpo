@@ -9,6 +9,11 @@ const API_BASE_URL = process.env.EXPO_PUBLIC_API_BASE_URL || 'https://j0cl9aplcs
 // Резервный URL API на случай, если основной недоступен
 const FALLBACK_API_URL = 'https://j0cl9aplcsh5.share.zrok.io';
 
+const YOUR_CLIENT_ID = process.env.EXPO_PUBLIC_VK_CLIENT_ID; 
+const YOUR_REDIRECT_SCHEME = YOUR_CLIENT_ID ? 'vk' + YOUR_CLIENT_ID : ''; // e.g., vk1234567
+const YOUR_REDIRECT_HOST = 'vk.com'; // Or whatever you configure, but docs use this
+const REDIRECT_URI = YOUR_REDIRECT_SCHEME ? `${YOUR_REDIRECT_SCHEME}://${YOUR_REDIRECT_HOST}/blank.html` : '';
+
 // Функция для проверки доступности сервера
 const checkServerAvailability = async (url: string): Promise<boolean> => {
   try {
@@ -52,6 +57,7 @@ interface AuthContextType {
   isAuthenticated: boolean;
   error: string | null;
   login: (email: string, password: string) => Promise<void>;
+  handleVkLogin: (code: string, verifier: string, deviceId: string) => Promise<void>;
   register: (userData: RegisterData) => Promise<void>;
   logout: () => Promise<void>;
   updateProfile: (profileData: Partial<UserProfile>) => Promise<void>;
@@ -259,6 +265,50 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       setIsLoading(false);
     }
   };
+
+  const handleVkLogin = async (code: string, verifier: string, deviceId: string) => {
+    setError(null);
+    setIsLoading(true);
+    try {
+      const response = await fetch(`${process.env.EXPO_PUBLIC_API_BASE_URL}/api/auth/vk`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+       body: JSON.stringify({
+         code: code,
+         code_verifier: verifier,
+         device_id: deviceId,
+         redirect_uri: REDIRECT_URI,
+       }),
+     });
+     const data = await response.json();
+     if (response.ok) {
+       await AsyncStorage.setItem('auth_token', data.token);
+
+      if (data.user) {
+        setUser(data.user);
+        await AsyncStorage.setItem('user_data', JSON.stringify(data.user));
+      } else {
+        // Если данные пользователя не пришли с токеном, получаем их отдельно
+        await fetchUserProfile(data.token);
+      }
+      
+      setToken(data.token);
+      console.log('9. User data saved, redirecting to home');
+      
+      // Перенаправляем на главную страницу
+      router.replace('/(tabs)');
+     } else {
+      Alert.alert('Backend Error', data.message || 'Failed to exchange code for token.');
+     }
+    } catch (error) {
+      console.error('Error exchanging code:', error);
+      Alert.alert('Pizdec!', 'Network error or backend is sleeping.');
+    } finally {
+      setIsLoading(false);
+    }
+ }
 
   const register = async (userData: RegisterData) => {
     setError(null);
@@ -480,6 +530,19 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       
       setToken(null);
       setUser(null);
+
+      try {
+        // Handling VK logout
+        console.log('Logging out from VK');
+        await fetch(`${process.env.EXPO_PUBLIC_API_BASE_URL}/api/auth/vk/logout`, {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${token}`,
+          },
+        });
+      } catch (error) {
+        console.error('Vk logout error:', error);
+      }
       
       // Перенаправление на страницу входа
       router.replace('/(auth)/login');
@@ -709,6 +772,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         isAuthenticated: !!token, 
         error, 
         login, 
+        handleVkLogin,
         register, 
         logout, 
         updateProfile,
