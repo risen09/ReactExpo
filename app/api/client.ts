@@ -1,5 +1,7 @@
 import axios from 'axios';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { LearningTrack } from '../models/LearningAgents';
+import { Track } from '../types/track';
 
 // Базовый URL API из переменных окружения или резервный URL
 const API_BASE_URL = process.env.EXPO_PUBLIC_API_BASE_URL || 'https://j0cl9aplcsh5.share.zrok.io';
@@ -199,9 +201,9 @@ export default {
   // Треки обучения
   tracks: {
     getAll: () => 
-      api.get('/api/learning/tracks'),
+      api.get<Track[]>('/api/tracks'),
     getById: (trackId: string) => 
-      api.get(`/api/learning/tracks/${trackId}`),
+      api.get<Track>(`/api/tracks/${trackId}`),
     startTrack: (trackId: string) => 
       api.post(`/api/learning/tracks/${trackId}/start`),
     completeLesson: (trackId: string, lessonId: string) => 

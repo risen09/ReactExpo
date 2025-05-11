@@ -3,13 +3,12 @@ import {
   View,
   Text,
   StyleSheet,
-  ScrollView,
   ActivityIndicator,
   TouchableOpacity,
+  FlatList,
 } from 'react-native';
-import { useDispatch, useSelector } from 'react-redux';
-import { useRouter, useNavigation } from 'expo-router';
-import { MaterialIcons, FontAwesome } from '@expo/vector-icons';
+import { useRouter, useLocalSearchParams } from 'expo-router';
+import { FontAwesome } from '@expo/vector-icons';
 import {
   selectCurrentLesson,
   selectLessonLoading,
@@ -17,54 +16,73 @@ import {
   generateLesson,
 } from '../../store/features/lessonSlice';
 import type { AppDispatch } from '../../store/store';
-import type { Subject, LearningStyle } from '../types/lesson';
+import { LearningStyle, Lesson, Subject } from '../types/lesson';
+import Markdown from 'react-native-markdown-display';
+
+// Define types for FlatList sections
+interface HeaderSection {
+  id: string;
+  type: 'HEADER';
+  data: Lesson; 
+}
+
+interface ContentSection {
+  id: string;
+  type: 'CONTENT';
+  text: string;
+  styles: any; // Using 'any' for simplicity for the markdown styles object, or could be more specific
+}
+
+type SectionItem = HeaderSection | ContentSection;
 
 const LessonScreen: React.FC = () => {
-  const dispatch = useDispatch<AppDispatch>();
+  const params = useLocalSearchParams<{ lessonData?: string; lessonId?: string; trackId?: string }>();
+
+  const [lessonFromParams, setLessonFromParams] = useState<Lesson | null>(null);
+  const [paramError, setParamError] = useState<string | null>(null);
+
   const router = useRouter();
-  const navigation = useNavigation();
-  const currentLesson = useSelector(selectCurrentLesson);
-  const loading = useSelector(selectLessonLoading);
-  const error = useSelector(selectLessonError);
-  const [currentStep, setCurrentStep] = useState(0);
 
-  const handleGenerateLesson = async (subject: Subject, learningStyle: LearningStyle) => {
-    try {
-      await dispatch(generateLesson({ subject, learningStyle })).unwrap();
-    } catch (err) {
-      console.error('Failed to generate lesson:', err);
+  useEffect(() => {
+    if (params.lessonData) {
+      try {
+        const passedPayload = JSON.parse(params.lessonData);
+        const mappedLesson: Lesson = {
+          id: passedPayload._id || passedPayload.id || `param-lesson-${Date.now()}`,
+          topic: passedPayload.topic || 'Неизвестный тема',
+          content: passedPayload.content || 'Содержимое не передано.',
+          subject: passedPayload.subject,
+          difficulty: passedPayload.difficulty || 1,
+          assignments: passedPayload.assignments || [],
+          estimatedTime: passedPayload.estimatedTime || 0,
+          completed: passedPayload.completed || false,
+        };
+        setLessonFromParams(mappedLesson);
+        setParamError(null);
+      } catch (e) {
+        console.error("Blyat! Failed to parse lessonData from params:", e);
+        setParamError('Ошибка обработки данных урока из параметров.');
+        setLessonFromParams(null);
+      }
+    } else {
+      setLessonFromParams(null);
+      setParamError(null);
     }
-  };
-
-  const handleNextStep = () => {
-    if (currentLesson && currentStep < currentLesson.steps.length - 1) {
-      setCurrentStep(currentStep + 1);
-    }
-  };
-
-  const handlePreviousStep = () => {
-    if (currentStep > 0) {
-      setCurrentStep(currentStep - 1);
-    }
-  };
+  }, [params.lessonData]);
 
   const openTrackAssistant = () => {
-    if (currentLesson) {
-      // Навигация к экрану ассистента трека
-      // @ts-ignore - игнорируем ошибку типа для простоты
-      navigation.navigate('TrackAssistantScreen', {
-        trackId: currentLesson.trackId,
-        lessonId: currentLesson.id,
-        trackName: currentLesson.trackTitle || currentLesson.title
-      });
-    }
+    console.log('Navigating to assistant...');
   };
 
-  if (loading) {
+  const displayLesson = lessonFromParams;
+  const isLoading = !lessonFromParams;
+  const error = paramError;
+
+  if (isLoading) {
     return (
       <View style={styles.centerContainer}>
-        <ActivityIndicator size="large" color="#0000ff" />
-        <Text style={styles.loadingText}>Generating your personalized lesson...</Text>
+        <ActivityIndicator size="large" color="#007bff" />
+        <Text style={styles.loadingText}>Загружаем урок...</Text>
       </View>
     );
   }
@@ -72,80 +90,83 @@ const LessonScreen: React.FC = () => {
   if (error) {
     return (
       <View style={styles.centerContainer}>
-        <Text style={styles.errorText}>{error}</Text>
-        <TouchableOpacity
-          style={styles.retryButton}
-          onPress={() => handleGenerateLesson('mathematics', 'visual')}
-        >
-          <Text style={styles.retryButtonText}>Retry</Text>
-        </TouchableOpacity>
+        <Text style={styles.errorText}>Ошибка: {error}</Text>
+        {!lessonFromParams && (
+          <TouchableOpacity
+            style={styles.retryButton}
+            disabled={true}
+          >
+            <Text style={styles.retryButtonText}>Попробовать снова</Text>
+          </TouchableOpacity>
+        )}
       </View>
     );
   }
 
-  if (!currentLesson) {
+  if (!displayLesson) {
     return (
       <View style={styles.centerContainer}>
-        <Text style={styles.noLessonText}>No lesson selected</Text>
-        <TouchableOpacity
-          style={styles.generateButton}
-          onPress={() => handleGenerateLesson('mathematics', 'visual')}
-        >
-          <Text style={styles.generateButtonText}>Generate New Lesson</Text>
-        </TouchableOpacity>
+        <Text style={styles.noLessonText}>Урок не найден</Text>
       </View>
     );
   }
 
-  return (
-    <View style={styles.container}>
-      <View style={styles.header}>
-        <Text style={styles.title}>{currentLesson.title}</Text>
-        <Text style={styles.subtitle}>{currentLesson.subject}</Text>
-        
-        <TouchableOpacity 
-          style={styles.assistantButton}
-          onPress={openTrackAssistant}
-        >
-          <FontAwesome name="question-circle" size={20} color="#5B67CA" />
-          <Text style={styles.assistantButtonText}>Спросить ассистента</Text>
-        </TouchableOpacity>
-      </View>
+  const currentMarkdownStyles = {
+    heading1: {
+      fontSize: 24,
+      fontWeight: 'bold',
+      marginBottom: 10,
+    },
+    heading2: {
+      fontSize: 20,
+      fontWeight: 'bold',
+      marginBottom: 10,
+    },
+    heading3: {
+      fontSize: 18,
+      fontWeight: 'bold',
+      marginBottom: 10,
+    },
+    paragraph: {
+      fontSize: 16,
+      lineHeight: 24,
+    },
+  };
 
-      <ScrollView style={styles.content}>
-        <View style={styles.stepContainer}>
-          <Text style={styles.stepTitle}>
-            Step {currentStep + 1} of {currentLesson.steps.length}
-          </Text>
-          <Text style={styles.stepContent}>
-            {currentLesson.steps[currentStep].content}
-          </Text>
+  const sections: SectionItem[] = [
+    { id: 'lessonHeader', type: 'HEADER', data: displayLesson },
+    { id: 'lessonContent', type: 'CONTENT', text: displayLesson.content, styles: currentMarkdownStyles }
+  ];
+
+  const renderSectionItem = ({ item }: { item: SectionItem }) => {
+    if (item.type === 'HEADER') {
+      return (
+        <View style={styles.header}>
+          <Text style={styles.title}>{item.data.topic}</Text>
+          {item.data.subject && <Text style={styles.subtitle}>{item.data.subject}</Text>}
         </View>
-      </ScrollView>
+      );
+    }
+    if (item.type === 'CONTENT') {
+      return (
+        <View style={styles.markdownContentContainer}>
+          <Markdown style={item.styles}>
+            {item.text}
+          </Markdown>
+        </View>
+      );
+    }
+    return null;
+  };
 
-      <View style={styles.navigation}>
-        <TouchableOpacity
-          style={[styles.navButton, currentStep === 0 && styles.disabledButton]}
-          onPress={handlePreviousStep}
-          disabled={currentStep === 0}
-        >
-          <MaterialIcons name="navigate-before" size={24} color="white" />
-          <Text style={styles.navButtonText}>Previous</Text>
-        </TouchableOpacity>
-
-        <TouchableOpacity
-          style={[
-            styles.navButton,
-            currentStep === currentLesson.steps.length - 1 && styles.disabledButton,
-          ]}
-          onPress={handleNextStep}
-          disabled={currentStep === currentLesson.steps.length - 1}
-        >
-          <Text style={styles.navButtonText}>Next</Text>
-          <MaterialIcons name="navigate-next" size={24} color="white" />
-        </TouchableOpacity>
-      </View>
-    </View>
+  return (
+    <FlatList
+      data={sections}
+      renderItem={renderSectionItem}
+      keyExtractor={item => item.id}
+      style={styles.container}
+      showsVerticalScrollIndicator={false}
+    />
   );
 };
 
@@ -196,54 +217,13 @@ const styles = StyleSheet.create({
     flex: 1,
     padding: 20,
   },
-  stepContainer: {
-    backgroundColor: '#fff',
-    borderRadius: 8,
-    padding: 15,
-    shadowColor: '#000',
-    shadowOffset: {
-      width: 0,
-      height: 2,
-    },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
-  },
-  stepTitle: {
-    fontSize: 18,
-    fontWeight: '600',
-    marginBottom: 10,
-    color: '#495057',
+  markdownContentContainer: {
+    padding: 20,
   },
   stepContent: {
     fontSize: 16,
     lineHeight: 24,
     color: '#212529',
-  },
-  navigation: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    padding: 20,
-    backgroundColor: '#f8f9fa',
-    borderTopWidth: 1,
-    borderTopColor: '#e9ecef',
-  },
-  navButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#007bff',
-    paddingVertical: 10,
-    paddingHorizontal: 20,
-    borderRadius: 8,
-  },
-  navButtonText: {
-    color: '#fff',
-    fontSize: 16,
-    marginHorizontal: 5,
-  },
-  disabledButton: {
-    backgroundColor: '#6c757d',
-    opacity: 0.5,
   },
   loadingText: {
     marginTop: 10,
@@ -254,9 +234,10 @@ const styles = StyleSheet.create({
     color: '#dc3545',
     fontSize: 16,
     marginBottom: 20,
+    textAlign: 'center',
   },
   retryButton: {
-    backgroundColor: '#dc3545',
+    backgroundColor: '#007bff',
     paddingVertical: 10,
     paddingHorizontal: 20,
     borderRadius: 8,
@@ -269,6 +250,7 @@ const styles = StyleSheet.create({
     fontSize: 18,
     color: '#6c757d',
     marginBottom: 20,
+    textAlign: 'center',
   },
   generateButton: {
     backgroundColor: '#28a745',
@@ -282,4 +264,4 @@ const styles = StyleSheet.create({
   },
 });
 
-export default LessonScreen; 
+export default LessonScreen;

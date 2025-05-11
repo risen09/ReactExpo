@@ -12,61 +12,22 @@ import {
   FlatList
 } from 'react-native';
 import { useRoute, useNavigation } from '@react-navigation/native';
+import { router } from 'expo-router';
 import COLORS from '@/app/config/colors';
 import apiClient from '@/app/api/client';
 import aiLearningTrackService from '@/app/services/aiLearningTrackService';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
-
-// Интерфейсы для типов данных
-interface LessonItem {
-  id: string;
-  title: string;
-  description: string;
-  content: string;
-  duration: number; // в минутах
-  isCompleted: boolean;
-  type: 'theory' | 'exercise';
-  exercises?: ExerciseItem[];
-}
-
-interface ExerciseItem {
-  id: string;
-  question: string;
-  type: 'text' | 'multiple_choice' | 'single_choice' | 'number';
-  options?: string[];
-  correctAnswer: any;
-  userAnswer?: any;
-  isCompleted: boolean;
-  explanation?: string;
-}
-
-interface LearningTrack {
-  id: string;
-  title: string;
-  subject: string;
-  topic: string;
-  description: string;
-  difficulty: 'basic' | 'intermediate' | 'advanced';
-  createdAt: string;
-  expectedDuration: number; // в минутах
-  progress: number; // процент завершения
-  lessons: LessonItem[];
-  schedule?: {
-    days: {
-      date: string;
-      lessons: string[]; // ID уроков
-    }[];
-  };
-}
+import { Track } from '../types/track';
+import { Lesson } from '../types/lesson';
 
 const LearningTrackDetailsScreen = () => {
   const route = useRoute();
   const navigation = useNavigation();
   
   // Получаем параметры из навигации
-  const { trackId, trackData } = route.params as { trackId: string, trackData?: LearningTrack };
+  const { trackId, trackData } = route.params as { trackId: string, trackData?: Track };
   
-  const [track, setTrack] = useState<LearningTrack | null>(trackData || null);
+  const [track, setTrack] = useState<Track | null>(trackData || null);
   const [isLoading, setIsLoading] = useState(!trackData);
   const [error, setError] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<'lessons' | 'schedule'>('lessons');
@@ -89,53 +50,9 @@ const LearningTrackDetailsScreen = () => {
         setIsLoading(true);
         
         // Пытаемся получить трек из API
-        let fetchedTrack = null;
-        try {
-          const response = await apiClient.tracks.getTrack(trackId);
-          fetchedTrack = response.data;
-        } catch (err) {
-          console.warn('Не удалось загрузить трек из API, пробуем локальное хранилище:', err);
-        }
-        
-        // Если не удалось получить из API, пробуем из локального хранилища
-        if (!fetchedTrack) {
-          // Здесь должна быть логика получения из AsyncStorage
-          // Но для примера просто создадим заглушку
-          fetchedTrack = {
-            id: trackId,
-            title: 'Учебный трек',
-            subject: 'Математика',
-            topic: 'Дискриминант',
-            description: 'Изучение дискриминанта и квадратных уравнений',
-            difficulty: 'intermediate' as const,
-            createdAt: new Date().toISOString(),
-            expectedDuration: 120,
-            progress: 0,
-            lessons: []
-          };
-          
-          // Генерируем уроки с помощью AI
-          try {
-            fetchedTrack.lessons = await aiLearningTrackService.generateLessonsForTrack(
-              fetchedTrack.subject,
-              fetchedTrack.topic,
-              fetchedTrack.difficulty
-            );
-          } catch (err) {
-            console.error('Ошибка при генерации уроков:', err);
-            fetchedTrack.lessons = [];
-          }
-          
-          // Создаем расписание
-          try {
-            fetchedTrack.schedule = await aiLearningTrackService.createSchedule(
-              fetchedTrack.lessons,
-              new Date()
-            );
-          } catch (err) {
-            console.error('Ошибка при создании расписания:', err);
-          }
-        }
+        const response = await apiClient.tracks.getById(trackId);
+        const fetchedTrack = response.data;
+        console.log('Загружен трек:', fetchedTrack);
         
         setTrack(fetchedTrack);
       } catch (err) {
@@ -150,32 +67,31 @@ const LearningTrackDetailsScreen = () => {
   }, [trackId, trackData]);
   
   // Обработчик открытия урока
-  const handleOpenLesson = (lesson: LessonItem) => {
-    if (lesson.type === 'theory') {
-      // @ts-ignore - игнорируем для простоты
-      navigation.navigate('LessonScreen', {
+  const handleOpenLesson = (lesson: Lesson) => {
+    // @ts-ignore - still ignoring for simplicity, but ensure 'lesson' has at least 'id', 'topic', 'content', and 'subject' if used by LessonScreen
+    const lessonPayload = {
+      _id: lesson.id, // Assuming lesson.id maps to _id, or use lesson._id if available
+      topic: lesson.topic, // Assuming lesson.title maps to topic
+      content: lesson.content,
+      subject: (lesson as any).subject, // If lesson object has subject
+      // Add other fields from the lesson object that LessonScreen might need from the payload
+      // For example, if your 'lessonData' in the error log is what 'lesson' object looks like:
+      // topic: lesson.topic, subject: lesson.subject, grade: lesson.grade, etc.
+    };
+
+    router.push({
+      pathname: '/screens/LessonScreen',
+      params: { 
+        headerTitle: 'Урок',
         lessonId: lesson.id,
-        trackId: track?.id,
-        lessonData: lesson
-      });
-    } else if (lesson.type === 'exercise' && lesson.exercises && lesson.exercises.length > 0) {
-      // @ts-ignore - игнорируем для простоты
-      navigation.navigate('ExerciseScreen', {
-        lessonId: lesson.id,
-        trackId: track?.id,
-        exercises: lesson.exercises
-      });
-    } else {
-      Alert.alert(
-        'Информация',
-        'Упражнение недоступно в данный момент.',
-        [{ text: 'OK' }]
-      );
-    }
+        trackId: track?._id, 
+        lessonData: JSON.stringify(lessonPayload) // Pass the prepared payload
+      }
+    });
   };
   
   // Обработчик для завершения урока
-  const handleMarkComplete = async (lesson: LessonItem) => {
+  const handleMarkComplete = async (lesson: Lesson) => {
     if (!track) return;
     
     try {
@@ -237,7 +153,7 @@ const LearningTrackDetailsScreen = () => {
   const handleStartFinalTest = () => {
     if (!track) return;
     
-    // @ts-ignore - игнорируем для простоты
+    // @ts-ignore - and ignore for simplicity
     navigation.navigate('TestScreen', {
       subject: track.subject,
       topic: track.topic,
@@ -308,7 +224,7 @@ const LearningTrackDetailsScreen = () => {
   };
   
   // Функция рендеринга элемента списка уроков
-  const renderLessonItem = ({ item }: { item: LessonItem }) => (
+  const renderLessonItem = ({ item }: { item: Lesson }) => (
     <TouchableOpacity 
       style={[
         styles.lessonItem,
@@ -317,17 +233,14 @@ const LearningTrackDetailsScreen = () => {
       onPress={() => handleOpenLesson(item)}
     >
       <View style={styles.lessonIconContainer}>
-        <Icon name={getLessonTypeIcon(item.type)} size={24} color={COLORS.primary} />
+        <Icon name={getLessonTypeIcon('lesson')} size={24} color={COLORS.primary} />
+
       </View>
       
       <View style={styles.lessonContent}>
-        <Text style={styles.lessonTitle}>{item.title}</Text>
-        <Text style={styles.lessonDescription} numberOfLines={2}>{item.description}</Text>
+        <Text style={styles.lessonTitle}>{item.topic}</Text>
         <View style={styles.lessonMeta}>
-          <Text style={styles.lessonDuration}>{formatDuration(item.duration)}</Text>
-          <Text style={styles.lessonType}>
-            {item.type === 'theory' ? 'Теория' : 'Упражнение'}
-          </Text>
+          <Text style={styles.lessonDuration}>{formatDuration(item.duration ?? 0)}</Text>
         </View>
       </View>
       
@@ -335,6 +248,7 @@ const LearningTrackDetailsScreen = () => {
         <TouchableOpacity 
           style={styles.markCompleteButton}
           onPress={() => handleMarkComplete(item)}
+        disabled={true}
         >
           <Icon name="check-circle-outline" size={24} color={COLORS.primary} />
         </TouchableOpacity>
@@ -390,19 +304,11 @@ const LearningTrackDetailsScreen = () => {
   
   return (
     <SafeAreaView style={styles.container}>
-      <View style={styles.header}>
-        <TouchableOpacity style={styles.backButton} onPress={handleGoBack}>
-          <Icon name="arrow-left" size={24} color={COLORS.text} />
-        </TouchableOpacity>
-        <Text style={styles.headerTitle}>Учебный трек</Text>
-        <View style={{ width: 24 }} />
-      </View>
-      
       <ScrollView contentContainerStyle={styles.scrollContent}>
         <View style={styles.trackInfoCard}>
           <View style={styles.trackHeader}>
             <View>
-              <Text style={styles.trackTitle}>{track.title}</Text>
+              <Text style={styles.trackTitle}>{track.name}</Text>
               <Text style={styles.trackSubject}>{track.subject}: {track.topic}</Text>
               <View style={styles.badgeRow}>
                 <View style={styles.difficultyBadge}>
@@ -413,13 +319,14 @@ const LearningTrackDetailsScreen = () => {
                 <View style={styles.durationBadge}>
                   <Icon name="clock-outline" size={14} color={COLORS.white} style={styles.badgeIcon} />
                   <Text style={styles.durationText}>
-                    {formatDuration(track.expectedDuration)}
+                    {formatDuration(track.expectedDuration ?? 60)}
                   </Text>
                 </View>
               </View>
             </View>
           </View>
           
+          { /*
           <View style={styles.progressSection}>
             <View style={styles.progressHeader}>
               <Text style={styles.progressTitle}>Общий прогресс</Text>
@@ -434,6 +341,7 @@ const LearningTrackDetailsScreen = () => {
               />
             </View>
           </View>
+          */ }
           
           <Text style={styles.trackDescription}>{track.description}</Text>
         </View>
@@ -502,6 +410,7 @@ const LearningTrackDetailsScreen = () => {
           <TouchableOpacity 
             style={styles.primaryButton}
             onPress={handleStartFinalTest}
+            disabled={true}
           >
             <Text style={styles.primaryButtonText}>Пройти итоговый тест</Text>
           </TouchableOpacity>
