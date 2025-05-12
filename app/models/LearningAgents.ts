@@ -19,38 +19,6 @@ export interface TestResult {
   recommendations: string[];
 }
 
-export interface LearningTrack {
-  id: string;
-  name: string;
-  description: string;
-  subject: string;
-  topic: string;
-  createdAt: string;
-  lessons: Lesson[];
-  tests: Test[];
-  schedule?: Schedule;
-}
-
-export interface Lesson {
-  id: string;
-  title: string;
-  content: string;
-  difficulty: 1 | 2 | 3; // 1=Легкий, 2=Средний, 3=Сложный
-  stars: 0 | 1 | 2 | 3; // Количество звезд, которые пользователь получил
-  assignments: Assignment[];
-  examples: Example[];
-  completed: boolean;
-}
-
-export interface Assignment {
-  id: string;
-  question: string;
-  difficulty: 1 | 2 | 3;
-  solution?: string;
-  userAnswer?: string;
-  isCorrect?: boolean;
-}
-
 export interface Example {
   id: string;
   title: string;

@@ -3,10 +3,12 @@ import { View, Text, StyleSheet, FlatList, TouchableOpacity, SafeAreaView } from
 import { StatusBar } from 'expo-status-bar';
 import { router } from 'expo-router';
 import { Plus } from 'lucide-react-native';
-import { LearningTrack } from '../models/LearningAgents';
-import LearningTrackCard from '../components/LearningTrackCard';
-import { useAuth } from '../hooks/useAuth';
-import logger from '../utils/logger';
+import LearningTrackCard from '../../components/LearningTrackCard';
+import { useAuth } from '../../hooks/useAuth';
+import logger from '../../utils/logger';
+import { Track } from '@/app/types/track';
+
+const API_BASE_URL = process.env.EXPO_PUBLIC_API_BASE_URL;
 
 // Общая цветовая палитра приложения
 const COLORS = {
@@ -23,8 +25,8 @@ const COLORS = {
 };
 
 export default function LearningTracksScreen() {
-  const { user } = useAuth();
-  const [tracks, setTracks] = useState<LearningTrack[]>([]);
+  const { token } = useAuth();
+  const [tracks, setTracks] = useState<Track[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   
   useEffect(() => {
@@ -32,85 +34,20 @@ export default function LearningTracksScreen() {
     const loadTracks = async () => {
       try {
         setIsLoading(true);
-        
-        // В реальном приложении здесь был бы запрос к API
-        // Для демонстрации используем моковые данные
-        const mockTracks: LearningTrack[] = [
-          {
-            id: '1',
-            name: 'Квадратные уравнения',
-            description: 'Изучение квадратных уравнений и методов их решения',
-            subject: 'математика',
-            topic: 'квадратные уравнения',
-            createdAt: new Date().toISOString(),
-            lessons: [
-              {
-                id: 'lesson-1',
-                title: 'Формула дискриминанта',
-                content: 'Содержание урока о дискриминанте...',
-                difficulty: 1,
-                stars: 2,
-                assignments: [],
-                examples: [],
-                completed: true
-              },
-              {
-                id: 'lesson-2',
-                title: 'Теорема Виета',
-                content: 'Содержание урока о теореме Виета...',
-                difficulty: 2,
-                stars: 1,
-                assignments: [],
-                examples: [],
-                completed: false
-              }
-            ],
-            tests: []
+        const response = await fetch(`${API_BASE_URL}/api/tracks`, {
+          method: 'GET',
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
           },
-          {
-            id: '2',
-            name: 'Основы программирования',
-            description: 'Изучение основ программирования на Python',
-            subject: 'информатика',
-            topic: 'python',
-            createdAt: new Date().toISOString(),
-            lessons: [
-              {
-                id: 'lesson-py-1',
-                title: 'Переменные и типы данных',
-                content: 'Содержание урока о переменных...',
-                difficulty: 1,
-                stars: 3,
-                assignments: [],
-                examples: [],
-                completed: true
-              },
-              {
-                id: 'lesson-py-2',
-                title: 'Условные операторы',
-                content: 'Содержание урока об условных операторах...',
-                difficulty: 1,
-                stars: 2,
-                assignments: [],
-                examples: [],
-                completed: true
-              },
-              {
-                id: 'lesson-py-3',
-                title: 'Циклы',
-                content: 'Содержание урока о циклах...',
-                difficulty: 2,
-                stars: 0,
-                assignments: [],
-                examples: [],
-                completed: false
-              }
-            ],
-            tests: []
-          }
-        ];
+        });
+        const data = await response.json();
+        if (!response.ok) {
+          throw new Error('Failed to load tracks.');
+        }
+
+        setTracks(data);
         
-        setTracks(mockTracks);
       } catch (error) {
         logger.error('Error loading learning tracks', error);
       } finally {
@@ -122,7 +59,10 @@ export default function LearningTracksScreen() {
   }, []);
   
   const handleTrackPress = (track: LearningTrack) => {
-    router.push(`/learning-track/${track.id}` as any);
+    router.push({
+      pathname: `/learning-tracks/${track._id}`,
+      params: { trackId: track._id }
+    } as any);
   };
   
   const handleCreateTrack = () => {
@@ -168,7 +108,7 @@ export default function LearningTracksScreen() {
               onPress={() => handleTrackPress(item)}
             />
           )}
-          keyExtractor={(item) => item.id}
+          keyExtractor={(item) => item._id}
           contentContainerStyle={styles.tracksList}
           showsVerticalScrollIndicator={false}
         />

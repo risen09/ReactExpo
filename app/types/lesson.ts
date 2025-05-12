@@ -2,12 +2,6 @@ export type LearningStyle = 'visual' | 'auditory' | 'kinesthetic';
 
 export type Subject = 'mathematics' | 'physics' | 'chemistry' | 'biology';
 
-export interface LessonStep {
-  id: string;
-  type: 'text' | 'video' | 'animation' | 'interactive';
-  content: string;
-  duration: number; // в минутах
-}
 
 export interface Practice {
   id: string;
@@ -21,14 +15,21 @@ export interface Practice {
 export interface Lesson {
   id: string;
   subject: Subject;
-  title: string;
-  description: string;
+  topic: string;
+  content: string;
   difficulty: 'beginner' | 'intermediate' | 'advanced';
-  steps: LessonStep[];
-  practices: Practice[];
+  assignments: Assignment[];
   estimatedTime: number; // в минутах
   completed: boolean;
-  score: number;
+}
+
+export interface Assignment {
+  id: string;
+  question: string;
+  difficulty: 1 | 2 | 3;
+  solution?: string;
+  userAnswer?: string;
+  isCorrect?: boolean;
 }
 
 export interface UserProgress {

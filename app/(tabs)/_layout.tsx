@@ -80,11 +80,11 @@ export default function TabLayout() {
           }}
         />
         <Tabs.Screen
-          name="lessons"
+          name="learning-tracks"
           options={{
-            title: 'Уроки',
+            title: 'Треки',
             tabBarIcon: ({ size, color }) => <BookOpen size={size} color={color} />,
-            headerTitle: 'Уроки',
+            headerTitle: 'Треки',
           }}
         />
         <Tabs.Screen
@@ -104,6 +104,12 @@ export default function TabLayout() {
           }}
         />
         {/* Hide the following screens from tab bar but keep them accessible via direct navigation */}
+        <Tabs.Screen
+          name="lessons"
+          options={{
+            href: null, // This prevents the tab from appearing in the tab bar
+          }}
+        />
         <Tabs.Screen
           name="subjects"
           options={{
