@@ -9,7 +9,9 @@ import {
   ActivityIndicator,
   Alert,
   Image,
-  FlatList
+  FlatList,
+  Modal,
+  TextInput
 } from 'react-native';
 import { useRoute, useNavigation } from '@react-navigation/native';
 import { router } from 'expo-router';
@@ -31,6 +33,9 @@ const LearningTrackDetailsScreen = () => {
   const [isLoading, setIsLoading] = useState(!trackData);
   const [error, setError] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<'lessons' | 'schedule'>('lessons');
+  const [isModalVisible, setIsModalVisible] = useState(false);
+  const [lessonTopic, setLessonTopic] = useState('');
+  const [isModalLoading, setIsModalLoading] = useState(false);
   
   // Загружаем данные трека, если они не были переданы через параметры
   useEffect(() => {
@@ -166,6 +171,46 @@ const LearningTrackDetailsScreen = () => {
   // Обработчик возврата назад
   const handleGoBack = () => {
     navigation.goBack();
+  };
+
+  const handleRequestLesson = async () => {
+    if (!track || !track.subject) {
+      Alert.alert('Ошибка', 'Информация о треке не загружена.');
+      return;
+    }
+    if (!lessonTopic.trim()) {
+      Alert.alert('Ошибка', 'Пожалуйста, введите тему урока.');
+      return;
+    }
+    
+    setIsModalLoading(true);
+
+    try {
+      console.log(`Запрос на урок по теме: "${lessonTopic}" для предмета: ${track.subject}`);
+      
+      const requestResponse = await apiClient.tracks.requestLesson(track._id, lessonTopic);
+      const { lessonId } = await requestResponse.data;
+      console.log('Lesson ID:', lessonId);
+      const lessonResponse = await apiClient.lessons.getById(lessonId);
+      const lessonData = await lessonResponse.data;
+      console.log('Lesson Data:', lessonData);
+  
+      const updatedTrack = {
+        ...track,
+        lessons: [
+          ...track.lessons,
+          lessonData
+        ]
+      };
+      setTrack(updatedTrack);
+      setLessonTopic(''); // Очищаем поле ввода
+      setIsModalVisible(false);
+    } catch (error) {
+      console.error('Ошибка при запросе урока:', error);
+      Alert.alert('Ошибка', 'Не удалось запросить урок. Попробуйте еще раз.');
+    } finally {
+      setIsModalLoading(false);
+    }
   };
   
   // Показываем индикатор загрузки
@@ -408,6 +453,15 @@ const LearningTrackDetailsScreen = () => {
         
         <View style={styles.actionsContainer}>
           <TouchableOpacity 
+            style={styles.secondaryButton}
+            onPress={() => setIsModalVisible(true)}
+          >
+            <Text style={styles.primaryButtonText}>Запросить урок</Text>
+          </TouchableOpacity>
+        </View>
+        
+        <View style={styles.actionsContainer}>
+          <TouchableOpacity 
             style={styles.primaryButton}
             onPress={handleStartFinalTest}
             disabled={true}
@@ -416,6 +470,68 @@ const LearningTrackDetailsScreen = () => {
           </TouchableOpacity>
         </View>
       </ScrollView>
+      
+      <Modal
+        animationType="slide"
+        transparent={true}
+        visible={isModalVisible}
+        onRequestClose={() => {
+          if (!isModalLoading) {
+            setIsModalVisible(!isModalVisible);
+          }
+        }}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContainer}>
+            {isModalLoading ? (
+              <View style={styles.modalLoadingContainer}>
+                <ActivityIndicator size="large" color={COLORS.primary} />
+                <Text style={styles.modalLoadingText}>Запрашиваем урок...</Text>
+              </View>
+            ) : (
+              <>
+                <Text style={styles.modalTitle}>
+                  Какую тему по этому предмету ({track?.subject || 'выбранному предмету'}) ты хочешь изучить?
+                </Text>
+                
+                <Text style={styles.inputLabel}>Тема урока</Text>
+                <TextInput
+                  style={styles.textInput}
+                  onChangeText={setLessonTopic}
+                  value={lessonTopic}
+                  placeholder="Введите тему урока"
+                  placeholderTextColor={COLORS.textSecondary}
+                />
+                
+                <View style={styles.modalButtonsContainer}>
+                  <TouchableOpacity
+                    style={[
+                      styles.modalButton,
+                      styles.modalButtonCancel,
+                      isModalLoading && styles.disabledButton
+                    ]}
+                    onPress={() => setIsModalVisible(false)}
+                    disabled={isModalLoading}
+                  >
+                    <Text style={[styles.modalButtonText, styles.modalButtonCancelText]}>Отмена</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    style={[
+                      styles.modalButton, 
+                      styles.modalButtonSubmit,
+                      isModalLoading && styles.disabledButton
+                    ]}
+                    onPress={handleRequestLesson}
+                    disabled={isModalLoading}
+                  >
+                    <Text style={styles.modalButtonText}>Запросить</Text>
+                  </TouchableOpacity>
+                </View>
+              </>
+            )}
+          </View>
+        </View>
+      </Modal>
     </SafeAreaView>
   );
 };
@@ -725,6 +841,100 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: 'bold',
     color: COLORS.white,
+  },
+  secondaryButton: {
+    backgroundColor: COLORS.secondary,
+    borderRadius: 12,
+    paddingVertical: 14,
+    alignItems: 'center',
+    marginBottom: 12,
+  },
+  // Modal Styles
+  modalOverlay: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+  },
+  modalContainer: {
+    width: '90%',
+    backgroundColor: COLORS.white,
+    borderRadius: 16,
+    padding: 20,
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.25,
+    shadowRadius: 4,
+    elevation: 5,
+  },
+  modalTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: COLORS.text,
+    marginBottom: 16,
+    textAlign: 'center',
+  },
+  inputLabel: {
+    fontSize: 14,
+    color: COLORS.textSecondary,
+    alignSelf: 'flex-start',
+    marginBottom: 6,
+    marginLeft: 4, // to align with text input border
+  },
+  textInput: {
+    width: '100%',
+    height: 48,
+    borderColor: COLORS.border,
+    borderWidth: 1,
+    borderRadius: 8,
+    paddingHorizontal: 12,
+    marginBottom: 20,
+    fontSize: 16,
+    color: COLORS.text,
+  },
+  modalButtonsContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    width: '100%',
+  },
+  modalButton: {
+    flex: 1,
+    paddingVertical: 12,
+    borderRadius: 8,
+    alignItems: 'center',
+    marginHorizontal: 5,
+  },
+  modalButtonCancel: {
+    backgroundColor: COLORS.border,
+  },
+  modalButtonCancelText: {
+    color: COLORS.textSecondary,
+    fontWeight: '500',
+  },
+  modalButtonSubmit: {
+    backgroundColor: COLORS.primary,
+  },
+  modalButtonText: {
+    color: COLORS.white,
+    fontSize: 16,
+    fontWeight: 'bold',
+  },
+  modalLoadingContainer: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 20,
+  },
+  modalLoadingText: {
+    marginTop: 10,
+    fontSize: 16,
+    color: COLORS.textSecondary,
+  },
+  disabledButton: {
+    opacity: 0.5,
   },
 });
 

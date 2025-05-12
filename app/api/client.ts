@@ -2,6 +2,7 @@ import axios from 'axios';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { LearningTrack } from '../models/LearningAgents';
 import { Track } from '../types/track';
+import { Lesson } from '../types/lesson';
 
 // Базовый URL API из переменных окружения или резервный URL
 const API_BASE_URL = process.env.EXPO_PUBLIC_API_BASE_URL || 'https://j0cl9aplcsh5.share.zrok.io';
@@ -204,10 +205,21 @@ export default {
       api.get<Track[]>('/api/tracks'),
     getById: (trackId: string) => 
       api.get<Track>(`/api/tracks/${trackId}`),
+    requestLesson: (trackId: string, topic: string) =>
+      api.post<{ lessonId: string }>(`/api/tracks/${trackId}/requestLesson`, { 
+        topic
+       }, {
+        timeout: 1000000,
+       }),
     startTrack: (trackId: string) => 
       api.post(`/api/learning/tracks/${trackId}/start`),
     completeLesson: (trackId: string, lessonId: string) => 
       api.post(`/api/learning/tracks/${trackId}/lessons/${lessonId}/complete`),
+  },
+  
+  lessons: {
+    getById: (lessonId: string) =>
+      api.get<Lesson>(`/api/lessons/${lessonId}`),
   },
   
   // AI ассистенты: предметные эксперты
