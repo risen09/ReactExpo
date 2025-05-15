@@ -180,12 +180,6 @@ export default {
       api.post('/api/auth/refresh', { refresh_token: refreshToken }),
   },
 
-  // Профиль пользователя
-  user: {
-    getProfile: () => api.get('/api/user/profile'),
-    updateProfile: (profileData: any) => api.put('/api/user/profile', profileData),
-  },
-
   // Треки обучения
   tracks: {
     getAll: () => api.get<Track[]>('/api/tracks'),
@@ -200,13 +194,19 @@ export default {
           timeout: 1000000,
         }
       ),
-    startTrack: (trackId: string) => api.post(`/api/learning/tracks/${trackId}/start`),
-    completeLesson: (trackId: string, lessonId: string) =>
-      api.post(`/api/learning/tracks/${trackId}/lessons/${lessonId}/complete`),
   },
 
   lessons: {
     getById: (lessonId: string) => api.get<Lesson>(`/api/lessons/${lessonId}`),
+  },
+
+  // GigaChat API
+  gigachat: {
+    new: () => api.post('/api/gigachat/new'),
+    list: () => api.get('/api/gigachat/list'),
+    sendMessage: (chatId: string, message: string) =>
+      api.post(`/api/gigachat/chat/${chatId}`, { message }),
+    getHistory: (chatId: string) => api.get(`/api/gigachat/chat/${chatId}`),
   },
 
   // Общий метод GET
@@ -221,46 +221,4 @@ export default {
   // Общий метод DELETE
   delete: (url: string) => api.delete(url),
 
-  // GigaChat API (убираем mock, добавляем диагностические методы)
-  gigachat: {
-    new: () => api.post('/api/gigachat/new'),
-    list: () => api.get('/api/gigachat/list'),
-    sendMessage: (chatId: string, message: string) =>
-      api.post(`/api/gigachat/chat/${chatId}`, { message }),
-    getHistory: (chatId: string) => api.get(`/api/gigachat/chat/${chatId}`),
-    analyzeSubject: (chatId: string, subject: string, topic?: string) =>
-      api.post(`/api/gigachat/analyze`, { chatId, subject, topic }),
-  },
-
-  // Начальная диагностика
-  initial_diagnostics: {
-    new: () => api.post('/api/initial-diagnostics/new'),
-    get: (chatId: string) => api.get(`/api/initial-diagnostics/${chatId}`),
-    sendMessage: (chatId: string, message: string) =>
-      api.post('/api/initial-diagnostics/sendMessage', {
-        chat_id: chatId,
-        message,
-      }),
-    list: () => api.get('/api/initial-diagnostics'),
-  },
-
-  // Тесты и диагностика
-  tests: {
-    // Существующие методы
-    startInitialTest: (subject: string, topic: string) =>
-      api.post('/api/tests/initial', { subject, topic }),
-    startFullSubjectTest: (subject: string) => api.post('/api/tests/subject', { subject }),
-    getQuestions: (testId: string) => api.get(`/api/tests/${testId}/questions`),
-    submitAnswer: (testId: string, questionId: string, answer: any) =>
-      api.post(`/api/tests/${testId}/questions/${questionId}/answer`, { answer }),
-    getResult: (testId: string) => api.get(`/api/tests/${testId}/result`),
-
-    // Новые методы для работы с тестами
-    generate: (subject: string, topic: string, difficulty: string) =>
-      api.post('/api/tests/generate', { subject, topic, difficulty }),
-    getById: (testId: string) => api.get(`/api/tests/${testId}`),
-    submit: (testId: string, answers: any[]) =>
-      api.post(`/api/tests/${testId}/submit`, { answers }),
-    getRecommendations: (testId: string) => api.get(`/api/tests/${testId}/recommendations`),
-  },
 };

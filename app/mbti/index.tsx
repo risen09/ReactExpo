@@ -150,7 +150,7 @@ export default function PersonalityTest() {
   // Navigate to test results
   const viewResults = () => {
     if (personalityType) {
-      router.push(`/test-result?type=${personalityType}`);
+      router.push(`./results?type=${personalityType}`);
     }
   };
 
