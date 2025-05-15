@@ -1,3 +1,6 @@
+import { MaterialIcons } from '@expo/vector-icons';
+import { Link, router } from 'expo-router';
+import { StatusBar } from 'expo-status-bar';
 import React, { useState } from 'react';
 import {
   View,
@@ -12,10 +15,8 @@ import {
   Alert,
   ScrollView,
 } from 'react-native';
-import { Link, router } from 'expo-router';
-import { useAuth } from '../hooks/useAuth';
-import { MaterialIcons } from '@expo/vector-icons';
-import { StatusBar } from 'expo-status-bar';
+
+import { useAuth } from '../../hooks/useAuth';
 
 export default function RegisterScreen() {
   const [name, setName] = useState('');
@@ -51,7 +52,7 @@ export default function RegisterScreen() {
 
     try {
       console.log('Начинаем процесс регистрации...');
-      
+
       // Вызываем метод регистрации из хука useAuth
       // После регистрации хук useAuth сам перенаправит пользователя на страницу входа или панель приложения
       await register({
@@ -60,36 +61,36 @@ export default function RegisterScreen() {
         password,
         // Добавляем gender и age с значениями по умолчанию, так как они требуются API
         gender: 'other',
-        age: 0
+        age: 0,
       });
-      
+
       console.log('Регистрация завершена, ожидается редирект...');
     } catch (err) {
       // Ошибка уже будет обработана внутри хука useAuth, но на всякий случай обрабатываем её и здесь
       console.error('Ошибка регистрации в компоненте:', err);
-      
+
       // Отображаем детали ошибки
       let errorMessage = error || 'Произошла ошибка при регистрации.';
-      
+
       if (err instanceof Error) {
         errorMessage = err.message;
       }
-      
+
       // Показываем диалог с ошибкой и опцией перехода на экран входа вручную
       Alert.alert(
-        'Ошибка регистрации', 
+        'Ошибка регистрации',
         `${errorMessage}\n\nВозможно, учетная запись уже создана. Хотите перейти на экран входа?`,
         [
-          { 
-            text: 'Перейти на вход', 
+          {
+            text: 'Перейти на вход',
             onPress: () => {
               router.replace({
                 pathname: '/(auth)/login',
-                params: { email: email.trim().toLowerCase() }
+                params: { email: email.trim().toLowerCase() },
               });
-            }
+            },
           },
-          { text: 'Остаться', style: 'cancel' }
+          { text: 'Остаться', style: 'cancel' },
         ]
       );
     }
@@ -103,8 +104,8 @@ export default function RegisterScreen() {
       <StatusBar style="dark" />
       <ScrollView contentContainerStyle={styles.container}>
         <View style={styles.header}>
-          <Image 
-            source={require('../../assets/images/logo.png')} 
+          <Image
+            source={require('../../assets/images/logo.png')}
             style={styles.logo}
             resizeMode="contain"
           />
@@ -147,10 +148,7 @@ export default function RegisterScreen() {
               onChangeText={setPassword}
               secureTextEntry={!showPassword}
             />
-            <TouchableOpacity 
-              style={styles.eyeIcon} 
-              onPress={() => setShowPassword(!showPassword)}
-            >
+            <TouchableOpacity style={styles.eyeIcon} onPress={() => setShowPassword(!showPassword)}>
               <MaterialIcons
                 name={showPassword ? 'visibility' : 'visibility-off'}
                 size={20}
@@ -168,8 +166,8 @@ export default function RegisterScreen() {
               onChangeText={setConfirmPassword}
               secureTextEntry={!showConfirmPassword}
             />
-            <TouchableOpacity 
-              style={styles.eyeIcon} 
+            <TouchableOpacity
+              style={styles.eyeIcon}
               onPress={() => setShowConfirmPassword(!showConfirmPassword)}
             >
               <MaterialIcons
@@ -297,4 +295,4 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     marginLeft: 4,
   },
-}); 
+});

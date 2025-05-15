@@ -1,6 +1,6 @@
+import { useRoute, useNavigation } from '@react-navigation/native';
 import React from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, ScrollView } from 'react-native';
-import { useRoute, useNavigation } from '@react-navigation/native';
 
 // Заглушка для экрана создания трека обучения
 // В полной реализации здесь будет интерфейс для создания трека
@@ -14,10 +14,10 @@ interface CreateTrackScreenParams {
 export const CreateTrackScreen = () => {
   const route = useRoute();
   const navigation = useNavigation();
-  
+
   // Получаем параметры из навигации
   const { subject, topic, suggestedTopics = [] } = route.params as CreateTrackScreenParams;
-  
+
   return (
     <ScrollView style={styles.scrollView}>
       <View style={styles.container}>
@@ -25,24 +25,27 @@ export const CreateTrackScreen = () => {
           <Text style={styles.title}>Создание трека обучения</Text>
           <Text style={styles.subtitle}>Предмет: {subject}</Text>
           <Text style={styles.subtitle}>Основная тема: {topic}</Text>
-          
+
           {suggestedTopics.length > 0 && (
             <>
               <Text style={styles.sectionTitle}>Рекомендуемые темы для изучения:</Text>
               {suggestedTopics.map((suggestedTopic, index) => (
                 <View key={index} style={styles.topicItem}>
-                  <Text style={styles.topicText}>{index + 1}. {suggestedTopic}</Text>
+                  <Text style={styles.topicText}>
+                    {index + 1}. {suggestedTopic}
+                  </Text>
                 </View>
               ))}
             </>
           )}
-          
+
           <Text style={styles.note}>
-            (Это временная заглушка. В полной реализации здесь будет интерфейс для настройки трека обучения.)
+            (Это временная заглушка. В полной реализации здесь будет интерфейс для настройки трека
+            обучения.)
           </Text>
         </View>
-        
-        <TouchableOpacity 
+
+        <TouchableOpacity
           style={styles.button}
           onPress={() => {
             // @ts-ignore
@@ -51,8 +54,8 @@ export const CreateTrackScreen = () => {
         >
           <Text style={styles.buttonText}>Создать трек и перейти к трекам обучения</Text>
         </TouchableOpacity>
-        
-        <TouchableOpacity 
+
+        <TouchableOpacity
           style={[styles.button, styles.secondaryButton]}
           onPress={() => {
             // @ts-ignore
@@ -150,4 +153,4 @@ const styles = StyleSheet.create({
   },
 });
 
-export default CreateTrackScreen; 
+export default CreateTrackScreen;

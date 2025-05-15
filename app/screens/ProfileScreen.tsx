@@ -1,17 +1,7 @@
-import React, { useState, useEffect } from 'react';
+import * as ImagePicker from 'expo-image-picker';
+import { LinearGradient } from 'expo-linear-gradient';
+import { router } from 'expo-router';
 import {
-  View,
-  Text,
-  StyleSheet,
-  TouchableOpacity,
-  Image,
-  Switch,
-  ScrollView,
-  TextInput,
-  Alert,
-  ActivityIndicator,
-} from 'react-native';
-import { 
   User,
   Settings,
   LogOut,
@@ -34,30 +24,41 @@ import {
   Camera,
   Brain,
 } from 'lucide-react-native';
-import * as ImagePicker from 'expo-image-picker';
-import { router } from 'expo-router';
-import { usePersonalityTest } from '../hooks/usePersonalityTest';
-import { mbtiDescriptions } from '../types/personalityTest';
-import { LinearGradient } from 'expo-linear-gradient';
-import { useAuth } from '../hooks/useAuth';
-import GenderPickerModal from '../components/GenderPickerModal';
-import LanguagePickerModal from '../components/LanguagePickerModal';
-import ThemePickerModal from '../components/ThemePickerModal';
-import LogoutConfirmModal from '../components/LogoutConfirmModal';
-import AvatarPickerModal from '../components/AvatarPickerModal';
+import React, { useState, useEffect } from 'react';
+import {
+  View,
+  Text,
+  StyleSheet,
+  TouchableOpacity,
+  Image,
+  Switch,
+  ScrollView,
+  TextInput,
+  Alert,
+  ActivityIndicator,
+} from 'react-native';
+
+import AvatarPickerModal from '../../components/AvatarPickerModal';
+import GenderPickerModal from '../../components/GenderPickerModal';
+import LanguagePickerModal from '../../components/LanguagePickerModal';
+import LogoutConfirmModal from '../../components/LogoutConfirmModal';
+import ThemePickerModal from '../../components/ThemePickerModal';
+import { useAuth } from '../../hooks/useAuth';
+import { usePersonalityTest } from '../../hooks/usePersonalityTest';
+import { mbtiDescriptions } from '../../types/personalityTest';
 
 // Общая цветовая палитра приложения
 const COLORS = {
-  primary: '#5B67CA',     // Основной синий/фиолетовый
-  secondary: '#43C0B4',   // Бирюзовый
-  accent1: '#F98D51',     // Оранжевый
-  accent2: '#EC575B',     // Красный
-  accent3: '#FFCA42',     // Желтый
-  background: '#F2F5FF',  // Светлый фон
-  card: '#FFFFFF',        // Белый для карточек
-  text: '#25335F',        // Основной текст
-  textSecondary: '#7F8BB7',  // Вторичный текст
-  border: '#EAEDF5'       // Граница
+  primary: '#5B67CA', // Основной синий/фиолетовый
+  secondary: '#43C0B4', // Бирюзовый
+  accent1: '#F98D51', // Оранжевый
+  accent2: '#EC575B', // Красный
+  accent3: '#FFCA42', // Желтый
+  background: '#F2F5FF', // Светлый фон
+  card: '#FFFFFF', // Белый для карточек
+  text: '#25335F', // Основной текст
+  textSecondary: '#7F8BB7', // Вторичный текст
+  border: '#EAEDF5', // Граница
 };
 
 // API конфигурация
@@ -88,16 +89,16 @@ const ProfileScreen: React.FC = () => {
     notifications: true,
     soundEffects: true,
   });
-  
+
   // Определяем объект с путями к изображениям
-  const avatarMap: {[key: string]: any} = {
+  const avatarMap: { [key: string]: any } = {
     'photo_2025-04-05_15-03-42.jpg': require('../../images/photo_2025-04-05_15-03-42.jpg'),
     'photo_2025-04-05_15-04-48.jpg': require('../../images/photo_2025-04-05_15-04-48.jpg'),
     'photo_2025-04-05_15-20-56.jpg': require('../../images/photo_2025-04-05_15-20-56.jpg'),
   };
-  
+
   const { getUserTestResults } = usePersonalityTest();
-  
+
   const [image, setImage] = useState<string | null>(null);
   const [showGenderPicker, setShowGenderPicker] = useState(false);
   const [showLanguagePicker, setShowLanguagePicker] = useState(false);
@@ -105,16 +106,23 @@ const ProfileScreen: React.FC = () => {
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [showAvatarPicker, setShowAvatarPicker] = useState(false);
-  
+
   useEffect(() => {
     if (user) {
       console.log('=== PROFILE DEBUG ===');
-      console.log('User data:', JSON.stringify({
-        ...user,
-        email: user.email ? `${user.email.substring(0, 3)}***` : null // маскируем email для безопасности
-      }, null, 2));
+      console.log(
+        'User data:',
+        JSON.stringify(
+          {
+            ...user,
+            email: user.email ? `${user.email.substring(0, 3)}***` : null, // маскируем email для безопасности
+          },
+          null,
+          2
+        )
+      );
       console.log('Personality type:', user.personalityType || 'Not set');
-      
+
       setFormData({
         nickname: user.nickname || '',
         name: user.name || '',
@@ -125,15 +133,22 @@ const ProfileScreen: React.FC = () => {
       });
       setAvatar(user.avatar || null);
       setImage(user.profileImage || null);
-      
+
       if (user.settings) {
         setSettings(user.settings);
       }
-      
-      console.log('FormData after update:', JSON.stringify({
-        ...formData, 
-        email: formData.email ? `${formData.email.substring(0, 3)}***` : null
-      }, null, 2));
+
+      console.log(
+        'FormData after update:',
+        JSON.stringify(
+          {
+            ...formData,
+            email: formData.email ? `${formData.email.substring(0, 3)}***` : null,
+          },
+          null,
+          2
+        )
+      );
       console.log('personalityType in formData:', formData.personalityType || 'Not set');
       console.log('=== END PROFILE DEBUG ===');
     }
@@ -150,19 +165,16 @@ const ProfileScreen: React.FC = () => {
       Alert.alert('Ошибка', 'Пожалуйста, заполните обязательные поля: никнейм, имя и email');
       return;
     }
-    
+
     setIsSaving(true);
-    
+
     try {
       // Приводим gender к нужному типу
-      const gender = (
-        formData.gender === 'male' || 
-        formData.gender === 'female' || 
-        formData.gender === 'other'
-      ) 
-        ? formData.gender as 'male' | 'female' | 'other' 
-        : 'other';
-        
+      const gender =
+        formData.gender === 'male' || formData.gender === 'female' || formData.gender === 'other'
+          ? (formData.gender as 'male' | 'female' | 'other')
+          : 'other';
+
       await updateProfile({
         name: formData.name,
         email: formData.email,
@@ -174,7 +186,7 @@ const ProfileScreen: React.FC = () => {
         profileImage: image || undefined,
         settings,
       });
-      
+
       Alert.alert('Успешно', 'Профиль успешно обновлен');
       setIsEditing(false); // Выходим из режима редактирования после сохранения
     } catch (err) {
@@ -202,13 +214,13 @@ const ProfileScreen: React.FC = () => {
 
   const handleSelectAvatar = (avatarKey: string) => {
     console.log('handleSelectAvatar вызван с:', avatarKey);
-    
+
     try {
       // Проверяем, есть ли изображение для данного ключа
       if (avatarMap[avatarKey]) {
         console.log('Установка аватара из локальных изображений:', avatarKey);
         setAvatar(avatarKey);
-        
+
         if (!isEditing) {
           // Если не в режиме редактирования, сразу сохраняем аватар
           updateProfile({ avatar: avatarKey });
@@ -217,7 +229,7 @@ const ProfileScreen: React.FC = () => {
         // Если ключ не найден в мапе, то это может быть URI из галереи
         console.log('Установка аватара из галереи:', avatarKey);
         setAvatar(avatarKey);
-        
+
         if (!isEditing) {
           updateProfile({ avatar: avatarKey });
         }
@@ -243,10 +255,22 @@ const ProfileScreen: React.FC = () => {
   ];
 
   const themes = [
-    { id: 'light', name: 'Светлая', icon: <Sun size={22} color={settings.theme === 'light' ? COLORS.primary : COLORS.textSecondary} /> },
-    { id: 'dark', name: 'Темная', icon: <Moon size={22} color={settings.theme === 'dark' ? COLORS.primary : COLORS.textSecondary} /> },
+    {
+      id: 'light',
+      name: 'Светлая',
+      icon: (
+        <Sun size={22} color={settings.theme === 'light' ? COLORS.primary : COLORS.textSecondary} />
+      ),
+    },
+    {
+      id: 'dark',
+      name: 'Темная',
+      icon: (
+        <Moon size={22} color={settings.theme === 'dark' ? COLORS.primary : COLORS.textSecondary} />
+      ),
+    },
   ];
-  
+
   const handleLogout = async () => {
     try {
       await logout();
@@ -256,60 +280,52 @@ const ProfileScreen: React.FC = () => {
     }
   };
 
-  // Отдельная функция для обработки нажатия на тег типа личности в шапке
-  const handleHeaderPersonalityTagPress = () => {
-    // В шапке показывается тип только если он уже определен,
-    // поэтому всегда переходим на страницу результатов
-    if (formData.personalityType) {
-      router.push(`/test-result?type=${formData.personalityType}`);
-    }
-  };
-
   // Функция для навигации к тесту личности
   const navigateToPersonalityTest = () => {
-    router.push('/personality-test');
+    router.push('/mbti');
   };
 
   // Функция для навигации к результатам теста
   const navigateToTestResults = () => {
     if (formData.personalityType) {
-      router.push(`/test-result?type=${formData.personalityType}`);
+      router.push(`/mbti/results?type=${formData.personalityType}`);
+      // router.push(`/test-result?type=${formData.personalityType}`);
     }
   };
 
   const getPersonalityTypeName = () => {
     // Расширенный список типов личности для правильного отображения
-    const types: {[key: string]: string} = {
+    const types: { [key: string]: string } = {
       // Основные 4 типа
-      'analytical': 'Аналитический тип',
-      'creative': 'Креативный тип',
-      'social': 'Социальный тип',
-      'practical': 'Практический тип',
-      
+      analytical: 'Аналитический тип',
+      creative: 'Креативный тип',
+      social: 'Социальный тип',
+      practical: 'Практический тип',
+
       // MBTI типы (16 типов)
-      'INTJ': 'Стратег (INTJ)',
-      'INTP': 'Мыслитель (INTP)',
-      'ENTJ': 'Командир (ENTJ)',
-      'ENTP': 'Изобретатель (ENTP)',
-      'INFJ': 'Советник (INFJ)',
-      'INFP': 'Посредник (INFP)',
-      'ENFJ': 'Протагонист (ENFJ)',
-      'ENFP': 'Борец (ENFP)',
-      'ISTJ': 'Логистик (ISTJ)',
-      'ISFJ': 'Защитник (ISFJ)',
-      'ESTJ': 'Руководитель (ESTJ)',
-      'ESFJ': 'Консул (ESFJ)',
-      'ISTP': 'Виртуоз (ISTP)',
-      'ISFP': 'Артист (ISFP)',
-      'ESTP': 'Делец (ESTP)',
-      'ESFP': 'Развлекатель (ESFP)',
+      INTJ: 'Стратег (INTJ)',
+      INTP: 'Мыслитель (INTP)',
+      ENTJ: 'Командир (ENTJ)',
+      ENTP: 'Изобретатель (ENTP)',
+      INFJ: 'Советник (INFJ)',
+      INFP: 'Посредник (INFP)',
+      ENFJ: 'Протагонист (ENFJ)',
+      ENFP: 'Борец (ENFP)',
+      ISTJ: 'Логистик (ISTJ)',
+      ISFJ: 'Защитник (ISFJ)',
+      ESTJ: 'Руководитель (ESTJ)',
+      ESFJ: 'Консул (ESFJ)',
+      ISTP: 'Виртуоз (ISTP)',
+      ISFP: 'Артист (ISFP)',
+      ESTP: 'Делец (ESTP)',
+      ESFP: 'Развлекатель (ESFP)',
     };
-    
+
     // Проверяем, есть ли тип в списке известных типов
     if (formData.personalityType && types[formData.personalityType]) {
       return types[formData.personalityType];
     }
-    
+
     // Если точного совпадения нет, возвращаем сам тип (чтобы ничего не потерялось)
     return formData.personalityType ? `Тип: ${formData.personalityType}` : 'Не определен';
   };
@@ -321,24 +337,24 @@ const ProfileScreen: React.FC = () => {
   };
 
   const getLanguageName = () => {
-    const languages: {[key: string]: string} = {
-      'ru': 'Русский',
-      'en': 'English',
-      'es': 'Español',
-      'fr': 'Français',
-      'de': 'Deutsch',
+    const languages: { [key: string]: string } = {
+      ru: 'Русский',
+      en: 'English',
+      es: 'Español',
+      fr: 'Français',
+      de: 'Deutsch',
     };
-    
+
     return languages[settings.language] || 'Русский';
   };
 
   const getThemeName = () => {
-    const themes: {[key: string]: string} = {
-      'light': 'Светлая',
-      'dark': 'Темная',
-      'system': 'Системная',
+    const themes: { [key: string]: string } = {
+      light: 'Светлая',
+      dark: 'Темная',
+      system: 'Системная',
     };
-    
+
     return themes[settings.theme] || 'Светлая';
   };
 
@@ -346,23 +362,23 @@ const ProfileScreen: React.FC = () => {
   const pickImage = () => {
     setShowAvatarPicker(true);
   };
-  
+
   // Функция для выбора изображения из галереи
   const selectAvatarFromGallery = async () => {
     const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
-    
+
     if (status !== 'granted') {
       Alert.alert('Ошибка', 'Для доступа к галерее необходимо предоставить разрешение');
       return;
     }
-    
-    let result = await ImagePicker.launchImageLibraryAsync({
+
+    const result = await ImagePicker.launchImageLibraryAsync({
       mediaTypes: ImagePicker.MediaTypeOptions.Images,
       allowsEditing: true,
       aspect: [1, 1],
       quality: 0.7,
     });
-    
+
     if (!result.canceled) {
       const newAvatar = result.assets[0].uri;
       handleSelectAvatar(newAvatar);
@@ -382,10 +398,7 @@ const ProfileScreen: React.FC = () => {
     return (
       <View style={styles.errorContainer}>
         <Text style={styles.errorText}>Пользователь не авторизован</Text>
-        <TouchableOpacity 
-          style={styles.loginButton}
-          onPress={() => router.replace('/login')}
-        >
+        <TouchableOpacity style={styles.loginButton} onPress={() => router.replace('/login')}>
           <Text style={styles.loginButtonText}>Войти</Text>
         </TouchableOpacity>
       </View>
@@ -405,16 +418,10 @@ const ProfileScreen: React.FC = () => {
             {avatar ? (
               avatar.includes('.jpg') || avatar.includes('.png') ? (
                 // Используем локальные изображения из мапы
-                <Image 
-                  source={avatarMap[avatar]}
-                  style={styles.avatar} 
-                />
+                <Image source={avatarMap[avatar]} style={styles.avatar} />
               ) : (
                 // Используем URI из галереи
-                <Image 
-                  source={{ uri: avatar }} 
-                  style={styles.avatar} 
-                />
+                <Image source={{ uri: avatar }} style={styles.avatar} />
               )
             ) : (
               <View style={styles.profileImagePlaceholder}>
@@ -428,7 +435,10 @@ const ProfileScreen: React.FC = () => {
           <Text style={styles.userName}>{formData.name || 'Ваше имя'}</Text>
           <Text style={styles.userNickname}>@{formData.nickname || 'nickname'}</Text>
           {formData.personalityType && (
-            <TouchableOpacity style={styles.personalityTypeTag} onPress={handleHeaderPersonalityTagPress}>
+            <TouchableOpacity
+              style={styles.personalityTypeTag}
+              onPress={navigateToTestResults}
+            >
               <Brain size={16} color="#FFFFFF" style={styles.personalityTypeIcon} />
               <Text style={styles.personalityTypeText}>{getPersonalityTypeName()}</Text>
             </TouchableOpacity>
@@ -440,112 +450,124 @@ const ProfileScreen: React.FC = () => {
         {isEditing ? (
           <View style={styles.editFormContainer}>
             <Text style={styles.editFormTitle}>Редактирование профиля</Text>
-            
+
             <View style={styles.inputGroup}>
               <Text style={styles.inputLabel}>Имя</Text>
               <View style={styles.inputContainer}>
                 <User size={18} color={COLORS.textSecondary} style={styles.inputIcon} />
-                <TextInput 
+                <TextInput
                   style={styles.input}
                   value={formData.name}
-                  onChangeText={(text) => setFormData({...formData, name: text})}
+                  onChangeText={text => setFormData({ ...formData, name: text })}
                   placeholder="Введите ваше имя"
                 />
               </View>
             </View>
-            
+
             <View style={styles.inputGroup}>
               <Text style={styles.inputLabel}>Никнейм</Text>
               <View style={styles.inputContainer}>
                 <AtSign size={18} color={COLORS.textSecondary} style={styles.inputIcon} />
-                <TextInput 
+                <TextInput
                   style={styles.input}
                   value={formData.nickname}
-                  onChangeText={(text) => setFormData({...formData, nickname: text})}
+                  onChangeText={text => setFormData({ ...formData, nickname: text })}
                   placeholder="Введите никнейм"
                 />
               </View>
             </View>
-            
+
             <View style={styles.inputGroup}>
               <Text style={styles.inputLabel}>Email</Text>
               <View style={styles.inputContainer}>
                 <Mail size={18} color={COLORS.textSecondary} style={styles.inputIcon} />
-                <TextInput 
+                <TextInput
                   style={styles.input}
                   value={formData.email}
-                  onChangeText={(text) => setFormData({...formData, email: text})}
+                  onChangeText={text => setFormData({ ...formData, email: text })}
                   placeholder="Введите email"
                   keyboardType="email-address"
                   autoCapitalize="none"
                 />
               </View>
             </View>
-            
+
             <View style={styles.inputGroup}>
               <Text style={styles.inputLabel}>Возраст</Text>
               <View style={styles.inputContainer}>
                 <Calendar size={18} color={COLORS.textSecondary} style={styles.inputIcon} />
-                <TextInput 
+                <TextInput
                   style={styles.input}
                   value={formData.age}
-                  onChangeText={(text) => setFormData({...formData, age: text})}
+                  onChangeText={text => setFormData({ ...formData, age: text })}
                   placeholder="Введите возраст"
                   keyboardType="number-pad"
                 />
               </View>
             </View>
-            
+
             <View style={styles.inputGroup}>
               <Text style={styles.inputLabel}>Пол</Text>
               <View style={styles.genderContainer}>
-                <TouchableOpacity 
+                <TouchableOpacity
                   style={[
-                    styles.genderOption, 
-                    formData.gender === 'male' && styles.activeGenderOption
+                    styles.genderOption,
+                    formData.gender === 'male' && styles.activeGenderOption,
                   ]}
-                  onPress={() => setFormData({...formData, gender: 'male'})}
+                  onPress={() => setFormData({ ...formData, gender: 'male' })}
                 >
-                  <Text style={[
-                    styles.genderText,
-                    formData.gender === 'male' && styles.activeGenderText
-                  ]}>Мужской</Text>
+                  <Text
+                    style={[
+                      styles.genderText,
+                      formData.gender === 'male' && styles.activeGenderText,
+                    ]}
+                  >
+                    Мужской
+                  </Text>
                 </TouchableOpacity>
-                <TouchableOpacity 
+                <TouchableOpacity
                   style={[
-                    styles.genderOption, 
-                    formData.gender === 'female' && styles.activeGenderOption
+                    styles.genderOption,
+                    formData.gender === 'female' && styles.activeGenderOption,
                   ]}
-                  onPress={() => setFormData({...formData, gender: 'female'})}
+                  onPress={() => setFormData({ ...formData, gender: 'female' })}
                 >
-                  <Text style={[
-                    styles.genderText,
-                    formData.gender === 'female' && styles.activeGenderText
-                  ]}>Женский</Text>
+                  <Text
+                    style={[
+                      styles.genderText,
+                      formData.gender === 'female' && styles.activeGenderText,
+                    ]}
+                  >
+                    Женский
+                  </Text>
                 </TouchableOpacity>
-                <TouchableOpacity 
+                <TouchableOpacity
                   style={[
-                    styles.genderOption, 
-                    formData.gender === 'other' && styles.activeGenderOption
+                    styles.genderOption,
+                    formData.gender === 'other' && styles.activeGenderOption,
                   ]}
-                  onPress={() => setFormData({...formData, gender: 'other'})}
+                  onPress={() => setFormData({ ...formData, gender: 'other' })}
                 >
-                  <Text style={[
-                    styles.genderText,
-                    formData.gender === 'other' && styles.activeGenderText
-                  ]}>Другой</Text>
+                  <Text
+                    style={[
+                      styles.genderText,
+                      formData.gender === 'other' && styles.activeGenderText,
+                    ]}
+                  >
+                    Другой
+                  </Text>
                 </TouchableOpacity>
               </View>
             </View>
-            
+
             <View style={styles.editButtonsContainer}>
-              <TouchableOpacity 
+              <TouchableOpacity
                 style={[styles.editButton, styles.editCancelButton]}
                 onPress={handleCancelEdit}
               >
                 <Text style={styles.editCancelButtonText}>Отмена</Text>
               </TouchableOpacity>
-              <TouchableOpacity 
+              <TouchableOpacity
                 style={[styles.editButton, styles.editSaveButton]}
                 onPress={handleSaveProfile}
               >
@@ -557,11 +579,8 @@ const ProfileScreen: React.FC = () => {
           <>
             <View style={styles.settingsSection}>
               <Text style={styles.sectionTitle}>Личный профиль</Text>
-              
-              <TouchableOpacity 
-                style={styles.settingItem}
-                onPress={() => setIsEditing(true)}
-              >
+
+              <TouchableOpacity style={styles.settingItem} onPress={() => setIsEditing(true)}>
                 <View style={styles.settingIconContainer}>
                   <User size={20} color={COLORS.primary} />
                 </View>
@@ -570,8 +589,8 @@ const ProfileScreen: React.FC = () => {
                 </View>
                 <ChevronRight size={20} color={COLORS.textSecondary} />
               </TouchableOpacity>
-              
-              <TouchableOpacity 
+
+              <TouchableOpacity
                 style={styles.settingItem}
                 onPress={() => router.push('/change-password')}
               >
@@ -583,7 +602,7 @@ const ProfileScreen: React.FC = () => {
                 </View>
                 <ChevronRight size={20} color={COLORS.textSecondary} />
               </TouchableOpacity>
-              
+
               <View style={styles.settingItem}>
                 <View style={[styles.settingIconContainer, { backgroundColor: '#E8F0FB' }]}>
                   <AtSign size={20} color={COLORS.primary} />
@@ -593,7 +612,7 @@ const ProfileScreen: React.FC = () => {
                   <Text style={styles.settingSubtext}>@{formData.nickname}</Text>
                 </View>
               </View>
-              
+
               <View style={styles.settingItem}>
                 <View style={[styles.settingIconContainer, { backgroundColor: '#FFF0E8' }]}>
                   <Mail size={20} color={COLORS.accent1} />
@@ -603,7 +622,7 @@ const ProfileScreen: React.FC = () => {
                   <Text style={styles.settingSubtext}>{formData.email}</Text>
                 </View>
               </View>
-              
+
               <View style={styles.settingItem}>
                 <View style={[styles.settingIconContainer, { backgroundColor: '#E6F8F6' }]}>
                   <Calendar size={20} color={COLORS.secondary} />
@@ -613,14 +632,11 @@ const ProfileScreen: React.FC = () => {
                   <Text style={styles.settingSubtext}>{getAgeText()}</Text>
                 </View>
               </View>
-              
+
               {/* Personality Test Section */}
               {formData.personalityType ? (
                 <View>
-                  <TouchableOpacity 
-                    style={styles.settingItem}
-                    onPress={navigateToTestResults}
-                  >
+                  <TouchableOpacity style={styles.settingItem} onPress={navigateToTestResults}>
                     <View style={[styles.settingIconContainer, { backgroundColor: '#EEF0FF' }]}>
                       <Star size={20} color={COLORS.primary} />
                     </View>
@@ -630,8 +646,8 @@ const ProfileScreen: React.FC = () => {
                     </View>
                     <ChevronRight size={20} color={COLORS.textSecondary} />
                   </TouchableOpacity>
-                  
-                  <TouchableOpacity 
+
+                  <TouchableOpacity
                     style={[styles.settingItem, { paddingTop: 0 }]}
                     onPress={navigateToPersonalityTest}
                   >
@@ -645,10 +661,7 @@ const ProfileScreen: React.FC = () => {
                   </TouchableOpacity>
                 </View>
               ) : (
-                <TouchableOpacity 
-                  style={styles.settingItem}
-                  onPress={navigateToPersonalityTest}
-                >
+                <TouchableOpacity style={styles.settingItem} onPress={navigateToPersonalityTest}>
                   <View style={[styles.settingIconContainer, { backgroundColor: '#EEF0FF' }]}>
                     <Star size={20} color={COLORS.primary} />
                   </View>
@@ -659,8 +672,8 @@ const ProfileScreen: React.FC = () => {
                   <ChevronRight size={20} color={COLORS.textSecondary} />
                 </TouchableOpacity>
               )}
-              
-              <TouchableOpacity 
+
+              <TouchableOpacity
                 style={styles.settingItem}
                 onPress={() => router.push('/achievements' as any)}
               >
@@ -672,7 +685,7 @@ const ProfileScreen: React.FC = () => {
                 </View>
                 <ChevronRight size={20} color={COLORS.textSecondary} />
               </TouchableOpacity>
-              
+
               <TouchableOpacity style={styles.settingItem}>
                 <View style={[styles.settingIconContainer, { backgroundColor: '#FFF0E8' }]}>
                   <BookOpen size={20} color={COLORS.accent1} />
@@ -683,10 +696,10 @@ const ProfileScreen: React.FC = () => {
                 <ChevronRight size={20} color={COLORS.textSecondary} />
               </TouchableOpacity>
             </View>
-            
+
             <View style={styles.settingsSection}>
               <Text style={styles.sectionTitle}>Настройки приложения</Text>
-              
+
               {/* Theme Selection */}
               <View style={styles.settingItem}>
                 <View style={[styles.settingIconContainer, { backgroundColor: '#E6F8F6' }]}>
@@ -696,7 +709,7 @@ const ProfileScreen: React.FC = () => {
                   <Text style={styles.settingText}>Тема оформления</Text>
                 </View>
                 <View style={styles.themeToggleContainer}>
-                  {themes.map((theme) => (
+                  {themes.map(theme => (
                     <TouchableOpacity
                       key={theme.id}
                       style={[
@@ -710,7 +723,7 @@ const ProfileScreen: React.FC = () => {
                   ))}
                 </View>
               </View>
-              
+
               {/* Language Selection */}
               <View style={styles.settingItem}>
                 <View style={[styles.settingIconContainer, { backgroundColor: '#EEF0FF' }]}>
@@ -724,7 +737,7 @@ const ProfileScreen: React.FC = () => {
                 </View>
                 <ChevronRight size={20} color={COLORS.textSecondary} />
               </View>
-              
+
               {/* Notification Toggle */}
               <View style={styles.settingItem}>
                 <View style={[styles.settingIconContainer, { backgroundColor: '#FFF0E8' }]}>
@@ -737,11 +750,11 @@ const ProfileScreen: React.FC = () => {
                   value={settings.notifications}
                   onValueChange={() => toggleSetting('notifications')}
                   trackColor={{ false: COLORS.border, true: COLORS.primary }}
-                  thumbColor={'#FFFFFF'}
+                  thumbColor="#FFFFFF"
                   ios_backgroundColor={COLORS.border}
                 />
               </View>
-              
+
               {/* Sound Toggle */}
               <View style={styles.settingItem}>
                 <View style={[styles.settingIconContainer, { backgroundColor: '#FFF8E8' }]}>
@@ -754,15 +767,15 @@ const ProfileScreen: React.FC = () => {
                   value={settings.soundEffects}
                   onValueChange={() => toggleSetting('soundEffects')}
                   trackColor={{ false: COLORS.border, true: COLORS.primary }}
-                  thumbColor={'#FFFFFF'}
+                  thumbColor="#FFFFFF"
                   ios_backgroundColor={COLORS.border}
                 />
               </View>
             </View>
-            
+
             <View style={styles.settingsSection}>
               <Text style={styles.sectionTitle}>О приложении</Text>
-              
+
               <TouchableOpacity style={styles.settingItem}>
                 <View style={[styles.settingIconContainer, { backgroundColor: '#EEF0FF' }]}>
                   <HelpCircle size={20} color={COLORS.primary} />
@@ -772,7 +785,7 @@ const ProfileScreen: React.FC = () => {
                 </View>
                 <ChevronRight size={20} color={COLORS.textSecondary} />
               </TouchableOpacity>
-              
+
               <TouchableOpacity style={styles.settingItem}>
                 <View style={[styles.settingIconContainer, { backgroundColor: '#E6F8F6' }]}>
                   <Shield size={20} color={COLORS.secondary} />
@@ -783,15 +796,15 @@ const ProfileScreen: React.FC = () => {
                 <ChevronRight size={20} color={COLORS.textSecondary} />
               </TouchableOpacity>
             </View>
-            
-            <TouchableOpacity 
+
+            <TouchableOpacity
               style={styles.logoutButton}
               onPress={() => setShowLogoutConfirm(true)}
             >
               <LogOut size={20} color={COLORS.accent2} />
               <Text style={styles.logoutText}>Выйти из аккаунта</Text>
             </TouchableOpacity>
-            
+
             <Text style={styles.versionText}>Версия 1.0.0</Text>
           </>
         )}
@@ -801,31 +814,31 @@ const ProfileScreen: React.FC = () => {
       <GenderPickerModal
         visible={showGenderPicker}
         onClose={() => setShowGenderPicker(false)}
-        onSelect={(gender) => setFormData({...formData, gender})}
+        onSelect={gender => setFormData({ ...formData, gender })}
         selectedGender={formData.gender}
       />
-      
+
       <LanguagePickerModal
         visible={showLanguagePicker}
         onClose={() => setShowLanguagePicker(false)}
-        onSelect={(language) => setSettings({...settings, language})}
+        onSelect={language => setSettings({ ...settings, language })}
         selectedLanguage={settings.language}
       />
-      
+
       <ThemePickerModal
         visible={showThemePicker}
         onClose={() => setShowThemePicker(false)}
-        onSelect={(theme) => setSettings({...settings, theme})}
+        onSelect={theme => setSettings({ ...settings, theme })}
         selectedTheme={settings.theme}
       />
-      
+
       <LogoutConfirmModal
         visible={showLogoutConfirm}
         onClose={() => setShowLogoutConfirm(false)}
         onConfirm={handleLogout}
         loading={isLoading}
       />
-      
+
       <AvatarPickerModal
         visible={showAvatarPicker}
         onClose={() => setShowAvatarPicker(false)}
@@ -1146,4 +1159,4 @@ const styles = StyleSheet.create({
   },
 });
 
-export default ProfileScreen; 
+export default ProfileScreen;

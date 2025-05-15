@@ -1,34 +1,36 @@
+import { router } from 'expo-router';
+import { StatusBar } from 'expo-status-bar';
+import { Plus } from 'lucide-react-native';
 import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, FlatList, TouchableOpacity, SafeAreaView } from 'react-native';
-import { StatusBar } from 'expo-status-bar';
-import { router } from 'expo-router';
-import { Plus } from 'lucide-react-native';
-import LearningTrackCard from '../../components/LearningTrackCard';
-import { useAuth } from '../../hooks/useAuth';
-import logger from '../../utils/logger';
-import { Track } from '@/app/types/track';
+
+import LearningTrackCard from '../../../components/LearningTrackCard';
+import { useAuth } from '../../../hooks/useAuth';
+import logger from '../../../utils/logger';
+
+import { Track } from '@/types/track';
 
 const API_BASE_URL = process.env.EXPO_PUBLIC_API_BASE_URL;
 
 // Общая цветовая палитра приложения
 const COLORS = {
-  primary: '#5B67CA',     // Основной синий/фиолетовый
-  secondary: '#43C0B4',   // Бирюзовый
-  accent1: '#F98D51',     // Оранжевый
-  accent2: '#EC575B',     // Красный
-  accent3: '#FFCA42',     // Желтый
-  background: '#F2F5FF',  // Светлый фон
-  card: '#FFFFFF',        // Белый для карточек
-  text: '#25335F',        // Основной текст
-  textSecondary: '#7F8BB7',  // Вторичный текст
-  border: '#EAEDF5'       // Граница
+  primary: '#5B67CA', // Основной синий/фиолетовый
+  secondary: '#43C0B4', // Бирюзовый
+  accent1: '#F98D51', // Оранжевый
+  accent2: '#EC575B', // Красный
+  accent3: '#FFCA42', // Желтый
+  background: '#F2F5FF', // Светлый фон
+  card: '#FFFFFF', // Белый для карточек
+  text: '#25335F', // Основной текст
+  textSecondary: '#7F8BB7', // Вторичный текст
+  border: '#EAEDF5', // Граница
 };
 
 export default function LearningTracksScreen() {
   const { token } = useAuth();
   const [tracks, setTracks] = useState<Track[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  
+
   useEffect(() => {
     // Загрузка треков обучения из хранилища или API
     const loadTracks = async () => {
@@ -37,8 +39,8 @@ export default function LearningTracksScreen() {
         const response = await fetch(`${API_BASE_URL}/api/tracks`, {
           method: 'GET',
           headers: {
-            'Authorization': `Bearer ${token}`,
-            'Content-Type': 'application/json'
+            Authorization: `Bearer ${token}`,
+            'Content-Type': 'application/json',
           },
         });
         const data = await response.json();
@@ -47,41 +49,33 @@ export default function LearningTracksScreen() {
         }
 
         setTracks(data);
-        
       } catch (error) {
         logger.error('Error loading learning tracks', error);
       } finally {
         setIsLoading(false);
       }
     };
-    
+
     loadTracks();
   }, []);
-  
-  const handleTrackPress = (track: LearningTrack) => {
+
+  const handleTrackPress = (track: Track) => {
     router.push({
       pathname: `/learning-tracks/${track._id}`,
-      params: { trackId: track._id }
+      params: { trackId: track._id },
     } as any);
   };
-  
+
   const handleCreateTrack = () => {
     // В реальном приложении здесь был бы переход к созданию трека
     // или вызов чат-ассистента
     router.push('/');
   };
-  
+
   return (
     <SafeAreaView style={styles.container}>
       <StatusBar style="dark" />
-      
-      <View style={styles.header}>
-        <Text style={styles.title}>Образовательные треки</Text>
-        <TouchableOpacity style={styles.addButton} onPress={handleCreateTrack}>
-          <Plus size={24} color="#FFFFFF" />
-        </TouchableOpacity>
-      </View>
-      
+
       {isLoading ? (
         <View style={styles.emptyContainer}>
           <Text style={styles.emptyText}>Загрузка треков...</Text>
@@ -92,10 +86,7 @@ export default function LearningTracksScreen() {
           <Text style={styles.emptySubtext}>
             Начните чат с AI-ассистентом, чтобы создать свой первый образовательный трек
           </Text>
-          <TouchableOpacity 
-            style={styles.startChatButton}
-            onPress={() => router.push('/')}
-          >
+          <TouchableOpacity style={styles.startChatButton} onPress={() => router.push('/')}>
             <Text style={styles.startChatButtonText}>Начать чат</Text>
           </TouchableOpacity>
         </View>
@@ -103,12 +94,9 @@ export default function LearningTracksScreen() {
         <FlatList
           data={tracks}
           renderItem={({ item }) => (
-            <LearningTrackCard 
-              track={item} 
-              onPress={() => handleTrackPress(item)}
-            />
+            <LearningTrackCard track={item} onPress={() => handleTrackPress(item)} />
           )}
-          keyExtractor={(item) => item._id}
+          keyExtractor={item => item._id}
           contentContainerStyle={styles.tracksList}
           showsVerticalScrollIndicator={false}
         />
@@ -180,4 +168,4 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '600',
   },
-}); 
+});

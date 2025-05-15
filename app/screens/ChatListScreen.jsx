@@ -1,3 +1,6 @@
+import { MaterialIcons } from '@expo/vector-icons';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import React, { useState, useEffect } from 'react';
 import {
   View,
@@ -7,13 +10,10 @@ import {
   StyleSheet,
   ActivityIndicator,
   SafeAreaView,
-  Alert
+  Alert,
 } from 'react-native';
-import { useNavigation } from '@react-navigation/native';
-import { MaterialIcons } from '@expo/vector-icons';
-import apiClient from '../api/client';
-import AsyncStorage from '@react-native-async-storage/async-storage';
-import { useFocusEffect } from '@react-navigation/native';
+
+import apiClient from '@/api/client';
 
 // Константы цветов для приложения
 const COLORS = {
@@ -33,14 +33,14 @@ const MOCK_CHATS = [
     id: 'mock-1',
     lastMessage: 'Это демо-чат для тестирования. Сервер недоступен.',
     type: 'gigachat',
-    timestamp: new Date().toISOString()
+    timestamp: new Date().toISOString(),
   },
   {
     id: 'mock-2',
     lastMessage: 'Диагностический чат (демо). Сервер недоступен.',
     type: 'diagnostic',
-    createdAt: new Date().toISOString()
-  }
+    createdAt: new Date().toISOString(),
+  },
 ];
 
 const ChatListScreen = () => {
@@ -68,7 +68,7 @@ const ChatListScreen = () => {
   // Функция загрузки списка чатов - оптимизируем с useCallback
   const fetchChats = React.useCallback(async () => {
     if (!isMounted.current) return; // Не выполняем операции, если компонент размонтирован
-    
+
     setIsLoading(true);
     setError(null);
 
@@ -77,14 +77,14 @@ const ChatListScreen = () => {
       let gigaChats = [];
       try {
         const gigaChatsResponse = await apiClient.gigachat.list();
-        
+
         // Проверяем и обрабатываем ответ API
         if (gigaChatsResponse.data && Array.isArray(gigaChatsResponse.data)) {
           gigaChats = gigaChatsResponse.data.map(chat => ({
             id: chat.id || chat._id,
             lastMessage: chat.lastMessage || 'Новый чат',
             type: 'gigachat',
-            timestamp: chat.timestamp || chat.createdAt || new Date().toISOString()
+            timestamp: chat.timestamp || chat.createdAt || new Date().toISOString(),
           }));
         } else if (gigaChatsResponse.data) {
           console.log('Нестандартный формат данных от API:', gigaChatsResponse.data);
@@ -101,18 +101,18 @@ const ChatListScreen = () => {
       let diagnosticChats = [];
       try {
         const diagnosticResponse = await apiClient.initial_diagnostics.list();
-        
+
         // Проверяем и обрабатываем ответ API
         if (diagnosticResponse.data && Array.isArray(diagnosticResponse.data)) {
           diagnosticChats = diagnosticResponse.data.map(chat => ({
             id: chat._id || chat.id,
-            lastMessage: 
-              chat.messages && chat.messages.length > 0 
-                ? chat.messages[chat.messages.length - 1]?.content 
+            lastMessage:
+              chat.messages && chat.messages.length > 0
+                ? chat.messages[chat.messages.length - 1]?.content
                 : 'Новый диагностический чат',
             type: 'diagnostic',
             createdAt: chat.createdAt || new Date().toISOString(),
-            status: chat.status || 'active'
+            status: chat.status || 'active',
           }));
         } else if (diagnosticResponse.data) {
           console.log('Нестандартный формат данных от API:', diagnosticResponse.data);
@@ -156,48 +156,48 @@ const ChatListScreen = () => {
   }, [isOfflineMode, isMounted]);
 
   // Открыть существующий чат
-  const openChat = React.useCallback((item) => {
-    if (isOfflineMode) {
-      Alert.alert(
-        'Автономный режим', 
-        'Сервер временно недоступен. Пожалуйста, проверьте подключение к интернету и попробуйте позже.',
-        [{ text: 'OK' }]
-      );
-      return;
-    }
-    
-    // Проверяем, есть ли у элемента ID
-    if (!item.id) {
-      console.error('Ошибка: отсутствует ID чата', item);
-      Alert.alert('Ошибка', 'Невозможно открыть чат: отсутствует идентификатор.');
-      return;
-    }
-    
-    // Предотвращаем повторные нажатия
-    if (isOpeningChat) return;
-    setIsOpeningChat(true);
-    
-    try {
-      // Очищаем состояние чата и добавляем задержку между операциями
-      AsyncStorage.setItem('current_chat_cleared', 'true')
-        .then(() => {
+  const openChat = React.useCallback(
+    item => {
+      if (isOfflineMode) {
+        Alert.alert(
+          'Автономный режим',
+          'Сервер временно недоступен. Пожалуйста, проверьте подключение к интернету и попробуйте позже.',
+          [{ text: 'OK' }]
+        );
+        return;
+      }
+
+      // Проверяем, есть ли у элемента ID
+      if (!item.id) {
+        console.error('Ошибка: отсутствует ID чата', item);
+        Alert.alert('Ошибка', 'Невозможно открыть чат: отсутствует идентификатор.');
+        return;
+      }
+
+      // Предотвращаем повторные нажатия
+      if (isOpeningChat) return;
+      setIsOpeningChat(true);
+
+      try {
+        // Очищаем состояние чата и добавляем задержку между операциями
+        AsyncStorage.setItem('current_chat_cleared', 'true').then(() => {
           console.log(`Открываем чат типа ${item.type} с ID: ${item.id}`);
-          
+
           // Используем увеличенную задержку
           setTimeout(() => {
             // Простой подход к навигации
             if (item.type === 'diagnostic') {
-              navigation.navigate('DiagnosticChat', { 
+              navigation.navigate('DiagnosticChat', {
                 chatId: item.id,
-                timestamp: new Date().getTime() // Добавляем timestamp для уникальности
+                timestamp: new Date().getTime(), // Добавляем timestamp для уникальности
               });
             } else {
-              navigation.navigate('Chat', { 
+              navigation.navigate('Chat', {
                 chatId: item.id,
-                timestamp: new Date().getTime() // Добавляем timestamp для уникальности
+                timestamp: new Date().getTime(), // Добавляем timestamp для уникальности
               });
             }
-            
+
             // Сбрасываем флаг с задержкой
             setTimeout(() => {
               if (isMounted.current) {
@@ -206,51 +206,55 @@ const ChatListScreen = () => {
             }, 1000);
           }, 500);
         });
-    } catch (err) {
-      console.error('Ошибка при навигации:', err);
-      Alert.alert('Ошибка', 'Не удалось открыть чат. Возможно, возникла проблема с навигацией.');
-      setIsOpeningChat(false);
-    }
-  }, [isOfflineMode, navigation, isOpeningChat, isMounted]);
+      } catch (err) {
+        console.error('Ошибка при навигации:', err);
+        Alert.alert('Ошибка', 'Не удалось открыть чат. Возможно, возникла проблема с навигацией.');
+        setIsOpeningChat(false);
+      }
+    },
+    [isOfflineMode, navigation, isOpeningChat, isMounted]
+  );
 
   // Создание нового диагностического чата
   const createNewDiagnosticChat = React.useCallback(() => {
     if (isOfflineMode) {
       Alert.alert(
-        'Автономный режим', 
+        'Автономный режим',
         'Сервер временно недоступен. Пожалуйста, проверьте подключение к интернету и попробуйте позже.',
         [{ text: 'OK' }]
       );
       return;
     }
-    
+
     // Предотвращаем повторные нажатия
     if (isOpeningChat) return;
     setIsOpeningChat(true);
-    
+
     try {
       console.log('Создаем новый диагностический чат');
-      
+
       // Очищаем состояние чата перед навигацией с увеличенной задержкой
-      AsyncStorage.setItem('current_chat_cleared', 'true')
-        .then(() => {
+      AsyncStorage.setItem('current_chat_cleared', 'true').then(() => {
+        setTimeout(() => {
+          // Используем простую навигацию вместо reset
+          navigation.navigate('DiagnosticChat', {
+            timestamp: new Date().getTime(), // Уникальный параметр
+          });
+
+          // Сбрасываем флаг с задержкой
           setTimeout(() => {
-            // Используем простую навигацию вместо reset
-            navigation.navigate('DiagnosticChat', {
-              timestamp: new Date().getTime() // Уникальный параметр
-            });
-            
-            // Сбрасываем флаг с задержкой
-            setTimeout(() => {
-              if (isMounted.current) {
-                setIsOpeningChat(false);
-              }
-            }, 1000);
-          }, 500);
-        });
+            if (isMounted.current) {
+              setIsOpeningChat(false);
+            }
+          }, 1000);
+        }, 500);
+      });
     } catch (err) {
       console.error('Ошибка при навигации к DiagnosticChat:', err);
-      Alert.alert('Ошибка', 'Не удалось открыть диагностический чат. Пожалуйста, попробуйте позже.');
+      Alert.alert(
+        'Ошибка',
+        'Не удалось открыть диагностический чат. Пожалуйста, попробуйте позже.'
+      );
       setIsOpeningChat(false);
     }
   }, [isOfflineMode, navigation, isOpeningChat, isMounted]);
@@ -259,62 +263,62 @@ const ChatListScreen = () => {
   const createNewChat = React.useCallback(async () => {
     if (isOfflineMode) {
       Alert.alert(
-        'Автономный режим', 
+        'Автономный режим',
         'Сервер временно недоступен. Пожалуйста, проверьте подключение к интернету и попробуйте позже.',
         [{ text: 'OK' }]
       );
       return;
     }
-    
+
     // Предотвращаем повторные нажатия
     if (isOpeningChat) return;
     setIsOpeningChat(true);
-    
+
     try {
       if (!isMounted.current) {
         setIsOpeningChat(false);
         return;
       }
-      
+
       setIsLoading(true);
       console.log('Запрашиваем создание нового чата');
-      
+
       // Очищаем состояние перед запросом API
       await AsyncStorage.setItem('current_chat_cleared', 'true');
-      
+
       // Добавляем искусственную задержку
       await new Promise(resolve => setTimeout(resolve, 300));
-      
+
       const response = await apiClient.gigachat.new();
       console.log('Ответ API на создание чата:', response.data);
-      
+
       // Проверяем, что компонент все еще смонтирован
       if (!isMounted.current) {
         setIsOpeningChat(false);
         setIsLoading(false);
         return;
       }
-      
+
       // Увеличенная задержка перед навигацией
       setTimeout(() => {
         // Проверяем формат ответа
         if (response.data && response.data.chat_id) {
           // Стандартный ответ, как ожидается
-          navigation.navigate('Chat', { 
+          navigation.navigate('Chat', {
             chatId: response.data.chat_id,
-            timestamp: new Date().getTime() // Уникальный параметр
+            timestamp: new Date().getTime(), // Уникальный параметр
           });
         } else if (response.data && response.data._id) {
           // Альтернативный формат ответа от VPS
-          navigation.navigate('Chat', { 
+          navigation.navigate('Chat', {
             chatId: response.data._id,
-            timestamp: new Date().getTime() // Уникальный параметр
+            timestamp: new Date().getTime(), // Уникальный параметр
           });
         } else {
           console.error('Неожиданный формат ответа API:', response.data);
           Alert.alert('Ошибка', 'Получен некорректный ответ от сервера при создании чата.');
         }
-        
+
         // Сбрасываем флаг с задержкой
         setTimeout(() => {
           if (isMounted.current) {
@@ -334,55 +338,58 @@ const ChatListScreen = () => {
   }, [isOfflineMode, navigation, isMounted, isOpeningChat]);
 
   // Рендер пустого списка
-  const renderEmptyList = React.useCallback(() => (
-    <View style={styles.emptyContainer}>
-      <Text style={styles.emptyText}>У вас пока нет чатов.</Text>
-      <Text style={styles.emptySubtext}>Начните новую консультацию!</Text>
-    </View>
-  ), []);
+  const renderEmptyList = React.useCallback(
+    () => (
+      <View style={styles.emptyContainer}>
+        <Text style={styles.emptyText}>У вас пока нет чатов.</Text>
+        <Text style={styles.emptySubtext}>Начните новую консультацию!</Text>
+      </View>
+    ),
+    []
+  );
 
   // Вспомогательная функция форматирования даты
-  const formatChatDate = React.useCallback((dateString) => {
+  const formatChatDate = React.useCallback(dateString => {
     const date = new Date(dateString);
     const now = new Date();
     const diffMs = now - date;
     const diffMinutes = Math.floor(diffMs / (1000 * 60));
-    
+
     if (diffMinutes < 1) return 'Сейчас';
     if (diffMinutes < 60) return `${diffMinutes} мин.`;
-    
+
     const diffHours = Math.floor(diffMinutes / 60);
     if (diffHours < 24) return `${diffHours} ч.`;
-    
+
     const diffDays = Math.floor(diffHours / 24);
     if (diffDays < 7) return `${diffDays} д.`;
-    
+
     return date.toLocaleDateString('ru-RU', { day: '2-digit', month: '2-digit' });
   }, []);
 
   // Рендер элемента чата
-  const renderChatItem = React.useCallback(({ item }) => (
-    <TouchableOpacity
-      style={styles.chatItem}
-      onPress={() => openChat(item)}
-    >
-      <View style={styles.chatInfo}>
-        <Text style={styles.chatTitle} numberOfLines={1}>
-          {item.title || 'Новая консультация'}
-        </Text>
-        <Text style={styles.chatPreview} numberOfLines={1}>
-          {item.lastMessage || 'Нет сообщений'}
-        </Text>
-      </View>
-      <View style={styles.chatMeta}>
-        <Text style={styles.chatDate}>
-          {item.updatedAt ? formatChatDate(item.updatedAt) : 'Сейчас'}
-        </Text>
-        <MaterialIcons name="chevron-right" size={24} color={COLORS.textSecondary} />
-      </View>
-    </TouchableOpacity>
-  ), [openChat]);
-  
+  const renderChatItem = React.useCallback(
+    ({ item }) => (
+      <TouchableOpacity style={styles.chatItem} onPress={() => openChat(item)}>
+        <View style={styles.chatInfo}>
+          <Text style={styles.chatTitle} numberOfLines={1}>
+            {item.title || 'Новая консультация'}
+          </Text>
+          <Text style={styles.chatPreview} numberOfLines={1}>
+            {item.lastMessage || 'Нет сообщений'}
+          </Text>
+        </View>
+        <View style={styles.chatMeta}>
+          <Text style={styles.chatDate}>
+            {item.updatedAt ? formatChatDate(item.updatedAt) : 'Сейчас'}
+          </Text>
+          <MaterialIcons name="chevron-right" size={24} color={COLORS.textSecondary} />
+        </View>
+      </TouchableOpacity>
+    ),
+    [openChat]
+  );
+
   // Показываем индикатор загрузки если идет загрузка
   if (isLoading && chats.length === 0) {
     return (
@@ -399,16 +406,16 @@ const ChatListScreen = () => {
     <SafeAreaView style={styles.container}>
       {/* Кнопки создания новых чатов */}
       <View style={styles.newChatButtons}>
-        <TouchableOpacity 
-          style={[styles.newChatButton, styles.diagnosticButton]} 
+        <TouchableOpacity
+          style={[styles.newChatButton, styles.diagnosticButton]}
           onPress={createNewDiagnosticChat}
         >
           <MaterialIcons name="psychology" size={24} color="#FFFFFF" />
           <Text style={styles.newChatButtonText}>Диагностический чат</Text>
         </TouchableOpacity>
 
-        <TouchableOpacity 
-          style={[styles.newChatButton, styles.regularButton]} 
+        <TouchableOpacity
+          style={[styles.newChatButton, styles.regularButton]}
           onPress={createNewChat}
         >
           <MaterialIcons name="chat" size={24} color="#FFFFFF" />
@@ -430,7 +437,7 @@ const ChatListScreen = () => {
       <FlatList
         data={chats}
         renderItem={renderChatItem}
-        keyExtractor={(item) => 
+        keyExtractor={item =>
           // Обеспечиваем уникальность ключа, добавляя к ID тип чата
           `${item.type}-${item.id}`
         }
@@ -440,7 +447,7 @@ const ChatListScreen = () => {
         onRefresh={fetchChats}
         refreshing={isLoading && chats.length > 0}
         // Отключаем множественное обновление
-        removeClippedSubviews={true}
+        removeClippedSubviews
         maxToRenderPerBatch={10}
         updateCellsBatchingPeriod={50}
         windowSize={5}
@@ -571,4 +578,4 @@ const styles = StyleSheet.create({
   },
 });
 
-export default ChatListScreen; 
+export default ChatListScreen;

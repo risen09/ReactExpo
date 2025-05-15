@@ -1,24 +1,19 @@
-import React, { useState } from 'react';
 import { Tabs } from 'expo-router';
-import { 
-  BookOpen, 
-  MessageCircle, 
-  User, 
-  Home,
-  AlignRight
-} from 'lucide-react-native';
+import { BookOpen, MessageCircle, User, Home, AlignRight } from 'lucide-react-native';
+import React, { useState } from 'react';
 import { View, StyleSheet, TouchableOpacity } from 'react-native';
-import BurgerMenu from '../components/BurgerMenu';
+
+import BurgerMenu from '../../components/BurgerMenu';
 
 const COLORS = {
-  primary: '#5B67CA',     // Основной синий/фиолетовый
-  secondary: '#43C0B4',   // Бирюзовый
-  accent1: '#F98D51',     // Оранжевый
-  accent2: '#EC575B',     // Красный
-  background: '#F2F5FF',  // Светлый фон
-  text: '#25335F',        // Основной текст
-  textSecondary: '#7F8BB7',  // Вторичный текст
-  border: '#EAEDF5'       // Граница
+  primary: '#5B67CA', // Основной синий/фиолетовый
+  secondary: '#43C0B4', // Бирюзовый
+  accent1: '#F98D51', // Оранжевый
+  accent2: '#EC575B', // Красный
+  background: '#F2F5FF', // Светлый фон
+  text: '#25335F', // Основной текст
+  textSecondary: '#7F8BB7', // Вторичный текст
+  border: '#EAEDF5', // Граница
 };
 
 export default function TabLayout() {
@@ -30,11 +25,8 @@ export default function TabLayout() {
 
   return (
     <>
-      <BurgerMenu 
-        visible={menuVisible} 
-        onClose={() => setMenuVisible(false)} 
-      />
-      
+      <BurgerMenu visible={menuVisible} onClose={() => setMenuVisible(false)} />
+
       <Tabs
         screenOptions={{
           headerShown: true,
@@ -65,18 +57,18 @@ export default function TabLayout() {
             fontSize: 12,
             fontWeight: '500',
           },
-          headerRight: () => (
-            <TouchableOpacity onPress={toggleMenu} style={styles.headerRight}>
-              <AlignRight size={24} color={COLORS.text} />
-            </TouchableOpacity>
-          ),
-        }}>
+          // headerRight: () => (
+          //   <TouchableOpacity onPress={toggleMenu} style={styles.headerRight}>
+          //     <AlignRight size={24} color={COLORS.text} />
+          //   </TouchableOpacity>
+          // ),
+        }}
+      >
         <Tabs.Screen
           name="index"
           options={{
             title: 'Главная',
             tabBarIcon: ({ size, color }) => <Home size={size} color={color} />,
-            headerTitle: 'Главная',
           }}
         />
         <Tabs.Screen
@@ -84,7 +76,6 @@ export default function TabLayout() {
           options={{
             title: 'Треки',
             tabBarIcon: ({ size, color }) => <BookOpen size={size} color={color} />,
-            headerTitle: 'Треки',
           }}
         />
         <Tabs.Screen
@@ -92,7 +83,6 @@ export default function TabLayout() {
           options={{
             title: 'Приветствие',
             tabBarIcon: ({ size, color }) => <MessageCircle size={size} color={color} />,
-            headerTitle: 'Приветствие',
           }}
         />
         <Tabs.Screen
@@ -100,7 +90,6 @@ export default function TabLayout() {
           options={{
             title: 'Профиль',
             tabBarIcon: ({ size, color }) => <User size={size} color={color} />,
-            headerTitle: 'Профиль',
           }}
         />
         {/* Hide the following screens from tab bar but keep them accessible via direct navigation */}
@@ -108,36 +97,6 @@ export default function TabLayout() {
           name="lessons"
           options={{
             href: null, // This prevents the tab from appearing in the tab bar
-          }}
-        />
-        <Tabs.Screen
-          name="subjects"
-          options={{
-            href: null, // This prevents the tab from appearing in the tab bar
-          }}
-        />
-        <Tabs.Screen
-          name="leaderboard"
-          options={{
-            href: null,
-          }}
-        />
-        <Tabs.Screen
-          name="practice"
-          options={{
-            href: null,
-          }}
-        />
-        <Tabs.Screen
-          name="achievements"
-          options={{
-            href: null,
-          }}
-        />
-        <Tabs.Screen
-          name="progress"
-          options={{
-            href: null,
           }}
         />
       </Tabs>

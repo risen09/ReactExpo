@@ -1,3 +1,13 @@
+import { useLocalSearchParams, router } from 'expo-router';
+import {
+  ChevronRight,
+  Star,
+  Award,
+  Calendar,
+  Clock,
+  Book,
+  GraduationCap,
+} from 'lucide-react-native';
 import React, { useState, useEffect } from 'react';
 import {
   View,
@@ -10,23 +20,22 @@ import {
   Alert,
   ActivityIndicator,
 } from 'react-native';
-import { ChevronRight, Star, Award, Calendar, Clock, Book, GraduationCap } from 'lucide-react-native';
-import { useLocalSearchParams, router } from 'expo-router';
-import { useAuth } from '../hooks/useAuth';
-import logger from '../utils/logger';
+
+import { useAuth } from '../../hooks/useAuth';
+import logger from '../../utils/logger';
 
 // Общая цветовая палитра приложения
 const COLORS = {
-  primary: '#5B67CA',     // Основной синий/фиолетовый
-  secondary: '#43C0B4',   // Бирюзовый
-  accent1: '#F98D51',     // Оранжевый
-  accent2: '#EC575B',     // Красный
-  accent3: '#FFCA42',     // Желтый
-  background: '#F2F5FF',  // Светлый фон
-  card: '#FFFFFF',        // Белый для карточек
-  text: '#25335F',        // Основной текст
-  textSecondary: '#7F8BB7',  // Вторичный текст
-  border: '#EAEDF5'       // Граница
+  primary: '#5B67CA', // Основной синий/фиолетовый
+  secondary: '#43C0B4', // Бирюзовый
+  accent1: '#F98D51', // Оранжевый
+  accent2: '#EC575B', // Красный
+  accent3: '#FFCA42', // Желтый
+  background: '#F2F5FF', // Светлый фон
+  card: '#FFFFFF', // Белый для карточек
+  text: '#25335F', // Основной текст
+  textSecondary: '#7F8BB7', // Вторичный текст
+  border: '#EAEDF5', // Граница
 };
 
 const API_BASE_URL = process.env.EXPO_PUBLIC_API_BASE_URL;
@@ -72,13 +81,16 @@ export default function AchievementsScreen() {
     try {
       setIsLoading(true);
       // Запрос на получение достижений
-      const response = await fetch(`${API_BASE_URL}/api/users/achievements${params.trackId ? `?trackId=${params.trackId}` : ''}`, {
-        method: 'GET',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
+      const response = await fetch(
+        `${API_BASE_URL}/api/users/achievements${params.trackId ? `?trackId=${params.trackId}` : ''}`,
+        {
+          method: 'GET',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${token}`,
+          },
         }
-      });
+      );
 
       if (!response.ok) {
         throw new Error('Failed to fetch achievements');
@@ -102,7 +114,11 @@ export default function AchievementsScreen() {
   };
 
   // Функция для отображения иконки достижения
-  const renderAchievementIcon = (iconType: string, size: number = 24, color: string = COLORS.primary) => {
+  const renderAchievementIcon = (
+    iconType: string,
+    size: number = 24,
+    color: string = COLORS.primary
+  ) => {
     switch (iconType) {
       case 'star':
         return <Star size={size} color={color} />;
@@ -125,8 +141,16 @@ export default function AchievementsScreen() {
   const achievementCategories = [
     { type: 'streak', title: 'Регулярность', description: 'Достижения за непрерывные занятия' },
     { type: 'session', title: 'Практика', description: 'Достижения за количество занятий' },
-    { type: 'test', title: 'Результаты тестов', description: 'Достижения за успешное прохождение тестов' },
-    { type: 'chapter', title: 'Прогресс обучения', description: 'Достижения за изучение материалов' },
+    {
+      type: 'test',
+      title: 'Результаты тестов',
+      description: 'Достижения за успешное прохождение тестов',
+    },
+    {
+      type: 'chapter',
+      title: 'Прогресс обучения',
+      description: 'Достижения за изучение материалов',
+    },
   ];
 
   // Фильтрация достижений по категории
@@ -146,18 +170,17 @@ export default function AchievementsScreen() {
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.header}>
-        <TouchableOpacity
-          style={styles.backButton}
-          onPress={() => router.back()}
-        >
-          <ChevronRight size={24} color={COLORS.text} style={{ transform: [{ rotate: '180deg' }] }} />
+        <TouchableOpacity style={styles.backButton} onPress={() => router.back()}>
+          <ChevronRight
+            size={24}
+            color={COLORS.text}
+            style={{ transform: [{ rotate: '180deg' }] }}
+          />
         </TouchableOpacity>
-        
+
         <View style={styles.headerContent}>
           <Text style={styles.headerTitle}>Достижения и прогресс</Text>
-          <Text style={styles.headerSubtitle}>
-            Отслеживайте свои успехи и получайте награды
-          </Text>
+          <Text style={styles.headerSubtitle}>Отслеживайте свои успехи и получайте награды</Text>
         </View>
       </View>
 
@@ -169,13 +192,13 @@ export default function AchievementsScreen() {
             <Text style={styles.statValue}>{stats.totalStars}</Text>
             <Text style={styles.statLabel}>Звезд</Text>
           </View>
-          
+
           <View style={styles.statCard}>
             <Award size={24} color={COLORS.accent1} />
             <Text style={styles.statValue}>{stats.completedAchievements}</Text>
             <Text style={styles.statLabel}>Достижений</Text>
           </View>
-          
+
           <View style={styles.statCard}>
             <Calendar size={24} color={COLORS.secondary} />
             <Text style={styles.statValue}>{stats.longestStreak}</Text>
@@ -184,61 +207,63 @@ export default function AchievementsScreen() {
         </View>
 
         {/* Список достижений по категориям */}
-        {achievementCategories.map((category) => {
+        {achievementCategories.map(category => {
           const categoryAchievements = getAchievementsByCategory(category.type);
-          
+
           if (categoryAchievements.length === 0) {
             return null;
           }
-          
+
           return (
             <View key={category.type} style={styles.categorySection}>
               <View style={styles.categoryHeader}>
                 <Text style={styles.categoryTitle}>{category.title}</Text>
                 <Text style={styles.categoryDescription}>{category.description}</Text>
               </View>
-              
-              {categoryAchievements.map((achievement) => (
+
+              {categoryAchievements.map(achievement => (
                 <View key={achievement.id} style={styles.achievementCard}>
-                  <View style={[
-                    styles.achievementIconContainer,
-                    achievement.isCompleted && styles.achievementIconCompleted
-                  ]}>
+                  <View
+                    style={[
+                      styles.achievementIconContainer,
+                      achievement.isCompleted && styles.achievementIconCompleted,
+                    ]}
+                  >
                     {renderAchievementIcon(
-                      achievement.iconType, 
-                      24, 
+                      achievement.iconType,
+                      24,
                       achievement.isCompleted ? '#FFFFFF' : COLORS.primary
                     )}
                   </View>
-                  
+
                   <View style={styles.achievementContent}>
                     <View style={styles.achievementHeader}>
                       <Text style={styles.achievementTitle}>{achievement.title}</Text>
-                      {achievement.isCompleted && (
-                        <Star size={16} color={COLORS.accent3} />
-                      )}
+                      {achievement.isCompleted && <Star size={16} color={COLORS.accent3} />}
                     </View>
-                    
+
                     <Text style={styles.achievementDescription}>{achievement.description}</Text>
-                    
+
                     {/* Прогресс-бар */}
                     <View style={styles.progressContainer}>
                       <View style={styles.progressBackground}>
-                        <View 
+                        <View
                           style={[
                             styles.progressFill,
-                            { 
+                            {
                               width: `${Math.min(100, (achievement.currentValue / achievement.requiredValue) * 100)}%`,
-                              backgroundColor: achievement.isCompleted ? COLORS.secondary : COLORS.primary
-                            }
-                          ]} 
+                              backgroundColor: achievement.isCompleted
+                                ? COLORS.secondary
+                                : COLORS.primary,
+                            },
+                          ]}
                         />
                       </View>
                       <Text style={styles.progressText}>
                         {achievement.currentValue} / {achievement.requiredValue}
                       </Text>
                     </View>
-                    
+
                     {achievement.isCompleted && achievement.completedAt && (
                       <Text style={styles.completedText}>
                         Получено: {new Date(achievement.completedAt).toLocaleDateString()}
@@ -413,4 +438,4 @@ const styles = StyleSheet.create({
     color: COLORS.secondary,
     fontStyle: 'italic',
   },
-}); 
+});

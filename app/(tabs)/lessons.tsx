@@ -1,30 +1,39 @@
-import React, { useState } from 'react';
-import { 
-  View, 
-  Text, 
-  StyleSheet, 
-  ScrollView, 
-  Image, 
-  TouchableOpacity, 
-  TextInput, 
-  FlatList,
-  Dimensions
-} from 'react-native';
-import { Search, BookOpen, Clock, ChevronRight, User, Book, Star, ArrowRight } from 'lucide-react-native';
 import { LinearGradient } from 'expo-linear-gradient';
+import {
+  Search,
+  BookOpen,
+  Clock,
+  ChevronRight,
+  User,
+  Book,
+  Star,
+  ArrowRight,
+} from 'lucide-react-native';
+import React, { useState } from 'react';
+import {
+  View,
+  Text,
+  StyleSheet,
+  ScrollView,
+  Image,
+  TouchableOpacity,
+  TextInput,
+  FlatList,
+  Dimensions,
+} from 'react-native';
 
 // Общая цветовая палитра приложения
 const COLORS = {
-  primary: '#5B67CA',     // Основной синий/фиолетовый
-  secondary: '#43C0B4',   // Бирюзовый
-  accent1: '#F98D51',     // Оранжевый
-  accent2: '#EC575B',     // Красный
-  accent3: '#FFCA42',     // Желтый
-  background: '#F2F5FF',  // Светлый фон
-  card: '#FFFFFF',        // Белый для карточек
-  text: '#25335F',        // Основной текст
-  textSecondary: '#7F8BB7',  // Вторичный текст
-  border: '#EAEDF5'       // Граница
+  primary: '#5B67CA', // Основной синий/фиолетовый
+  secondary: '#43C0B4', // Бирюзовый
+  accent1: '#F98D51', // Оранжевый
+  accent2: '#EC575B', // Красный
+  accent3: '#FFCA42', // Желтый
+  background: '#F2F5FF', // Светлый фон
+  card: '#FFFFFF', // Белый для карточек
+  text: '#25335F', // Основной текст
+  textSecondary: '#7F8BB7', // Вторичный текст
+  border: '#EAEDF5', // Граница
 };
 
 interface Category {
@@ -63,7 +72,7 @@ export default function LessonsScreen() {
       lessons: 24,
       image: require('../../images/qwen-maths-2.png'),
       color: '#EEF0FF',
-      progress: 65
+      progress: 65,
     },
     {
       id: '2',
@@ -73,7 +82,7 @@ export default function LessonsScreen() {
       lessons: 18,
       image: require('../../images/qwen-maths-3.png'),
       color: '#FFF0E8',
-      progress: 30
+      progress: 30,
     },
   ];
 
@@ -86,7 +95,7 @@ export default function LessonsScreen() {
       lessons: 36,
       image: require('../../images/photo_2025-04-05_15-04-48.jpg'),
       color: '#E6F8F6',
-      progress: 45
+      progress: 45,
     },
     {
       id: '4',
@@ -96,7 +105,7 @@ export default function LessonsScreen() {
       lessons: 30,
       image: require('../../images/chatgpt-maths-1.png'),
       color: '#FFF8E8',
-      progress: 10
+      progress: 10,
     },
   ];
 
@@ -110,32 +119,24 @@ export default function LessonsScreen() {
   };
 
   const renderCourseItem = (item: Course) => (
-    <TouchableOpacity
-      style={[styles.courseCard, { backgroundColor: item.color }]}
-      key={item.id}
-    >
+    <TouchableOpacity style={[styles.courseCard, { backgroundColor: item.color }]} key={item.id}>
       <View style={styles.courseImageContainer}>
         <Image source={item.image} style={styles.courseImage} />
       </View>
       <View style={styles.courseInfo}>
         <Text style={styles.courseTitle}>{item.title}</Text>
         <Text style={styles.courseAuthor}>{item.author}</Text>
-        
+
         {/* Progress bar */}
         {item.progress && (
           <View style={styles.progressBarContainer}>
             <View style={styles.progressBar}>
-              <View 
-                style={[
-                  styles.progressFill,
-                  { width: `${item.progress}%` }
-                ]} 
-              />
+              <View style={[styles.progressFill, { width: `${item.progress}%` }]} />
             </View>
             <Text style={styles.progressText}>{item.progress}%</Text>
           </View>
         )}
-        
+
         <View style={styles.courseMetaContainer}>
           <View style={styles.courseMeta}>
             <Clock size={14} color={COLORS.textSecondary} />
@@ -147,7 +148,7 @@ export default function LessonsScreen() {
           </View>
         </View>
       </View>
-      
+
       <View style={styles.courseArrow}>
         <ArrowRight size={20} color={COLORS.primary} />
       </View>
@@ -180,18 +181,15 @@ export default function LessonsScreen() {
       </View>
 
       <View style={styles.categoriesContainer}>
-        <ScrollView 
-          horizontal 
+        <ScrollView
+          horizontal
           showsHorizontalScrollIndicator={false}
           contentContainerStyle={styles.categoriesScrollContainer}
         >
           {categories.map(category => (
             <TouchableOpacity
               key={category.id}
-              style={[
-                styles.categoryButton,
-                category.active && styles.activeCategoryButton,
-              ]}
+              style={[styles.categoryButton, category.active && styles.activeCategoryButton]}
               onPress={() => selectCategory(category.id)}
             >
               <Text
@@ -245,12 +243,12 @@ export default function LessonsScreen() {
                 <Star size={12} color="#FFFFFF" />
                 <Text style={styles.featuredBadgeText}>Популярный</Text>
               </View>
-              
+
               <Text style={styles.featuredCourseTitle}>Продвинутый курс MBTI</Text>
               <Text style={styles.featuredCourseDescription}>
                 Глубокое изучение типов личности и их влияния на коммуникацию
               </Text>
-              
+
               <View style={styles.featuredCourseStats}>
                 <View style={styles.featuredCourseStat}>
                   <BookOpen size={16} color="#FFFFFF" />
@@ -261,16 +259,16 @@ export default function LessonsScreen() {
                   <Text style={styles.featuredCourseStatText}>12 часов</Text>
                 </View>
               </View>
-              
+
               <TouchableOpacity style={styles.featuredCourseButton}>
                 <Text style={styles.featuredCourseButtonText}>Начать обучение</Text>
               </TouchableOpacity>
             </View>
-            
+
             <View style={styles.featuredCourseImageContainer}>
-              <Image 
-                source={require('../../images/photo_2025-04-05_15-20-56.jpg')} 
-                style={styles.featuredCourseImage} 
+              <Image
+                source={require('../../images/photo_2025-04-05_15-20-56.jpg')}
+                style={styles.featuredCourseImage}
               />
             </View>
           </LinearGradient>

@@ -1,9 +1,6 @@
 module.exports = {
   root: true,
-  extends: [
-    'universe/native',
-    'universe/shared/typescript-analysis',
-  ],
+  extends: ['universe/native', 'universe/shared/typescript-analysis'],
   overrides: [
     {
       files: ['*.ts', '*.tsx', '*.d.ts'],
@@ -18,4 +15,4 @@ module.exports = {
     'react/react-in-jsx-scope': 'off',
     'react/prop-types': 'off',
   },
-}; 
+};

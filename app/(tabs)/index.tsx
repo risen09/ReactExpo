@@ -1,3 +1,20 @@
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { LinearGradient } from 'expo-linear-gradient';
+import { router } from 'expo-router';
+import {
+  Search,
+  BookOpen,
+  MessageCircle,
+  User,
+  Trophy,
+  GraduationCap,
+  Brain,
+  BookMarked,
+  Calendar,
+  Bell,
+  Clock,
+  Award,
+} from 'lucide-react-native';
 import React from 'react';
 import {
   View,
@@ -7,47 +24,30 @@ import {
   Image,
   TouchableOpacity,
   ImageBackground,
-  Dimensions
+  Dimensions,
 } from 'react-native';
-import { router } from 'expo-router';
-import { 
-  Search, 
-  BookOpen, 
-  MessageCircle, 
-  User, 
-  Trophy, 
-  GraduationCap,
-  Brain,
-  BookMarked,
-  Calendar,
-  Bell,
-  Clock,
-  Award
-} from 'lucide-react-native';
-import { LinearGradient } from 'expo-linear-gradient';
-import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const { width } = Dimensions.get('window');
 const cardWidth = width * 0.42;
 
 // Новая цветовая палитра
 const COLORS = {
-  primary: '#5B67CA',     // Основной синий/фиолетовый
-  secondary: '#43C0B4',   // Бирюзовый
-  accent1: '#F98D51',     // Оранжевый
-  accent2: '#EC575B',     // Красный
-  accent3: '#FFCA42',     // Желтый
-  background: '#F2F5FF',  // Светлый фон
-  card: '#FFFFFF',        // Белый для карточек
-  text: '#25335F',        // Основной текст
-  textSecondary: '#7F8BB7',  // Вторичный текст
-  border: '#EAEDF5'       // Граница
+  primary: '#5B67CA', // Основной синий/фиолетовый
+  secondary: '#43C0B4', // Бирюзовый
+  accent1: '#F98D51', // Оранжевый
+  accent2: '#EC575B', // Красный
+  accent3: '#FFCA42', // Желтый
+  background: '#F2F5FF', // Светлый фон
+  card: '#FFFFFF', // Белый для карточек
+  text: '#25335F', // Основной текст
+  textSecondary: '#7F8BB7', // Вторичный текст
+  border: '#EAEDF5', // Граница
 };
 
-// Mock auth implementation 
+// Mock auth implementation
 const useAuth = () => {
-  const [user, setUser] = React.useState<{name: string} | null>(null);
-  
+  const [user, setUser] = React.useState<{ name: string } | null>(null);
+
   React.useEffect(() => {
     const getUser = async () => {
       try {
@@ -59,20 +59,22 @@ const useAuth = () => {
         console.error('Error getting user:', error);
       }
     };
-    
+
     getUser();
   }, []);
-  
+
   return {
     state: {
-      user: user || { name: 'Гость' }
-    }
+      user: user || { name: 'Гость' },
+    },
   };
 };
 
 export default function HomeScreen() {
-  const { state: { user } } = useAuth();
-  
+  const {
+    state: { user },
+  } = useAuth();
+
   const featureCards = [
     {
       id: 1,
@@ -80,7 +82,7 @@ export default function HomeScreen() {
       description: 'Интерактивные уроки и курсы',
       icon: <BookOpen size={28} color="#FFFFFF" strokeWidth={2} />,
       gradient: [COLORS.primary, '#424D9D'] as [string, string],
-      route: '/(tabs)/lessons'
+      route: '/(tabs)/lessons',
     },
     {
       id: 2,
@@ -88,7 +90,7 @@ export default function HomeScreen() {
       description: 'Узнай свой MBTI тип',
       icon: <Brain size={28} color="#FFFFFF" strokeWidth={2} />,
       gradient: [COLORS.accent1, '#E06B30'] as [string, string],
-      route: '/personality-test'
+      route: '/mbti',
     },
     {
       id: 3,
@@ -96,7 +98,7 @@ export default function HomeScreen() {
       description: 'Общение и поддержка',
       icon: <MessageCircle size={28} color="#FFFFFF" strokeWidth={2} />,
       gradient: [COLORS.secondary, '#328E85'] as [string, string],
-      route: '/(tabs)/chat'
+      route: '/(tabs)/chat',
     },
     {
       id: 4,
@@ -104,8 +106,8 @@ export default function HomeScreen() {
       description: 'Ваши достижения и награды',
       icon: <Award size={28} color="#FFFFFF" strokeWidth={2} />,
       gradient: ['#9661C9', '#7A45B7'] as [string, string],
-      route: '/(tabs)/progress'
-    }
+      route: '/(tabs)/progress',
+    },
   ];
 
   const popularCourses = [
@@ -114,15 +116,15 @@ export default function HomeScreen() {
       title: 'Основы психологии',
       lessons: 12,
       duration: '6 часов',
-      image: require('@/images/photo_2025-04-05_15-03-42.jpg')
+      image: require('@/images/photo_2025-04-05_15-03-42.jpg'),
     },
     {
       id: 2,
       title: 'Развитие эмоционального интеллекта',
       lessons: 8,
       duration: '4 часа',
-      image: require('@/images/chatgpt-maths-1.png')
-    }
+      image: require('@/images/chatgpt-maths-1.png'),
+    },
   ];
 
   const todayTasks = [
@@ -130,14 +132,14 @@ export default function HomeScreen() {
       id: 1,
       title: 'Прохождение теста MBTI',
       time: '10:00 - 10:30',
-      completed: false
+      completed: false,
     },
     {
       id: 2,
       title: 'Урок: Введение в типы личности',
       time: '11:00 - 12:00',
-      completed: true
-    }
+      completed: true,
+    },
   ];
 
   return (
@@ -154,13 +156,13 @@ export default function HomeScreen() {
       </View>
 
       {/* Main Features */}
-      <View style={{paddingHorizontal: 20}}>
-        <Text style={[styles.sectionTitle, {paddingHorizontal: 0}]}>Основные функции</Text>
+      <View style={{ paddingHorizontal: 20 }}>
+        <Text style={[styles.sectionTitle, { paddingHorizontal: 0 }]}>Основные функции</Text>
       </View>
       <View style={styles.featureGrid}>
-        {featureCards.map((card) => (
-          <TouchableOpacity 
-            key={card.id} 
+        {featureCards.map(card => (
+          <TouchableOpacity
+            key={card.id}
             style={styles.featureCard}
             onPress={() => router.navigate(card.route as any)}
           >
@@ -170,9 +172,7 @@ export default function HomeScreen() {
               start={{ x: 0, y: 0 }}
               end={{ x: 1, y: 1 }}
             >
-              <View style={styles.featureCardIcon}>
-                {card.icon}
-              </View>
+              <View style={styles.featureCardIcon}>{card.icon}</View>
               <View style={{ width: '100%', paddingBottom: 15 }}>
                 <Text style={styles.featureCardTitle}>{card.title}</Text>
                 <Text style={styles.featureCardDescription}>{card.description}</Text>
@@ -184,18 +184,18 @@ export default function HomeScreen() {
 
       {/* Popular Courses */}
       <View style={styles.sectionHeader}>
-        <Text style={[styles.sectionTitle, {paddingHorizontal: 0}]}>Популярные курсы</Text>
+        <Text style={[styles.sectionTitle, { paddingHorizontal: 0 }]}>Популярные курсы</Text>
         <TouchableOpacity onPress={() => router.navigate('/(tabs)/lessons' as any)}>
           <Text style={styles.seeAllLink}>Все курсы</Text>
         </TouchableOpacity>
       </View>
 
-      <ScrollView 
-        horizontal 
+      <ScrollView
+        horizontal
         showsHorizontalScrollIndicator={false}
         contentContainerStyle={styles.coursesContainer}
       >
-        {popularCourses.map((course) => (
+        {popularCourses.map(course => (
           <TouchableOpacity key={course.id} style={styles.courseCard}>
             <Image source={course.image} style={styles.courseImage} />
             <View style={styles.courseInfo}>
@@ -217,23 +217,20 @@ export default function HomeScreen() {
 
       {/* Today's Tasks */}
       <View style={styles.sectionHeader}>
-        <Text style={[styles.sectionTitle, {paddingHorizontal: 0}]}>Задачи на сегодня</Text>
+        <Text style={[styles.sectionTitle, { paddingHorizontal: 0 }]}>Задачи на сегодня</Text>
         <TouchableOpacity>
           <Text style={styles.seeAllLink}>Все задачи</Text>
         </TouchableOpacity>
       </View>
 
       <View style={styles.tasksContainer}>
-        {todayTasks.map((task) => (
+        {todayTasks.map(task => (
           <View key={task.id} style={styles.taskCard}>
             <View style={[styles.taskCheckbox, task.completed ? styles.taskCompleted : {}]}>
               {task.completed && <Text style={styles.checkmark}>✓</Text>}
             </View>
             <View style={styles.taskContent}>
-              <Text style={[
-                styles.taskTitle, 
-                task.completed ? styles.taskCompletedText : {}
-              ]}>
+              <Text style={[styles.taskTitle, task.completed ? styles.taskCompletedText : {}]}>
                 {task.title}
               </Text>
               <View style={styles.taskMeta}>
@@ -246,11 +243,13 @@ export default function HomeScreen() {
       </View>
 
       {/* Additional Features */}
-      <View style={{paddingHorizontal: 20}}>
-        <Text style={[styles.sectionTitle, {paddingHorizontal: 0}]}>Дополнительные возможности</Text>
+      <View style={{ paddingHorizontal: 20 }}>
+        <Text style={[styles.sectionTitle, { paddingHorizontal: 0 }]}>
+          Дополнительные возможности
+        </Text>
       </View>
       <View style={styles.additionalFeatures}>
-        <TouchableOpacity 
+        <TouchableOpacity
           style={styles.additionalFeatureButton}
           onPress={() => router.navigate('/(tabs)/profile' as any)}
         >
@@ -260,30 +259,21 @@ export default function HomeScreen() {
           <Text style={styles.additionalFeatureText}>Профиль</Text>
         </TouchableOpacity>
 
-        <TouchableOpacity 
-          style={styles.additionalFeatureButton}
-          onPress={() => {}}
-        >
+        <TouchableOpacity style={styles.additionalFeatureButton} onPress={() => {}}>
           <View style={[styles.additionalFeatureIcon, { backgroundColor: '#E6F8F6' }]}>
             <Calendar size={20} color={COLORS.secondary} />
           </View>
           <Text style={styles.additionalFeatureText}>Календарь</Text>
         </TouchableOpacity>
 
-        <TouchableOpacity 
-          style={styles.additionalFeatureButton}
-          onPress={() => {}}
-        >
+        <TouchableOpacity style={styles.additionalFeatureButton} onPress={() => {}}>
           <View style={[styles.additionalFeatureIcon, { backgroundColor: '#FFF8E8' }]}>
             <Bell size={20} color={COLORS.accent3} />
           </View>
           <Text style={styles.additionalFeatureText}>Напоминания</Text>
         </TouchableOpacity>
 
-        <TouchableOpacity 
-          style={styles.additionalFeatureButton}
-          onPress={() => {}}
-        >
+        <TouchableOpacity style={styles.additionalFeatureButton} onPress={() => {}}>
           <View style={[styles.additionalFeatureIcon, { backgroundColor: '#FFF0E8' }]}>
             <BookMarked size={20} color={COLORS.accent1} />
           </View>

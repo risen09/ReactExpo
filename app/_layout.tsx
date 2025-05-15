@@ -3,7 +3,8 @@ import { useFonts } from 'expo-font';
 import { Stack, useRouter, useSegments } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import { useEffect } from 'react';
-import { AuthProvider, useAuth } from './hooks/useAuth';
+
+import { AuthProvider, useAuth } from '../hooks/useAuth';
 
 export {
   // Catch any errors thrown by the Layout component.
@@ -72,56 +73,6 @@ function RootLayoutNav() {
     <Stack>
       <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
       <Stack.Screen name="(auth)" options={{ headerShown: false }} />
-      <Stack.Screen name="change-password" options={{ headerShown: true, title: 'Изменить пароль' }} />
-      <Stack.Screen name="personality-test" options={{ headerShown: true, title: 'Тест личности' }} />
-      <Stack.Screen name="test-result" options={{ headerShown: false }} />
-      <Stack.Screen name="test-screen" options={{ headerShown: false }} />
-      <Stack.Screen name="test-questions" options={{ headerShown: false }} />
-      <Stack.Screen name="screens/ChatScreen" options={{ headerShown: false }} />
-      <Stack.Screen 
-        name="screens/TrackAssistantScreen" 
-        options={{ 
-          headerShown: true, 
-          title: 'Ассистент трека',
-          headerBackTitle: 'Назад'
-        }} 
-      />
-      <Stack.Screen 
-        name="screens/DiagnosticsScreen" 
-        options={{ 
-          headerShown: false 
-        }} 
-      />
-      <Stack.Screen 
-        name="screens/TestScreen" 
-        options={{ 
-          headerShown: true, 
-          title: 'Диагностический тест',
-          headerBackVisible: false
-        }} 
-      />
-      <Stack.Screen 
-        name="screens/TestQuestionsScreen" 
-        options={{ 
-          headerShown: true, 
-          title: 'Вопросы теста',
-          headerBackVisible: false
-        }} 
-      />
-      <Stack.Screen 
-        name="screens/TestResultScreen" 
-        options={{ 
-          headerShown: true, 
-          title: 'Результаты теста'
-        }} 
-      />
-      <Stack.Screen 
-        name="screens/CreateTrackScreen" 
-        options={{ 
-          headerShown: true, 
-          title: 'Создание трека обучения'
-        }} 
-      />
     </Stack>
   );
 }

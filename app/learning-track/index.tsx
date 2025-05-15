@@ -1,3 +1,5 @@
+import { useLocalSearchParams, router } from 'expo-router';
+import { Book, Star, Calendar, Clock, ChevronRight, BookOpen, TestTube } from 'lucide-react-native';
 import React, { useState, useEffect, useCallback } from 'react';
 import {
   View,
@@ -8,25 +10,24 @@ import {
   ActivityIndicator,
   SafeAreaView,
   Image,
-  Alert
+  Alert,
 } from 'react-native';
-import { Book, Star, Calendar, Clock, ChevronRight, BookOpen, TestTube } from 'lucide-react-native';
-import { useLocalSearchParams, router } from 'expo-router';
-import { useAuth } from '../hooks/useAuth';
-import logger from '../utils/logger';
+
+import { useAuth } from '../../hooks/useAuth';
+import logger from '../../utils/logger';
 
 // Общая цветовая палитра приложения
 const COLORS = {
-  primary: '#5B67CA',     // Основной синий/фиолетовый
-  secondary: '#43C0B4',   // Бирюзовый
-  accent1: '#F98D51',     // Оранжевый
-  accent2: '#EC575B',     // Красный
-  accent3: '#FFCA42',     // Желтый
-  background: '#F2F5FF',  // Светлый фон
-  card: '#FFFFFF',        // Белый для карточек
-  text: '#25335F',        // Основной текст
-  textSecondary: '#7F8BB7',  // Вторичный текст
-  border: '#EAEDF5'       // Граница
+  primary: '#5B67CA', // Основной синий/фиолетовый
+  secondary: '#43C0B4', // Бирюзовый
+  accent1: '#F98D51', // Оранжевый
+  accent2: '#EC575B', // Красный
+  accent3: '#FFCA42', // Желтый
+  background: '#F2F5FF', // Светлый фон
+  card: '#FFFFFF', // Белый для карточек
+  text: '#25335F', // Основной текст
+  textSecondary: '#7F8BB7', // Вторичный текст
+  border: '#EAEDF5', // Граница
 };
 
 const API_BASE_URL = process.env.EXPO_PUBLIC_API_BASE_URL;
@@ -76,24 +77,24 @@ export default function LearningTrackScreen() {
   const [track, setTrack] = useState<Track | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [activeTab, setActiveTab] = useState<'lessons' | 'tests' | 'schedule'>('lessons');
-  
+
   // Получение данных трека
   const fetchTrack = useCallback(async () => {
     if (!params.trackId || !token) return;
-    
+
     setIsLoading(true);
     try {
       const response = await fetch(`${API_BASE_URL}/api/tracks/${params.trackId}`, {
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
-        }
+          Authorization: `Bearer ${token}`,
+        },
       });
-      
+
       if (!response.ok) {
         throw new Error('Failed to fetch track data');
       }
-      
+
       const data = await response.json();
       setTrack(data);
     } catch (error) {
@@ -103,114 +104,117 @@ export default function LearningTrackScreen() {
       setIsLoading(false);
     }
   }, [params.trackId, token]);
-  
+
   useEffect(() => {
     fetchTrack();
   }, [fetchTrack]);
-  
+
   // Обработчик перехода к уроку
   const handleLessonPress = useCallback((lessonId: string) => {
     router.push({
-      pathname: "/learning-track/lesson",
-      params: { lessonId }
+      pathname: '/learning-track/lesson',
+      params: { lessonId },
     });
   }, []);
-  
+
   // Обработчик перехода к тесту
   const handleTestPress = useCallback((testId: string) => {
     router.push({
-      pathname: "/learning-track/test",
-      params: { testId }
+      pathname: '/learning-track/test',
+      params: { testId },
     });
   }, []);
-  
+
   // Рендер карточки урока
-  const renderLessonItem = useCallback(({ item }: { item: Lesson }) => (
-    <TouchableOpacity
-      style={styles.itemCard}
-      onPress={() => handleLessonPress(item._id)}
-    >
-      <View style={styles.itemIconContainer}>
-        <BookOpen size={24} color={COLORS.primary} />
-      </View>
-      
-      <View style={styles.itemContent}>
-        <Text style={styles.itemTitle}>{item.title}</Text>
-        
-        <View style={styles.itemDetails}>
-          <View style={styles.difficultyContainer}>
-            {Array.from({ length: item.difficulty }).map((_, i) => (
-              <View 
-                key={`diff-${i}`} 
-                style={[
-                  styles.difficultyDot,
-                  { backgroundColor: 
-                    item.difficulty === 1 ? '#43C0B4' : 
-                    item.difficulty === 2 ? '#FFCA42' : 
-                    '#EC575B'
-                  }
-                ]} 
-              />
-            ))}
-          </View>
-          
-          <View style={styles.starsContainer}>
-            {Array.from({ length: 3 }).map((_, i) => (
-              <Star
-                key={`star-${i}`}
-                size={16}
-                color={i < item.stars ? COLORS.accent3 : '#D1D5DB'}
-                fill={i < item.stars ? COLORS.accent3 : 'none'}
-              />
-            ))}
-          </View>
-          
-          {item.completed && (
-            <View style={styles.completedBadge}>
-              <Text style={styles.completedText}>Пройден</Text>
+  const renderLessonItem = useCallback(
+    ({ item }: { item: Lesson }) => (
+      <TouchableOpacity style={styles.itemCard} onPress={() => handleLessonPress(item._id)}>
+        <View style={styles.itemIconContainer}>
+          <BookOpen size={24} color={COLORS.primary} />
+        </View>
+
+        <View style={styles.itemContent}>
+          <Text style={styles.itemTitle}>{item.title}</Text>
+
+          <View style={styles.itemDetails}>
+            <View style={styles.difficultyContainer}>
+              {Array.from({ length: item.difficulty }).map((_, i) => (
+                <View
+                  key={`diff-${i}`}
+                  style={[
+                    styles.difficultyDot,
+                    {
+                      backgroundColor:
+                        item.difficulty === 1
+                          ? '#43C0B4'
+                          : item.difficulty === 2
+                            ? '#FFCA42'
+                            : '#EC575B',
+                    },
+                  ]}
+                />
+              ))}
             </View>
-          )}
-        </View>
-      </View>
-      
-      <ChevronRight size={20} color={COLORS.textSecondary} />
-    </TouchableOpacity>
-  ), [handleLessonPress]);
-  
-  // Рендер карточки теста
-  const renderTestItem = useCallback(({ item }: { item: Test }) => (
-    <TouchableOpacity
-      style={styles.itemCard}
-      onPress={() => handleTestPress(item._id)}
-    >
-      <View style={styles.itemIconContainer}>
-        <TestTube size={24} color={COLORS.primary} />
-      </View>
-      
-      <View style={styles.itemContent}>
-        <Text style={styles.itemTitle}>{item.title}</Text>
-        
-        <View style={styles.itemDetails}>
-          <View style={styles.testTypeBadge}>
-            <Text style={styles.testTypeText}>
-              {item.testType === 'T1' ? 'Тест по теме' : 'Диагностика'}
-            </Text>
+
+            <View style={styles.starsContainer}>
+              {Array.from({ length: 3 }).map((_, i) => (
+                <Star
+                  key={`star-${i}`}
+                  size={16}
+                  color={i < item.stars ? COLORS.accent3 : '#D1D5DB'}
+                  fill={i < item.stars ? COLORS.accent3 : 'none'}
+                />
+              ))}
+            </View>
+
+            {item.completed && (
+              <View style={styles.completedBadge}>
+                <Text style={styles.completedText}>Пройден</Text>
+              </View>
+            )}
           </View>
         </View>
-      </View>
-      
-      <ChevronRight size={20} color={COLORS.textSecondary} />
-    </TouchableOpacity>
-  ), [handleTestPress]);
-  
+
+        <ChevronRight size={20} color={COLORS.textSecondary} />
+      </TouchableOpacity>
+    ),
+    [handleLessonPress]
+  );
+
+  // Рендер карточки теста
+  const renderTestItem = useCallback(
+    ({ item }: { item: Test }) => (
+      <TouchableOpacity style={styles.itemCard} onPress={() => handleTestPress(item._id)}>
+        <View style={styles.itemIconContainer}>
+          <TestTube size={24} color={COLORS.primary} />
+        </View>
+
+        <View style={styles.itemContent}>
+          <Text style={styles.itemTitle}>{item.title}</Text>
+
+          <View style={styles.itemDetails}>
+            <View style={styles.testTypeBadge}>
+              <Text style={styles.testTypeText}>
+                {item.testType === 'T1' ? 'Тест по теме' : 'Диагностика'}
+              </Text>
+            </View>
+          </View>
+        </View>
+
+        <ChevronRight size={20} color={COLORS.textSecondary} />
+      </TouchableOpacity>
+    ),
+    [handleTestPress]
+  );
+
   // Рендер сессии расписания
   const renderScheduleItem = useCallback(({ item }: { item: Track['schedule']['sessions'][0] }) => {
     const dateObj = new Date(item.date);
-    const formattedDate = dateObj.toLocaleDateString('ru-RU', { 
-      day: 'numeric', 
-      month: 'long'
+    const formattedDate = dateObj.toLocaleDateString('ru-RU', {
+      day: 'numeric',
+      month: 'long',
     });
-    
+
     return (
       <View style={styles.scheduleCard}>
         <View style={styles.scheduleHeader}>
@@ -218,24 +222,27 @@ export default function LearningTrackScreen() {
             <Calendar size={18} color={COLORS.primary} />
             <Text style={styles.scheduleDate}>{formattedDate}</Text>
           </View>
-          
+
           <View style={styles.scheduleTimeContainer}>
             <Clock size={18} color={COLORS.primary} />
-            <Text style={styles.scheduleTime}>{item.startTime} - {item.endTime}</Text>
+            <Text style={styles.scheduleTime}>
+              {item.startTime} - {item.endTime}
+            </Text>
           </View>
         </View>
-        
+
         <View style={styles.scheduleContent}>
           {item.lessons.length > 0 ? (
             <Text style={styles.scheduleLessons}>
-              {`${item.lessons.length} ${item.lessons.length === 1 ? 'урок' : 
-                item.lessons.length < 5 ? 'урока' : 'уроков'}`}
+              {`${item.lessons.length} ${
+                item.lessons.length === 1 ? 'урок' : item.lessons.length < 5 ? 'урока' : 'уроков'
+              }`}
             </Text>
           ) : (
             <Text style={styles.schedulePlaceholder}>Нет запланированных уроков</Text>
           )}
         </View>
-        
+
         {item.completed ? (
           <View style={styles.scheduleCompletedBadge}>
             <Text style={styles.scheduleCompletedText}>Выполнено</Text>
@@ -248,7 +255,7 @@ export default function LearningTrackScreen() {
       </View>
     );
   }, []);
-  
+
   // Секции табов
   const renderContent = () => {
     if (isLoading) {
@@ -259,7 +266,7 @@ export default function LearningTrackScreen() {
         </View>
       );
     }
-    
+
     if (!track) {
       return (
         <View style={styles.emptyContainer}>
@@ -267,14 +274,14 @@ export default function LearningTrackScreen() {
         </View>
       );
     }
-    
+
     switch (activeTab) {
       case 'lessons':
         return (
           <FlatList
             data={track.lessons}
             renderItem={renderLessonItem}
-            keyExtractor={(item) => item._id}
+            keyExtractor={item => item._id}
             contentContainerStyle={styles.listContainer}
             ListEmptyComponent={
               <View style={styles.emptyContainer}>
@@ -283,13 +290,13 @@ export default function LearningTrackScreen() {
             }
           />
         );
-        
+
       case 'tests':
         return (
           <FlatList
             data={track.tests}
             renderItem={renderTestItem}
-            keyExtractor={(item) => item._id}
+            keyExtractor={item => item._id}
             contentContainerStyle={styles.listContainer}
             ListEmptyComponent={
               <View style={styles.emptyContainer}>
@@ -298,25 +305,27 @@ export default function LearningTrackScreen() {
             }
           />
         );
-        
+
       case 'schedule':
         if (!track.schedule) {
           return (
             <View style={styles.emptyContainer}>
               <Text style={styles.emptyText}>Расписание еще не создано</Text>
-              <TouchableOpacity 
+              <TouchableOpacity
                 style={styles.createScheduleButton}
-                onPress={() => router.push({
-                  pathname: "/learning-track/create-schedule",
-                  params: { trackId: track._id }
-                })}
+                onPress={() =>
+                  router.push({
+                    pathname: '/learning-track/create-schedule',
+                    params: { trackId: track._id },
+                  })
+                }
               >
                 <Text style={styles.createScheduleText}>Создать расписание</Text>
               </TouchableOpacity>
             </View>
           );
         }
-        
+
         return (
           <FlatList
             data={track.schedule.sessions}
@@ -340,17 +349,18 @@ export default function LearningTrackScreen() {
         );
     }
   };
-  
+
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.header}>
-        <TouchableOpacity 
-          style={styles.backButton}
-          onPress={() => router.back()}
-        >
-          <ChevronRight size={24} color={COLORS.text} style={{ transform: [{ rotate: '180deg' }] }} />
+        <TouchableOpacity style={styles.backButton} onPress={() => router.back()}>
+          <ChevronRight
+            size={24}
+            color={COLORS.text}
+            style={{ transform: [{ rotate: '180deg' }] }}
+          />
         </TouchableOpacity>
-        
+
         <View style={styles.headerContent}>
           <Text style={styles.headerTitle}>{track?.name || 'Учебный трек'}</Text>
           <Text style={styles.headerSubtitle}>
@@ -358,51 +368,44 @@ export default function LearningTrackScreen() {
           </Text>
         </View>
       </View>
-      
+
       <View style={styles.tabsContainer}>
         <TouchableOpacity
           style={[styles.tabButton, activeTab === 'lessons' && styles.activeTab]}
           onPress={() => setActiveTab('lessons')}
         >
           <Book size={18} color={activeTab === 'lessons' ? COLORS.primary : COLORS.textSecondary} />
-          <Text style={[
-            styles.tabText, 
-            activeTab === 'lessons' && styles.activeTabText
-          ]}>
+          <Text style={[styles.tabText, activeTab === 'lessons' && styles.activeTabText]}>
             Уроки
           </Text>
         </TouchableOpacity>
-        
+
         <TouchableOpacity
           style={[styles.tabButton, activeTab === 'tests' && styles.activeTab]}
           onPress={() => setActiveTab('tests')}
         >
-          <TestTube size={18} color={activeTab === 'tests' ? COLORS.primary : COLORS.textSecondary} />
-          <Text style={[
-            styles.tabText, 
-            activeTab === 'tests' && styles.activeTabText
-          ]}>
-            Тесты
-          </Text>
+          <TestTube
+            size={18}
+            color={activeTab === 'tests' ? COLORS.primary : COLORS.textSecondary}
+          />
+          <Text style={[styles.tabText, activeTab === 'tests' && styles.activeTabText]}>Тесты</Text>
         </TouchableOpacity>
-        
+
         <TouchableOpacity
           style={[styles.tabButton, activeTab === 'schedule' && styles.activeTab]}
           onPress={() => setActiveTab('schedule')}
         >
-          <Calendar size={18} color={activeTab === 'schedule' ? COLORS.primary : COLORS.textSecondary} />
-          <Text style={[
-            styles.tabText, 
-            activeTab === 'schedule' && styles.activeTabText
-          ]}>
+          <Calendar
+            size={18}
+            color={activeTab === 'schedule' ? COLORS.primary : COLORS.textSecondary}
+          />
+          <Text style={[styles.tabText, activeTab === 'schedule' && styles.activeTabText]}>
             Расписание
           </Text>
         </TouchableOpacity>
       </View>
-      
-      <View style={styles.content}>
-        {renderContent()}
-      </View>
+
+      <View style={styles.content}>{renderContent()}</View>
     </SafeAreaView>
   );
 }
@@ -657,4 +660,4 @@ const styles = StyleSheet.create({
     color: COLORS.text,
     marginBottom: 4,
   },
-}); 
+});

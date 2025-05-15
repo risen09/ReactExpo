@@ -1,14 +1,8 @@
-import React from 'react';
-import {
-  View,
-  Text,
-  StyleSheet,
-  ScrollView,
-  TouchableOpacity,
-  Image,
-} from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';
-import type { Subject } from '../types/lesson';
+import React from 'react';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Image } from 'react-native';
+
+import type { Subject } from '../../types/lesson';
 
 interface Achievement {
   id: string;
@@ -81,9 +75,7 @@ const AchievementsScreen: React.FC = () => {
           <Text style={styles.achievementTitle}>{achievement.title}</Text>
           <Text style={styles.achievementDescription}>{achievement.description}</Text>
         </View>
-        {achievement.unlocked && (
-          <MaterialIcons name="verified" size={24} color="#4caf50" />
-        )}
+        {achievement.unlocked && <MaterialIcons name="verified" size={24} color="#4caf50" />}
       </View>
 
       <View style={styles.progressContainer}>
@@ -114,9 +106,7 @@ const AchievementsScreen: React.FC = () => {
         <Text style={styles.title}>Достижения</Text>
         <View style={styles.statsContainer}>
           <View style={styles.statItem}>
-            <Text style={styles.statValue}>
-              {achievements.filter((a) => a.unlocked).length}
-            </Text>
+            <Text style={styles.statValue}>{achievements.filter(a => a.unlocked).length}</Text>
             <Text style={styles.statLabel}>Получено</Text>
           </View>
           <View style={styles.statItem}>
@@ -126,9 +116,7 @@ const AchievementsScreen: React.FC = () => {
         </View>
       </View>
 
-      <View style={styles.achievementsContainer}>
-        {achievements.map(renderAchievement)}
-      </View>
+      <View style={styles.achievementsContainer}>{achievements.map(renderAchievement)}</View>
     </ScrollView>
   );
 };
@@ -256,4 +244,4 @@ const styles = StyleSheet.create({
   },
 });
 
-export default AchievementsScreen; 
+export default AchievementsScreen;

@@ -1,3 +1,8 @@
+import { MaterialIcons } from '@expo/vector-icons';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { Buffer } from 'buffer';
+import { Link, router, useLocalSearchParams } from 'expo-router';
+import { StatusBar } from 'expo-status-bar';
 import React, { useState, useEffect } from 'react';
 import {
   View,
@@ -13,19 +18,17 @@ import {
   ScrollView,
   Linking,
 } from 'react-native';
-import { Link, router, useLocalSearchParams } from 'expo-router';
-import { useAuth } from '../hooks/useAuth';
-import { MaterialIcons } from '@expo/vector-icons';
-import { StatusBar } from 'expo-status-bar';
-import { Buffer } from 'buffer';
 import crypto from 'react-native-quick-crypto';
-import AsyncStorage from '@react-native-async-storage/async-storage';
+
+import { useAuth } from '../../hooks/useAuth';
 
 // VK Constants - IMPORTANT, BLYAT! Make sure EXPO_PUBLIC_VK_CLIENT_ID is in your .env file!
-const YOUR_CLIENT_ID = process.env.EXPO_PUBLIC_VK_CLIENT_ID; 
+const YOUR_CLIENT_ID = process.env.EXPO_PUBLIC_VK_CLIENT_ID;
 const YOUR_REDIRECT_SCHEME = YOUR_CLIENT_ID ? 'vk' + YOUR_CLIENT_ID : ''; // e.g., vk1234567
 const YOUR_REDIRECT_HOST = 'vk.com'; // Or whatever you configure, but docs use this
-const REDIRECT_URI = YOUR_REDIRECT_SCHEME ? `${YOUR_REDIRECT_SCHEME}://${YOUR_REDIRECT_HOST}/blank.html` : '';
+const REDIRECT_URI = YOUR_REDIRECT_SCHEME
+  ? `${YOUR_REDIRECT_SCHEME}://${YOUR_REDIRECT_HOST}/blank.html`
+  : '';
 const SCOPE = 'email phone'; // Or whatever scopes you need, comrade
 const OAUTH2_PARAMS = Buffer.from(JSON.stringify({ scope: SCOPE })).toString('base64');
 const FINAL_REDIRECT_URI = REDIRECT_URI ? `${REDIRECT_URI}?oauth2_params=${OAUTH2_PARAMS}` : '';
@@ -69,16 +72,16 @@ export default function LoginScreen() {
   }, [isAuthenticated]);
 
   useEffect(() => {
-    fetch(`${process.env.EXPO_PUBLIC_API_BASE_URL}/api/v1/auth/vk/health`, {
+    fetch(`${process.env.EXPO_PUBLIC_API_BASE_URL}/api/auth/vk/health`, {
       method: 'GET',
     })
-    .then((data) => {
-      setVkAvailable(true)
-    })
-    .catch((error) => {
-      console.error('Error checking VK availability:', error);
-      setVkAvailable(false);
-    })
+      .then(data => {
+        setVkAvailable(true);
+      })
+      .catch(error => {
+        console.error('Error checking VK availability:', error);
+        setVkAvailable(false);
+      });
   }, []);
 
   useEffect(() => {
@@ -86,7 +89,7 @@ export default function LoginScreen() {
     if (params.email && typeof params.email === 'string') {
       const sanitizedEmail = params.email.trim().toLowerCase();
       setEmail(sanitizedEmail);
-      
+
       if (params.fromRegistration === 'true') {
         Alert.alert(
           'Регистрация успешна',
@@ -100,7 +103,9 @@ export default function LoginScreen() {
   // useEffect for VK Deep Linking
   useEffect(() => {
     if (!YOUR_CLIENT_ID || !REDIRECT_URI) {
-      console.warn("VK Client ID or Redirect URI is not configured. VK login will not work, blyat!");
+      console.warn(
+        'VK Client ID or Redirect URI is not configured. VK login will not work, blyat!'
+      );
       return;
     }
 
@@ -117,10 +122,10 @@ export default function LoginScreen() {
             const [key, value] = param.split('=');
             params[key] = decodeURIComponent(value);
           });
-        
+
           const { code, state: receivedState, device_id, type } = params;
           if (receivedState !== vkAuthState) {
-            console.warn("VK State mismatch. Security issue or bad pipe connection.");
+            console.warn('VK State mismatch. Security issue or bad pipe connection.');
             return;
           }
 
@@ -130,38 +135,46 @@ export default function LoginScreen() {
           }
 
           if (code && device_id && vkCodeVerifier) {
-            handleVkLogin(code, vkCodeVerifier, device_id)
-            .catch((error) => {
+            handleVkLogin(code, vkCodeVerifier, device_id).catch(error => {
               console.error('Error exchanging code:', error);
               Alert.alert('Pizdec!', 'Network error or backend is sleeping.');
             });
           } else {
-            Alert.alert('Oy-vey!', 'Could not get all required data from VK (code, device_id, or verifier missing). Check pipes.');
-            return;
+            Alert.alert(
+              'Oy-vey!',
+              'Could not get all required data from VK (code, device_id, or verifier missing). Check pipes.'
+            );
           }
         }
       }
     };
 
     const subscription = Linking.addEventListener('url', handleDeepLink);
-    
+
     Linking.getInitialURL().then(url => {
-        if (url) {
-            handleDeepLink({url});
-        }
+      if (url) {
+        handleDeepLink({ url });
+      }
     });
 
     return () => {
       subscription.remove();
     };
-  }, [vkAuthState, vkCodeVerifier, YOUR_CLIENT_ID, REDIRECT_URI, YOUR_REDIRECT_SCHEME, YOUR_REDIRECT_HOST]); // Added dependencies
+  }, [
+    vkAuthState,
+    vkCodeVerifier,
+    YOUR_CLIENT_ID,
+    REDIRECT_URI,
+    YOUR_REDIRECT_SCHEME,
+    YOUR_REDIRECT_HOST,
+  ]); // Added dependencies
 
   const handleLogin = async () => {
     if (!email.trim() || !password.trim()) {
       Alert.alert('Ошибка', 'Пожалуйста, заполните все поля');
       return;
     }
-    
+
     try {
       await login(email.trim(), password.trim());
       // После успешного входа редирект произойдет автоматически в хуке useEffect
@@ -174,7 +187,10 @@ export default function LoginScreen() {
   // VK Login Handler
   const handleVKLogin = async () => {
     if (!YOUR_CLIENT_ID || !FINAL_REDIRECT_URI) {
-      Alert.alert('Ошибка конфигурации VK', 'VK Client ID или Redirect URI не настроены. Сообщите разработчикам, эти сантехники опять что-то напутали!');
+      Alert.alert(
+        'Ошибка конфигурации VK',
+        'VK Client ID или Redirect URI не настроены. Сообщите разработчикам, эти сантехники опять что-то напутали!'
+      );
       return;
     }
     console.log('Handling VK Login...');
@@ -187,7 +203,8 @@ export default function LoginScreen() {
     setVkCodeVerifier(verifier);
     setVkAuthState(state);
 
-    const authUrl = `https://id.vk.com/authorize?client_id=${YOUR_CLIENT_ID}` +
+    const authUrl =
+      `https://id.vk.com/authorize?client_id=${YOUR_CLIENT_ID}` +
       `&redirect_uri=${encodeURIComponent(FINAL_REDIRECT_URI)}` +
       `&response_type=code` +
       `&code_challenge=${challenge}` +
@@ -196,17 +213,20 @@ export default function LoginScreen() {
       `&lang_id=0` + // 0 for Russian, 3 for English
       `&scheme=space_gray`;
 
-    console.log("Opening VK Auth URL:", authUrl);
+    console.log('Opening VK Auth URL:', authUrl);
     try {
-        const canOpen = await Linking.canOpenURL(authUrl);
-        if (canOpen) {
-          Linking.openURL(authUrl);
-        } else {
-          Alert.alert('Pizdec!', 'Cannot open VK auth URL. Maybe no browser installed? Or bad URL pipe.');
-        }
+      const canOpen = await Linking.canOpenURL(authUrl);
+      if (canOpen) {
+        Linking.openURL(authUrl);
+      } else {
+        Alert.alert(
+          'Pizdec!',
+          'Cannot open VK auth URL. Maybe no browser installed? Or bad URL pipe.'
+        );
+      }
     } catch (error) {
-        console.error("Error opening VK URL:", error);
-        Alert.alert('Ошибка', 'Не удалось открыть страницу входа VK.');
+      console.error('Error opening VK URL:', error);
+      Alert.alert('Ошибка', 'Не удалось открыть страницу входа VK.');
     }
   };
 
@@ -218,8 +238,8 @@ export default function LoginScreen() {
       <StatusBar style="dark" />
       <ScrollView contentContainerStyle={styles.container}>
         <View style={styles.header}>
-          <Image 
-            source={require('../../assets/images/logo.png')} 
+          <Image
+            source={require('../../assets/images/logo.png')}
             style={styles.logo}
             resizeMode="contain"
           />
@@ -251,10 +271,7 @@ export default function LoginScreen() {
               onChangeText={setPassword}
               secureTextEntry={!showPassword}
             />
-            <TouchableOpacity 
-              style={styles.eyeIcon} 
-              onPress={() => setShowPassword(!showPassword)}
-            >
+            <TouchableOpacity style={styles.eyeIcon} onPress={() => setShowPassword(!showPassword)}>
               <MaterialIcons
                 name={showPassword ? 'visibility' : 'visibility-off'}
                 size={20}
@@ -267,11 +284,7 @@ export default function LoginScreen() {
             <Text style={styles.forgotPasswordText}>Забыли пароль?</Text>
           </TouchableOpacity>
 
-          <TouchableOpacity
-            style={styles.loginButton}
-            onPress={handleLogin}
-            disabled={isLoading}
-          >
+          <TouchableOpacity style={styles.loginButton} onPress={handleLogin} disabled={isLoading}>
             {isLoading ? (
               <ActivityIndicator color="#fff" size="small" />
             ) : (

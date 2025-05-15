@@ -1,3 +1,14 @@
+import { router, useLocalSearchParams } from 'expo-router';
+import {
+  SendHorizontal,
+  Paperclip,
+  Mic,
+  ChevronLeft,
+  MoreVertical,
+  BookOpen,
+  Star,
+  ClipboardList,
+} from 'lucide-react-native';
 import React, { useState, useRef, useEffect, useCallback, useMemo } from 'react';
 import {
   View,
@@ -14,30 +25,24 @@ import {
   Modal,
   ScrollView,
 } from 'react-native';
-import { SendHorizontal, Paperclip, Mic, ChevronLeft, MoreVertical, BookOpen, Star, ClipboardList } from 'lucide-react-native';
-import { router, useLocalSearchParams } from 'expo-router';
-import logger from '../utils/logger';
-import { useAuth } from '../hooks/useAuth';
+
+import { useAuth } from '../../hooks/useAuth';
+import { AgentFactory, TestQuestion, LearningTrack, Test } from '../../models/LearningAgents';
+import logger from '../../utils/logger';
 // Импортируем наши агенты
-import { 
-  AgentFactory, 
-  TestQuestion, 
-  LearningTrack,
-  Test
-} from '../models/LearningAgents';
 
 // Общая цветовая палитра приложения
 const COLORS = {
-  primary: '#5B67CA',     // Основной синий/фиолетовый
-  secondary: '#43C0B4',   // Бирюзовый
-  accent1: '#F98D51',     // Оранжевый
-  accent2: '#EC575B',     // Красный
-  accent3: '#FFCA42',     // Желтый
-  background: '#F2F5FF',  // Светлый фон
-  card: '#FFFFFF',        // Белый для карточек
-  text: '#25335F',        // Основной текст
-  textSecondary: '#7F8BB7',  // Вторичный текст
-  border: '#EAEDF5'       // Граница
+  primary: '#5B67CA', // Основной синий/фиолетовый
+  secondary: '#43C0B4', // Бирюзовый
+  accent1: '#F98D51', // Оранжевый
+  accent2: '#EC575B', // Красный
+  accent3: '#FFCA42', // Желтый
+  background: '#F2F5FF', // Светлый фон
+  card: '#FFFFFF', // Белый для карточек
+  text: '#25335F', // Основной текст
+  textSecondary: '#7F8BB7', // Вторичный текст
+  border: '#EAEDF5', // Граница
 };
 
 const API_BASE_URL = process.env.EXPO_PUBLIC_API_BASE_URL;
@@ -71,7 +76,7 @@ export default function ChatScreen() {
   const [isLoading, setIsLoading] = useState(false);
   const flatListRef = useRef<FlatList>(null);
   const [isNewChat, setIsNewChat] = useState(!params?.chatId); // Track if this is a new chat
-  
+
   // Новые состояния для образовательной функциональности
   const [showTestModal, setShowTestModal] = useState(false);
   const [currentTest, setCurrentTest] = useState<Test | null>(null);
@@ -84,27 +89,30 @@ export default function ChatScreen() {
   const [currentLesson, setCurrentLesson] = useState<any | null>(null);
   const [showActionMenu, setShowActionMenu] = useState(false);
   const [menuType, setMenuType] = useState<'M1' | 'M2' | null>(null);
-  
+
   // Создаем экземпляры агентов
   const agentFactory = useMemo(() => {
     const apiBaseUrl = API_BASE_URL || '';
     return new AgentFactory(apiBaseUrl, token || '');
   }, [token]);
-  
+
   const assistantAgent = useMemo(() => agentFactory.createAssistantAgent(), [agentFactory]);
   const contentAgent = useMemo(() => agentFactory.createContentGenerationAgent(), [agentFactory]);
   const analyticalAgent = useMemo(() => agentFactory.createAnalyticalAgent(), [agentFactory]);
   const assignmentAgent = useMemo(() => agentFactory.createAssignmentCheckAgent(), [agentFactory]);
   const schedulerAgent = useMemo(() => agentFactory.createSchedulerAgent(), [agentFactory]);
 
-  const defaultWelcomeMessages = useMemo(() => [
-    {
-      id: '1',
-      text: 'Добро пожаловать в образовательный чат! Я ваш AI-ассистент. Как я могу помочь вам сегодня?',
-      isUser: false,
-      timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-    }
-  ], []);
+  const defaultWelcomeMessages = useMemo(
+    () => [
+      {
+        id: '1',
+        text: 'Добро пожаловать в образовательный чат! Я ваш AI-ассистент. Как я могу помочь вам сегодня?',
+        isUser: false,
+        timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+      },
+    ],
+    []
+  );
 
   // Fetch messages from API or use default welcome message
   const fetchMessages = useCallback(async () => {
@@ -113,10 +121,10 @@ export default function ChatScreen() {
       setMessages(defaultWelcomeMessages);
       return;
     }
-    
+
     logger.info('Fetching chat messages', { chatId: currentChatId });
     setIsLoading(true);
-    
+
     // Проверяем есть ли токен пользователя
     if (!token) {
       logger.error('No user token available, cannot fetch messages');
@@ -124,17 +132,17 @@ export default function ChatScreen() {
       setMessages(defaultWelcomeMessages);
       return;
     }
-    
+
     try {
       // Пробуем сначала использовать токен пользователя
       const response = await fetch(`${API_BASE_URL}/api/gigachat/chat/${currentChatId}`, {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json',
-          Authorization: 'Bearer ' + token
-        }
+          Authorization: 'Bearer ' + token,
+        },
       });
-      
+
       // Если запрос не удался, пробуем использовать admin токен
       if (!response.ok) {
         // Если ошибка не связана с авторизацией, просто возвращаем сообщение по умолчанию
@@ -143,34 +151,34 @@ export default function ChatScreen() {
           setMessages(defaultWelcomeMessages);
           return;
         }
-        
+
         // Пробуем с admin токеном
         logger.warn('User token not authorized for chat messages, trying admin login');
         const adminToken = await getAdminToken();
-        
+
         if (!adminToken) {
           logger.error('Failed to get admin token for messages');
           setMessages(defaultWelcomeMessages);
           return;
         }
-        
+
         const adminResponse = await fetch(`${API_BASE_URL}/api/gigachat/chat/${currentChatId}`, {
           method: 'GET',
           headers: {
             'Content-Type': 'application/json',
-            Authorization: 'Bearer ' + adminToken
-          }
+            Authorization: 'Bearer ' + adminToken,
+          },
         });
-        
+
         if (!adminResponse.ok) {
           logger.error(`Failed to fetch messages with admin token: ${adminResponse.status}`);
           setMessages(defaultWelcomeMessages);
           return;
         }
-        
+
         const adminData = await adminResponse.json();
         logger.debug('Received chat data with admin token', adminData);
-        
+
         if (adminData) {
           const messagesData = adminData.messages.map((item: any, index: number) => ({
             id: index.toString(),
@@ -179,18 +187,22 @@ export default function ChatScreen() {
             timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
           }));
           setMessages(messagesData.slice(1));
-          logger.info('Messages loaded successfully with admin token', { count: messagesData.length });
+          logger.info('Messages loaded successfully with admin token', {
+            count: messagesData.length,
+          });
         } else {
-          logger.warn('No messages found or invalid data format with admin token, using default welcome message');
+          logger.warn(
+            'No messages found or invalid data format with admin token, using default welcome message'
+          );
           setMessages(defaultWelcomeMessages);
         }
         return;
       }
-      
+
       // Успешный запрос с токеном пользователя
       const data = await response.json();
       logger.debug('Received chat data', data);
-      
+
       if (data) {
         const messagesData = data.messages.map((item: any, index: number) => ({
           id: index.toString(),
@@ -240,8 +252,8 @@ export default function ChatScreen() {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': 'Basic ' + btoa('admin:admin123')
-        }
+          Authorization: 'Basic ' + btoa('admin:admin123'),
+        },
       });
 
       if (!loginResponse.ok) {
@@ -261,7 +273,7 @@ export default function ChatScreen() {
   const createNewChat = async () => {
     try {
       logger.info('Creating new chat');
-      
+
       // Пробуем создать чат с токеном пользователя
       if (token) {
         try {
@@ -269,31 +281,31 @@ export default function ChatScreen() {
             method: 'POST',
             headers: {
               'Content-Type': 'application/json',
-              Authorization: 'Bearer ' + token
-            }
+              Authorization: 'Bearer ' + token,
+            },
           });
-          
+
           if (response.ok) {
             const data = await response.json();
             logger.debug('New chat created with user token', data);
             return data.chat_id;
           }
-          
+
           // Если не сработало с пользовательским токеном, продолжаем с admin токеном
           logger.warn('Failed to create chat with user token, trying admin token');
         } catch (error) {
           logger.warn('Error creating chat with user token:', error);
         }
       }
-      
+
       // Fallback с admin токеном
       const adminToken = await getAdminToken();
       const response = await fetch(`${API_BASE_URL}/api/gigachat/new`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          Authorization: 'Bearer ' + adminToken
-        }
+          Authorization: 'Bearer ' + adminToken,
+        },
         // No payload needed as per requirements
       });
 
@@ -303,7 +315,7 @@ export default function ChatScreen() {
 
       const data = await response.json();
       logger.debug('New chat created with admin token', data);
-      
+
       return data.chat_id;
     } catch (error) {
       logger.error('Failed to create new chat', error);
@@ -316,7 +328,7 @@ export default function ChatScreen() {
     logger.info('Sending message', { messageLength: inputText.length });
 
     const currentTime = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-    
+
     const newMessage: Message = {
       id: Date.now().toString(),
       text: inputText.trim(),
@@ -331,16 +343,16 @@ export default function ChatScreen() {
     try {
       // Анализируем запрос пользователя на предмет образовательного содержания
       const educationalQuery = await assistantAgent.processUserQuery(newMessage.text);
-      
+
       // Если это образовательный запрос, обрабатываем его
       if (educationalQuery.action === 'START_TEST') {
         // Сохраняем информацию о предмете и теме
         if (educationalQuery.subject) setCurrentSubject(educationalQuery.subject);
         if (educationalQuery.topic) setCurrentTopic(educationalQuery.topic);
-        
+
         // Задаем тип теста и подготавливаем тест
         setCurrentTestType(educationalQuery.testType || 'T1');
-        
+
         // Добавляем ответ бота
         const botResponse: Message = {
           id: (Date.now() + 1).toString(),
@@ -348,18 +360,22 @@ export default function ChatScreen() {
           isUser: false,
           timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
         };
-        
+
         setMessages(prev => [...prev, botResponse]);
-        
+
         // Через небольшую задержку показываем модальное окно с тестом
         setTimeout(() => {
-          prepareTest(educationalQuery.testType || 'T1', educationalQuery.subject || '', educationalQuery.topic);
+          prepareTest(
+            educationalQuery.testType || 'T1',
+            educationalQuery.subject || '',
+            educationalQuery.topic
+          );
         }, 1500);
-        
+
         setIsLoading(false);
         return;
       }
-      
+
       // Если это не образовательный запрос, продолжаем стандартную обработку
       // 2. Create a new chat if this is a new chat session
       let chatIdToUse = currentChatId;
@@ -386,44 +402,48 @@ export default function ChatScreen() {
           throw new Error('Не удалось получить токен для отправки сообщения');
         }
       }
-      
+
       // Отправка сообщения без дополнительной информации о пользователе
       // Это поможет избежать ошибки с undefined selected_subjects
       const messageData = {
         message: newMessage.text,
-        simple_mode: true // Флаг, указывающий, что это простое сообщение без данных профиля
+        simple_mode: true, // Флаг, указывающий, что это простое сообщение без данных профиля
       };
-      
-      logger.debug('Sending request to API', { message: newMessage.text, chatId: chatIdToUse, simple_mode: true });
+
+      logger.debug('Sending request to API', {
+        message: newMessage.text,
+        chatId: chatIdToUse,
+        simple_mode: true,
+      });
       try {
         // Пробуем отправить с токеном пользователя
         const response = await fetch(`${API_BASE_URL}/api/gigachat/chat/${chatIdToUse}`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
-            Authorization: 'Bearer ' + userToken
+            Authorization: 'Bearer ' + userToken,
           },
           body: JSON.stringify(messageData),
         });
-        
+
         // Если запрос с токеном пользователя не удался, пробуем с admin токеном
         if (!response.ok && (response.status === 401 || response.status === 403)) {
           logger.warn('User token not authorized for sending message, trying admin token');
           const adminToken = await getAdminToken();
-          
+
           const adminResponse = await fetch(`${API_BASE_URL}/api/gigachat/chat/${chatIdToUse}`, {
             method: 'POST',
             headers: {
               'Content-Type': 'application/json',
-              Authorization: 'Bearer ' + adminToken
+              Authorization: 'Bearer ' + adminToken,
             },
             body: JSON.stringify(messageData),
           });
-          
+
           if (!adminResponse.ok) {
             throw new Error(`Failed to send message with admin token: ${adminResponse.status}`);
           }
-          
+
           const adminData = await adminResponse.json();
           const botResponse: Message = {
             id: (Date.now() + 1).toString(),
@@ -431,23 +451,23 @@ export default function ChatScreen() {
             isUser: false,
             timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
           };
-          
+
           setMessages(prev => [...prev, botResponse]);
           logger.info('Bot response added successfully using admin token');
           return;
         }
-        
+
         // Если запрос с токеном пользователя прошел успешно
         const data = await response.json();
         logger.debug('Received API response', data);
-        
+
         const botResponse: Message = {
           id: (Date.now() + 1).toString(),
           text: data.message || 'Что-то пошло нет так, я не могу сейчас ответить тебе.',
           isUser: false,
           timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
         };
-        
+
         setMessages(prev => [...prev, botResponse]);
         logger.info('Bot response added successfully');
       } catch (apiError) {
@@ -473,23 +493,23 @@ export default function ChatScreen() {
   const prepareTest = async (testType: 'T1' | 'T2', subject: string, topic?: string) => {
     try {
       logger.info('Preparing test', { testType, subject, topic });
-      
+
       // Создаем тестовые вопросы в зависимости от типа теста
       const questions: TestQuestion[] = [];
-      
+
       if (testType === 'T1' && topic) {
         // Тест по конкретной теме
         questions.push({
           id: '1',
           question: `Насколько хорошо вы знакомы с темой "${topic}" в предмете "${subject}"?`,
           options: ['Хорошо знаком', 'Имею базовое представление', 'Практически не знаком'],
-          type: 'self-assessment'
+          type: 'self-assessment',
         });
-        
+
         questions.push({
           id: '2',
           question: `Решите задачу по теме "${topic}": [здесь будет сгенерирована задача]`,
-          type: 'open-ended'
+          type: 'open-ended',
         });
       } else if (testType === 'T2') {
         // Тест по всему предмету
@@ -497,9 +517,9 @@ export default function ChatScreen() {
           id: '1',
           question: `Оцените ваш уровень знаний по предмету "${subject}" в целом`,
           options: ['Продвинутый', 'Средний', 'Начинающий'],
-          type: 'self-assessment'
+          type: 'self-assessment',
         });
-        
+
         // Добавим вопросы по основным темам предмета
         if (subject === 'математика') {
           const mathTopics = ['Алгебра', 'Геометрия', 'Тригонометрия', 'Функции', 'Уравнения'];
@@ -508,32 +528,36 @@ export default function ChatScreen() {
               id: `topic-${index + 2}`,
               question: `Насколько хорошо вы знаете тему "${mathTopic}"?`,
               options: ['Знаком', 'Сомневаюсь', 'Не знаком'],
-              type: 'self-assessment'
+              type: 'self-assessment',
             });
           });
         }
-        
+
         // Добавляем задачу для проверки знаний
         questions.push({
           id: 'problem-1',
           question: `Решите задачу по предмету "${subject}": [здесь будет сгенерирована задача]`,
-          type: 'open-ended'
+          type: 'open-ended',
         });
       }
-      
+
       // Создаем объект теста
       const test: Test = {
         id: `test-${Date.now()}`,
-        title: testType === 'T1' ? `Тест по теме "${topic}"` : `Диагностика знаний по предмету "${subject}"`,
-        description: 'Этот тест поможет оценить ваш текущий уровень знаний и подготовить персонализированный план обучения.',
-        questions
+        title:
+          testType === 'T1'
+            ? `Тест по теме "${topic}"`
+            : `Диагностика знаний по предмету "${subject}"`,
+        description:
+          'Этот тест поможет оценить ваш текущий уровень знаний и подготовить персонализированный план обучения.',
+        questions,
       };
-      
+
       setCurrentTest(test);
       setShowTestModal(true);
     } catch (error) {
       logger.error('Error preparing test', error);
-      
+
       // Показываем сообщение об ошибке
       const errorMessage: Message = {
         id: (Date.now() + 1).toString(),
@@ -541,7 +565,7 @@ export default function ChatScreen() {
         isUser: false,
         timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
       };
-      
+
       setMessages(prev => [...prev, errorMessage]);
     }
   };
@@ -552,51 +576,54 @@ export default function ChatScreen() {
 
   const keyExtractor = useCallback((item: Message) => item.id, []);
 
-  const renderMessage = useCallback(({ item }: { item: Message }) => (
-    <View
-      style={[
-        styles.messageContainer,
-        item.isUser ? styles.userMessageContainer : styles.botMessageContainer,
-      ]}
-    >
-      {!item.isUser && (
-        <View style={styles.avatarContainer}>
-          <Image 
-          source={require('../../images/qwen-ai.png')} 
-          style={styles.avatar} 
-            resizeMode="contain"
-          />
-        </View>
-      )}
+  const renderMessage = useCallback(
+    ({ item }: { item: Message }) => (
       <View
         style={[
-          styles.messageBubble,
-          item.isUser ? styles.userMessageBubble : styles.botMessageBubble,
+          styles.messageContainer,
+          item.isUser ? styles.userMessageContainer : styles.botMessageContainer,
         ]}
       >
-        <Text style={[styles.messageText, item.isUser && styles.userMessageText]}>
-          {item.text}
-        </Text>
-        <Text style={[styles.timestamp, item.isUser && styles.userTimestamp]}>
-          {item.timestamp}
-        </Text>
+        {!item.isUser && (
+          <View style={styles.avatarContainer}>
+            <Image
+              source={require('../../images/qwen-ai.png')}
+              style={styles.avatar}
+              resizeMode="contain"
+            />
+          </View>
+        )}
+        <View
+          style={[
+            styles.messageBubble,
+            item.isUser ? styles.userMessageBubble : styles.botMessageBubble,
+          ]}
+        >
+          <Text style={[styles.messageText, item.isUser && styles.userMessageText]}>
+            {item.text}
+          </Text>
+          <Text style={[styles.timestamp, item.isUser && styles.userTimestamp]}>
+            {item.timestamp}
+          </Text>
+        </View>
       </View>
-    </View>
-  ), []);
+    ),
+    []
+  );
 
   // Обработка завершения теста
   const handleTestComplete = async () => {
     setTestCompleted(true);
     setShowTestModal(false);
-    
+
     try {
       // Анализируем результаты теста
       if (currentTest) {
         const testResults = await analyticalAgent.analyzeTestResults(currentTest, testAnswers);
-        
+
         // Формируем сообщение с результатами
         let resultMessage = `Тест завершен! Результат: ${testResults.score}%\n\n`;
-        
+
         if (testResults.weakTopics.length > 0) {
           resultMessage += `Темы, требующие внимания:\n`;
           testResults.weakTopics.forEach(topic => {
@@ -604,7 +631,7 @@ export default function ChatScreen() {
           });
           resultMessage += `\n`;
         }
-        
+
         if (testResults.successfulTopics.length > 0) {
           resultMessage += `Темы, которые вы хорошо усвоили:\n`;
           testResults.successfulTopics.forEach(topic => {
@@ -612,7 +639,7 @@ export default function ChatScreen() {
           });
           resultMessage += `\n`;
         }
-        
+
         // Добавляем рекомендации
         if (testResults.recommendations.length > 0) {
           resultMessage += `Рекомендации:\n`;
@@ -620,7 +647,7 @@ export default function ChatScreen() {
             resultMessage += `• ${rec}\n`;
           });
         }
-        
+
         // Добавляем сообщение с результатами теста
         const botResponseResult: Message = {
           id: (Date.now() + 1).toString(),
@@ -628,9 +655,9 @@ export default function ChatScreen() {
           isUser: false,
           timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
         };
-        
+
         setMessages(prev => [...prev, botResponseResult]);
-        
+
         // Если тест выявил слабые темы, показываем меню M1
         if (testResults.weakTopics.length > 0) {
           setTimeout(() => {
@@ -640,7 +667,7 @@ export default function ChatScreen() {
               isUser: false,
               timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
             };
-            
+
             setMessages(prev => [...prev, menuMessage]);
             setMenuType('M1');
             setShowActionMenu(true);
@@ -654,9 +681,9 @@ export default function ChatScreen() {
               isUser: false,
               timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
             };
-            
+
             setMessages(prev => [...prev, successMessage]);
-            
+
             if (currentSubject && currentTopic) {
               setTimeout(() => {
                 generateLesson(currentSubject, currentTopic, 1);
@@ -667,31 +694,31 @@ export default function ChatScreen() {
       }
     } catch (error) {
       logger.error('Error processing test results', error);
-      
+
       const errorMessage: Message = {
         id: (Date.now() + 1).toString(),
         text: 'Извините, произошла ошибка при обработке результатов теста. Пожалуйста, попробуйте еще раз позже.',
         isUser: false,
         timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
       };
-      
+
       setMessages(prev => [...prev, errorMessage]);
     }
   };
-  
+
   // Обработка ответов на вопросы теста
   const handleAnswerChange = (questionId: string, answer: string) => {
     setTestAnswers(prev => ({
       ...prev,
-      [questionId]: answer
+      [questionId]: answer,
     }));
   };
-  
+
   // Генерация урока
   const generateLesson = async (subject: string, topic: string, level: number) => {
     try {
       setIsLoading(true);
-      
+
       // Добавляем сообщение о генерации урока
       const generatingMessage: Message = {
         id: (Date.now() + 1).toString(),
@@ -699,13 +726,13 @@ export default function ChatScreen() {
         isUser: false,
         timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
       };
-      
+
       setMessages(prev => [...prev, generatingMessage]);
-      
+
       // Генерируем урок
       const lesson = await contentAgent.generateLesson(subject, topic, level);
       setCurrentLesson(lesson);
-      
+
       // Добавляем сообщение с уроком
       const lessonReadyMessage: Message = {
         id: (Date.now() + 2).toString(),
@@ -713,34 +740,33 @@ export default function ChatScreen() {
         isUser: false,
         timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
       };
-      
+
       setMessages(prev => [...prev, lessonReadyMessage]);
-      
+
       // Показываем урок
       setTimeout(() => {
         setShowLessonModal(true);
       }, 1000);
-      
     } catch (error) {
       logger.error('Error generating lesson', error);
-      
+
       const errorMessage: Message = {
         id: (Date.now() + 1).toString(),
         text: 'Извините, произошла ошибка при генерации урока. Пожалуйста, попробуйте еще раз позже.',
         isUser: false,
         timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
       };
-      
+
       setMessages(prev => [...prev, errorMessage]);
     } finally {
       setIsLoading(false);
     }
   };
-  
+
   // Обработка действий из меню M1
   const handleMenuAction = (action: string) => {
     setShowActionMenu(false);
-    
+
     if (menuType === 'M1') {
       if (action === '1.1' && currentLesson) {
         // Разобрать пример
@@ -750,7 +776,7 @@ export default function ChatScreen() {
           isUser: false,
           timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
         };
-        
+
         setMessages(prev => [...prev, exampleMessage]);
       } else if (action === '1.2' && currentLesson) {
         // Выдать еще одно задание
@@ -760,7 +786,7 @@ export default function ChatScreen() {
           isUser: false,
           timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
         };
-        
+
         setMessages(prev => [...prev, assignmentMessage]);
       } else if (action === '1.3') {
         // Недостающие темы
@@ -777,7 +803,7 @@ export default function ChatScreen() {
           isUser: false,
           timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
         };
-        
+
         setMessages(prev => [...prev, mediumAssignmentMessage]);
       } else if (action === '2.2') {
         // Пройти задание на 3 звездочки
@@ -787,7 +813,7 @@ export default function ChatScreen() {
           isUser: false,
           timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
         };
-        
+
         setMessages(prev => [...prev, hardAssignmentMessage]);
       } else if (action === '2.3') {
         // Не проходить
@@ -797,7 +823,7 @@ export default function ChatScreen() {
           isUser: false,
           timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
         };
-        
+
         setMessages(prev => [...prev, skipMessage]);
       }
     }
@@ -806,38 +832,33 @@ export default function ChatScreen() {
   return (
     <SafeAreaView style={styles.safeArea}>
       <View style={styles.header}>
-        <TouchableOpacity 
-          style={styles.backButton} 
-          onPress={() => router.back()}
-        >
+        <TouchableOpacity style={styles.backButton} onPress={() => router.back()}>
           <ChevronLeft size={24} color={COLORS.text} />
         </TouchableOpacity>
-        
+
         <View style={styles.headerTitleContainer}>
           <View style={styles.assistantAvatarContainer}>
-            <Image 
-          source={require('../../images/qwen-ai.png')} 
-          style={styles.assistantAvatar} 
+            <Image
+              source={require('../../images/qwen-ai.png')}
+              style={styles.assistantAvatar}
               resizeMode="contain"
             />
             <View style={styles.statusIndicator} />
           </View>
           <View>
             <Text style={styles.headerTitle}>AI-ассистент</Text>
-            <Text style={styles.headerSubtitle}>
-              {currentChatId ? 'Онлайн' : 'Новый чат'}
-            </Text>
+            <Text style={styles.headerSubtitle}>{currentChatId ? 'Онлайн' : 'Новый чат'}</Text>
           </View>
         </View>
-        
-        <TouchableOpacity 
-          style={styles.menuButton} 
+
+        <TouchableOpacity
+          style={styles.menuButton}
           onPress={() => logger.debug('Menu button pressed')}
         >
           <MoreVertical size={20} color={COLORS.text} />
         </TouchableOpacity>
       </View>
-      
+
       <KeyboardAvoidingView
         style={styles.container}
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
@@ -864,30 +885,21 @@ export default function ChatScreen() {
           <View style={styles.menuContainer}>
             {menuType === 'M1' && (
               <>
-                <TouchableOpacity 
-                  style={styles.menuButton}
-                  onPress={() => handleMenuAction('1.1')}
-                >
+                <TouchableOpacity style={styles.menuButton} onPress={() => handleMenuAction('1.1')}>
                   <View style={styles.menuButtonIcon}>
                     <BookOpen size={18} color={COLORS.primary} />
                   </View>
                   <Text style={styles.menuButtonText}>Разобрать пример</Text>
                 </TouchableOpacity>
-                
-                <TouchableOpacity 
-                  style={styles.menuButton}
-                  onPress={() => handleMenuAction('1.2')}
-                >
+
+                <TouchableOpacity style={styles.menuButton} onPress={() => handleMenuAction('1.2')}>
                   <View style={styles.menuButtonIcon}>
                     <ClipboardList size={18} color={COLORS.primary} />
                   </View>
                   <Text style={styles.menuButtonText}>Выдать еще одно задание</Text>
                 </TouchableOpacity>
-                
-                <TouchableOpacity 
-                  style={styles.menuButton}
-                  onPress={() => handleMenuAction('1.3')}
-                >
+
+                <TouchableOpacity style={styles.menuButton} onPress={() => handleMenuAction('1.3')}>
                   <View style={styles.menuButtonIcon}>
                     <BookOpen size={18} color={COLORS.primary} />
                   </View>
@@ -895,24 +907,18 @@ export default function ChatScreen() {
                 </TouchableOpacity>
               </>
             )}
-            
+
             {menuType === 'M2' && (
               <>
-                <TouchableOpacity 
-                  style={styles.menuButton}
-                  onPress={() => handleMenuAction('2.1')}
-                >
+                <TouchableOpacity style={styles.menuButton} onPress={() => handleMenuAction('2.1')}>
                   <View style={styles.menuButtonIcon}>
                     <Star size={18} color={COLORS.primary} />
                     <Star size={18} color={COLORS.primary} />
                   </View>
                   <Text style={styles.menuButtonText}>Пройти задание на 2 звездочки</Text>
                 </TouchableOpacity>
-                
-                <TouchableOpacity 
-                  style={styles.menuButton}
-                  onPress={() => handleMenuAction('2.2')}
-                >
+
+                <TouchableOpacity style={styles.menuButton} onPress={() => handleMenuAction('2.2')}>
                   <View style={styles.menuButtonIcon}>
                     <Star size={18} color={COLORS.primary} />
                     <Star size={18} color={COLORS.primary} />
@@ -920,11 +926,8 @@ export default function ChatScreen() {
                   </View>
                   <Text style={styles.menuButtonText}>Пройти задание на 3 звездочки</Text>
                 </TouchableOpacity>
-                
-                <TouchableOpacity 
-                  style={styles.menuButton}
-                  onPress={() => handleMenuAction('2.3')}
-                >
+
+                <TouchableOpacity style={styles.menuButton} onPress={() => handleMenuAction('2.3')}>
                   <Text style={styles.menuButtonText}>Не проходить</Text>
                 </TouchableOpacity>
               </>
@@ -933,34 +936,34 @@ export default function ChatScreen() {
         )}
 
         <View style={styles.inputContainer}>
-          <TouchableOpacity 
+          <TouchableOpacity
             style={styles.attachButton}
             onPress={() => logger.debug('Attachment button pressed')}
           >
             <Paperclip size={22} color={COLORS.primary} />
           </TouchableOpacity>
-          
+
           <TextInput
             style={styles.input}
             value={inputText}
             onChangeText={handleTextChange}
-            placeholder={isNewChat ? "Начните новый чат..." : "Введите сообщение..."}
+            placeholder={isNewChat ? 'Начните новый чат...' : 'Введите сообщение...'}
             multiline
             maxLength={500}
             placeholderTextColor={COLORS.textSecondary}
             onFocus={() => logger.debug('Input focused')}
           />
-          
+
           {inputText.trim() === '' ? (
-            <TouchableOpacity 
+            <TouchableOpacity
               style={styles.micButton}
               onPress={() => logger.debug('Mic button pressed')}
             >
               <Mic size={22} color={COLORS.primary} />
             </TouchableOpacity>
           ) : (
-            <TouchableOpacity 
-              style={[styles.sendButton, isLoading && styles.disabledButton]} 
+            <TouchableOpacity
+              style={[styles.sendButton, isLoading && styles.disabledButton]}
               onPress={sendMessage}
               disabled={isLoading}
             >
@@ -969,12 +972,12 @@ export default function ChatScreen() {
           )}
         </View>
       </KeyboardAvoidingView>
-      
+
       {/* Модальное окно для теста */}
       <Modal
         visible={showTestModal}
         animationType="slide"
-        transparent={true}
+        transparent
         onRequestClose={() => setShowTestModal(false)}
       >
         <View style={styles.modalContainer}>
@@ -983,82 +986,81 @@ export default function ChatScreen() {
               <Text style={styles.modalTitle}>{currentTest?.title}</Text>
               <Text style={styles.modalDescription}>{currentTest?.description}</Text>
             </View>
-            
+
             <ScrollView style={styles.modalBody}>
               {currentTest?.questions.map((question, index) => (
                 <View key={question.id} style={styles.questionContainer}>
                   <Text style={styles.questionText}>{`${index + 1}. ${question.question}`}</Text>
-                  
-                  {question.type === 'multiple-choice' && question.options && (
-                    question.options.map((option, optIndex) => (
+
+                  {question.type === 'multiple-choice' &&
+                    question.options?.map((option, optIndex) => (
                       <TouchableOpacity
                         key={`${question.id}-${optIndex}`}
                         style={[
                           styles.optionButton,
-                          testAnswers[question.id] === option && styles.optionButtonSelected
+                          testAnswers[question.id] === option && styles.optionButtonSelected,
                         ]}
                         onPress={() => handleAnswerChange(question.id, option)}
                       >
-                        <Text style={[
-                          styles.optionText,
-                          testAnswers[question.id] === option && styles.optionTextSelected
-                        ]}>
+                        <Text
+                          style={[
+                            styles.optionText,
+                            testAnswers[question.id] === option && styles.optionTextSelected,
+                          ]}
+                        >
                           {option}
                         </Text>
                       </TouchableOpacity>
-                    ))
-                  )}
-                  
-                  {question.type === 'self-assessment' && question.options && (
-                    question.options.map((option, optIndex) => (
+                    ))}
+
+                  {question.type === 'self-assessment' &&
+                    question.options?.map((option, optIndex) => (
                       <TouchableOpacity
                         key={`${question.id}-${optIndex}`}
                         style={[
                           styles.optionButton,
-                          testAnswers[question.id] === option && styles.optionButtonSelected
+                          testAnswers[question.id] === option && styles.optionButtonSelected,
                         ]}
                         onPress={() => handleAnswerChange(question.id, option)}
                       >
-                        <Text style={[
-                          styles.optionText,
-                          testAnswers[question.id] === option && styles.optionTextSelected
-                        ]}>
+                        <Text
+                          style={[
+                            styles.optionText,
+                            testAnswers[question.id] === option && styles.optionTextSelected,
+                          ]}
+                        >
                           {option}
                         </Text>
                       </TouchableOpacity>
-                    ))
-                  )}
-                  
+                    ))}
+
                   {question.type === 'open-ended' && (
                     <TextInput
                       style={styles.openEndedInput}
-                      multiline={true}
+                      multiline
                       placeholder="Введите ваш ответ здесь..."
                       value={testAnswers[question.id] || ''}
-                      onChangeText={(text) => handleAnswerChange(question.id, text)}
+                      onChangeText={text => handleAnswerChange(question.id, text)}
                     />
                   )}
                 </View>
               ))}
             </ScrollView>
-            
+
             <View style={styles.modalFooter}>
-              <TouchableOpacity
-                style={styles.completeButton}
-                onPress={handleTestComplete}
-              >
+              <TouchableOpacity style={styles.completeButton} onPress={handleTestComplete}>
                 <Text style={styles.completeButtonText}>Завершить тест</Text>
               </TouchableOpacity>
             </View>
           </View>
         </View>
       </Modal>
-      
+
       {/* Модальное окно для урока */}
       <Modal
         visible={showLessonModal}
         animationType="slide"
-        transparent={true}
+        transparent
         onRequestClose={() => setShowLessonModal(false)}
       >
         <View style={styles.modalContainer}>
@@ -1066,19 +1068,25 @@ export default function ChatScreen() {
             <View style={styles.modalHeader}>
               <Text style={styles.modalTitle}>{currentLesson?.title}</Text>
             </View>
-            
+
             <ScrollView style={styles.modalBody}>
               <View style={styles.lessonContent}>
                 <Text style={styles.lessonText}>{currentLesson?.content}</Text>
-                
+
                 <View style={styles.assignmentsContainer}>
                   <Text style={styles.assignmentsTitle}>Задания:</Text>
-                  
+
                   {currentLesson?.assignments.map((assignment: LessonAssignment, index: number) => (
                     <View key={assignment.id} style={styles.assignmentItem}>
                       <View style={styles.assignmentHeader}>
                         <Text style={styles.assignmentTitle}>
-                          Задание {index + 1} ({assignment.difficulty} {assignment.difficulty === 1 ? 'звездочка' : assignment.difficulty === 2 ? 'звездочки' : 'звездочки'})
+                          Задание {index + 1} ({assignment.difficulty}{' '}
+                          {assignment.difficulty === 1
+                            ? 'звездочка'
+                            : assignment.difficulty === 2
+                              ? 'звездочки'
+                              : 'звездочки'}
+                          )
                         </Text>
                         <View style={styles.starsContainer}>
                           {Array.from({ length: assignment.difficulty }).map((_, i) => (
@@ -1090,10 +1098,10 @@ export default function ChatScreen() {
                     </View>
                   ))}
                 </View>
-                
+
                 <View style={styles.examplesContainer}>
                   <Text style={styles.examplesTitle}>Примеры с решениями:</Text>
-                  
+
                   {currentLesson?.examples.map((example: LessonExample) => (
                     <View key={example.id} style={styles.exampleItem}>
                       <Text style={styles.exampleTitle}>{example.title}</Text>
@@ -1105,7 +1113,7 @@ export default function ChatScreen() {
                 </View>
               </View>
             </ScrollView>
-            
+
             <View style={styles.modalFooter}>
               <TouchableOpacity
                 style={styles.completeButton}
@@ -1307,7 +1315,7 @@ const styles = StyleSheet.create({
     color: COLORS.textSecondary,
     fontSize: 14,
   },
-  
+
   // Стили для модальных окон
   modalContainer: {
     flex: 1,
@@ -1397,7 +1405,7 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '600',
   },
-  
+
   // Стили для урока
   lessonContent: {
     marginBottom: 16,
@@ -1481,7 +1489,7 @@ const styles = StyleSheet.create({
     lineHeight: 20,
     fontStyle: 'italic',
   },
-  
+
   // Стили для меню действий
   menuContainer: {
     backgroundColor: COLORS.card,
@@ -1500,4 +1508,4 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: '500',
   },
-}); 
+});

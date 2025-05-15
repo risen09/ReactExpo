@@ -1,32 +1,33 @@
-import React, { useState, useEffect } from 'react';
-import { 
-  View, 
-  Text, 
-  StyleSheet, 
-  SafeAreaView, 
-  ScrollView, 
-  TouchableOpacity, 
-  Image,
-  ActivityIndicator 
-} from 'react-native';
 import { useLocalSearchParams, router } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { ChevronLeft, Star, BookOpen, ClipboardList, Calendar } from 'lucide-react-native';
-import { LearningTrack, Lesson } from '../models/LearningAgents';
-import logger from '../utils/logger';
+import React, { useState, useEffect } from 'react';
+import {
+  View,
+  Text,
+  StyleSheet,
+  SafeAreaView,
+  ScrollView,
+  TouchableOpacity,
+  Image,
+  ActivityIndicator,
+} from 'react-native';
+
+import { LearningTrack, Lesson } from '../../models/LearningAgents';
+import logger from '../../utils/logger';
 
 // Общая цветовая палитра приложения
 const COLORS = {
-  primary: '#5B67CA',     // Основной синий/фиолетовый
-  secondary: '#43C0B4',   // Бирюзовый
-  accent1: '#F98D51',     // Оранжевый
-  accent2: '#EC575B',     // Красный
-  accent3: '#FFCA42',     // Желтый
-  background: '#F2F5FF',  // Светлый фон
-  card: '#FFFFFF',        // Белый для карточек
-  text: '#25335F',        // Основной текст
-  textSecondary: '#7F8BB7',  // Вторичный текст
-  border: '#EAEDF5'       // Граница
+  primary: '#5B67CA', // Основной синий/фиолетовый
+  secondary: '#43C0B4', // Бирюзовый
+  accent1: '#F98D51', // Оранжевый
+  accent2: '#EC575B', // Красный
+  accent3: '#FFCA42', // Желтый
+  background: '#F2F5FF', // Светлый фон
+  card: '#FFFFFF', // Белый для карточек
+  text: '#25335F', // Основной текст
+  textSecondary: '#7F8BB7', // Вторичный текст
+  border: '#EAEDF5', // Граница
 };
 
 const subjectIcons: Record<string, any> = {
@@ -42,19 +43,20 @@ export default function LearningTrackDetails() {
   const [track, setTrack] = useState<LearningTrack | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<'lessons' | 'tests' | 'schedule'>('lessons');
-  
+
   useEffect(() => {
     const loadTrack = async () => {
       try {
         setIsLoading(true);
-        
+
         // В реальном приложении здесь был бы запрос к API
         // Для демонстрации используем моковые данные
         if (id === '1') {
           setTrack({
             id: '1',
             name: 'Квадратные уравнения',
-            description: 'Изучение квадратных уравнений и методов их решения, включая формулу дискриминанта, теорему Виета и методы разложения на множители.',
+            description:
+              'Изучение квадратных уравнений и методов их решения, включая формулу дискриминанта, теорему Виета и методы разложения на множители.',
             subject: 'математика',
             topic: 'квадратные уравнения',
             createdAt: new Date().toISOString(),
@@ -67,7 +69,7 @@ export default function LearningTrackDetails() {
                 stars: 2,
                 assignments: [],
                 examples: [],
-                completed: true
+                completed: true,
               },
               {
                 id: 'lesson-2',
@@ -77,7 +79,7 @@ export default function LearningTrackDetails() {
                 stars: 1,
                 assignments: [],
                 examples: [],
-                completed: false
+                completed: false,
               },
               {
                 id: 'lesson-3',
@@ -87,7 +89,7 @@ export default function LearningTrackDetails() {
                 stars: 0,
                 assignments: [],
                 examples: [],
-                completed: false
+                completed: false,
               },
               {
                 id: 'lesson-4',
@@ -97,22 +99,22 @@ export default function LearningTrackDetails() {
                 stars: 0,
                 assignments: [],
                 examples: [],
-                completed: false
-              }
+                completed: false,
+              },
             ],
             tests: [
               {
                 id: 'test-1',
                 title: 'Входной тест: Квадратные уравнения',
                 description: 'Проверка знаний по квадратным уравнениям',
-                questions: []
+                questions: [],
               },
               {
                 id: 'test-2',
                 title: 'Итоговый тест: Квадратные уравнения',
                 description: 'Проверка усвоения материала по квадратным уравнениям',
-                questions: []
-              }
+                questions: [],
+              },
             ],
             schedule: {
               startDate: '2023-08-15',
@@ -124,37 +126,38 @@ export default function LearningTrackDetails() {
                   startTime: '18:00',
                   endTime: '20:00',
                   lessons: ['lesson-1'],
-                  completed: true
+                  completed: true,
                 },
                 {
                   date: '2023-08-17',
                   startTime: '18:00',
                   endTime: '20:00',
                   lessons: ['lesson-2'],
-                  completed: false
+                  completed: false,
                 },
                 {
                   date: '2023-08-19',
                   startTime: '18:00',
                   endTime: '20:00',
                   lessons: ['lesson-3'],
-                  completed: false
+                  completed: false,
                 },
                 {
                   date: '2023-08-21',
                   startTime: '18:00',
                   endTime: '20:00',
                   lessons: ['lesson-4'],
-                  completed: false
-                }
-              ]
-            }
+                  completed: false,
+                },
+              ],
+            },
           });
         } else if (id === '2') {
           setTrack({
             id: '2',
             name: 'Основы программирования',
-            description: 'Изучение основ программирования на Python, включая переменные, условные операторы, циклы и функции.',
+            description:
+              'Изучение основ программирования на Python, включая переменные, условные операторы, циклы и функции.',
             subject: 'информатика',
             topic: 'python',
             createdAt: new Date().toISOString(),
@@ -167,7 +170,7 @@ export default function LearningTrackDetails() {
                 stars: 3,
                 assignments: [],
                 examples: [],
-                completed: true
+                completed: true,
               },
               {
                 id: 'lesson-py-2',
@@ -177,7 +180,7 @@ export default function LearningTrackDetails() {
                 stars: 2,
                 assignments: [],
                 examples: [],
-                completed: true
+                completed: true,
               },
               {
                 id: 'lesson-py-3',
@@ -187,7 +190,7 @@ export default function LearningTrackDetails() {
                 stars: 0,
                 assignments: [],
                 examples: [],
-                completed: false
+                completed: false,
               },
               {
                 id: 'lesson-py-4',
@@ -197,7 +200,7 @@ export default function LearningTrackDetails() {
                 stars: 0,
                 assignments: [],
                 examples: [],
-                completed: false
+                completed: false,
               },
               {
                 id: 'lesson-py-5',
@@ -207,22 +210,21 @@ export default function LearningTrackDetails() {
                 stars: 0,
                 assignments: [],
                 examples: [],
-                completed: false
-              }
+                completed: false,
+              },
             ],
             tests: [
               {
                 id: 'test-py-1',
                 title: 'Входной тест: Python',
                 description: 'Проверка знаний по основам Python',
-                questions: []
-              }
-            ]
+                questions: [],
+              },
+            ],
           });
         } else {
           // Если трек не найден
           router.back();
-          return;
         }
       } catch (error) {
         logger.error('Error loading track details', error);
@@ -230,18 +232,18 @@ export default function LearningTrackDetails() {
         setIsLoading(false);
       }
     };
-    
+
     loadTrack();
   }, [id]);
-  
+
   const handleLessonPress = (lesson: Lesson) => {
     router.push(`/lesson/${lesson.id}`);
   };
-  
+
   const handleTestPress = (testId: string) => {
     router.push(`/test/${testId}`);
   };
-  
+
   if (isLoading) {
     return (
       <SafeAreaView style={styles.loadingContainer}>
@@ -250,7 +252,7 @@ export default function LearningTrackDetails() {
       </SafeAreaView>
     );
   }
-  
+
   if (!track) {
     return (
       <SafeAreaView style={styles.loadingContainer}>
@@ -261,13 +263,13 @@ export default function LearningTrackDetails() {
       </SafeAreaView>
     );
   }
-  
+
   const subjectIcon = subjectIcons[track.subject.toLowerCase()] || subjectIcons.математика;
-  
+
   return (
     <SafeAreaView style={styles.container}>
       <StatusBar style="light" />
-      
+
       <View style={styles.header}>
         <TouchableOpacity style={styles.backButton} onPress={() => router.back()}>
           <ChevronLeft size={24} color="#FFFFFF" />
@@ -275,25 +277,27 @@ export default function LearningTrackDetails() {
         <Text style={styles.headerTitle}>{track.name}</Text>
         <View style={{ width: 24 }} />
       </View>
-      
+
       <ScrollView style={styles.content}>
         <View style={styles.trackInfoContainer}>
           <View style={styles.trackHeaderRow}>
             <View style={styles.iconContainer}>
               <Image source={subjectIcon} style={styles.icon} />
             </View>
-            
+
             <View style={styles.trackInfo}>
               <Text style={styles.trackSubject}>{track.subject}</Text>
               <Text style={styles.trackTopic}>{track.topic}</Text>
-              
+
               <View style={styles.progressContainer}>
                 <View style={styles.progressBar}>
-                  <View 
+                  <View
                     style={[
-                      styles.progressFill, 
-                      { width: `${(track.lessons.filter(l => l.completed).length / track.lessons.length) * 100}%` }
-                    ]} 
+                      styles.progressFill,
+                      {
+                        width: `${(track.lessons.filter(l => l.completed).length / track.lessons.length) * 100}%`,
+                      },
+                    ]}
                   />
                 </View>
                 <Text style={styles.progressText}>
@@ -302,43 +306,58 @@ export default function LearningTrackDetails() {
               </View>
             </View>
           </View>
-          
+
           <Text style={styles.trackDescription}>{track.description}</Text>
         </View>
-        
+
         <View style={styles.tabsContainer}>
-          <TouchableOpacity 
-            style={[styles.tab, activeTab === 'lessons' && styles.activeTab]} 
+          <TouchableOpacity
+            style={[styles.tab, activeTab === 'lessons' && styles.activeTab]}
             onPress={() => setActiveTab('lessons')}
           >
-            <BookOpen size={18} color={activeTab === 'lessons' ? COLORS.primary : COLORS.textSecondary} />
-            <Text style={[styles.tabText, activeTab === 'lessons' && styles.activeTabText]}>Уроки</Text>
+            <BookOpen
+              size={18}
+              color={activeTab === 'lessons' ? COLORS.primary : COLORS.textSecondary}
+            />
+            <Text style={[styles.tabText, activeTab === 'lessons' && styles.activeTabText]}>
+              Уроки
+            </Text>
           </TouchableOpacity>
-          
-          <TouchableOpacity 
-            style={[styles.tab, activeTab === 'tests' && styles.activeTab]} 
+
+          <TouchableOpacity
+            style={[styles.tab, activeTab === 'tests' && styles.activeTab]}
             onPress={() => setActiveTab('tests')}
           >
-            <ClipboardList size={18} color={activeTab === 'tests' ? COLORS.primary : COLORS.textSecondary} />
-            <Text style={[styles.tabText, activeTab === 'tests' && styles.activeTabText]}>Тесты</Text>
+            <ClipboardList
+              size={18}
+              color={activeTab === 'tests' ? COLORS.primary : COLORS.textSecondary}
+            />
+            <Text style={[styles.tabText, activeTab === 'tests' && styles.activeTabText]}>
+              Тесты
+            </Text>
           </TouchableOpacity>
-          
+
           {track.schedule && (
-            <TouchableOpacity 
-              style={[styles.tab, activeTab === 'schedule' && styles.activeTab]} 
+            <TouchableOpacity
+              style={[styles.tab, activeTab === 'schedule' && styles.activeTab]}
               onPress={() => setActiveTab('schedule')}
             >
-              <Calendar size={18} color={activeTab === 'schedule' ? COLORS.primary : COLORS.textSecondary} />
-              <Text style={[styles.tabText, activeTab === 'schedule' && styles.activeTabText]}>Расписание</Text>
+              <Calendar
+                size={18}
+                color={activeTab === 'schedule' ? COLORS.primary : COLORS.textSecondary}
+              />
+              <Text style={[styles.tabText, activeTab === 'schedule' && styles.activeTabText]}>
+                Расписание
+              </Text>
             </TouchableOpacity>
           )}
         </View>
-        
+
         {activeTab === 'lessons' && (
           <View style={styles.lessonsContainer}>
             {track.lessons.map((lesson, index) => (
-              <TouchableOpacity 
-                key={lesson.id} 
+              <TouchableOpacity
+                key={lesson.id}
                 style={styles.lessonCard}
                 onPress={() => handleLessonPress(lesson)}
               >
@@ -346,32 +365,38 @@ export default function LearningTrackDetails() {
                   <Text style={styles.lessonNumber}>{`Урок ${index + 1}`}</Text>
                   <View style={styles.starsContainer}>
                     {Array.from({ length: 3 }).map((_, i) => (
-                      <Star 
-                        key={i} 
-                        size={14} 
-                        color={i < lesson.stars ? COLORS.accent3 : COLORS.border} 
+                      <Star
+                        key={i}
+                        size={14}
+                        color={i < lesson.stars ? COLORS.accent3 : COLORS.border}
                         fill={i < lesson.stars ? COLORS.accent3 : 'transparent'}
                       />
                     ))}
                   </View>
                 </View>
-                
+
                 <Text style={styles.lessonTitle}>{lesson.title}</Text>
-                
+
                 <View style={styles.lessonFooter}>
-                  <View style={[
-                    styles.difficultyBadge, 
-                    lesson.difficulty === 1 ? styles.easyBadge : 
-                    lesson.difficulty === 2 ? styles.mediumBadge : 
-                    styles.hardBadge
-                  ]}>
+                  <View
+                    style={[
+                      styles.difficultyBadge,
+                      lesson.difficulty === 1
+                        ? styles.easyBadge
+                        : lesson.difficulty === 2
+                          ? styles.mediumBadge
+                          : styles.hardBadge,
+                    ]}
+                  >
                     <Text style={styles.difficultyText}>
-                      {lesson.difficulty === 1 ? 'Легкий' : 
-                       lesson.difficulty === 2 ? 'Средний' : 
-                       'Сложный'}
+                      {lesson.difficulty === 1
+                        ? 'Легкий'
+                        : lesson.difficulty === 2
+                          ? 'Средний'
+                          : 'Сложный'}
                     </Text>
                   </View>
-                  
+
                   {lesson.completed && (
                     <View style={styles.completedBadge}>
                       <Text style={styles.completedText}>Пройден</Text>
@@ -382,25 +407,30 @@ export default function LearningTrackDetails() {
             ))}
           </View>
         )}
-        
+
         {activeTab === 'tests' && (
           <View style={styles.testsContainer}>
             {track.tests.length > 0 ? (
-              track.tests.map((test) => (
-                <TouchableOpacity 
-                  key={test.id} 
+              track.tests.map(test => (
+                <TouchableOpacity
+                  key={test.id}
                   style={styles.testCard}
                   onPress={() => handleTestPress(test.id)}
                 >
                   <Text style={styles.testTitle}>{test.title}</Text>
                   <Text style={styles.testDescription}>{test.description}</Text>
-                  
+
                   <View style={styles.testFooter}>
                     <Text style={styles.testQuestions}>
-                      {`${test.questions.length} ${test.questions.length === 1 ? 'вопрос' : 
-                        test.questions.length < 5 ? 'вопроса' : 'вопросов'}`}
+                      {`${test.questions.length} ${
+                        test.questions.length === 1
+                          ? 'вопрос'
+                          : test.questions.length < 5
+                            ? 'вопроса'
+                            : 'вопросов'
+                      }`}
                     </Text>
-                    
+
                     {test.results && (
                       <View style={styles.testResultBadge}>
                         <Text style={styles.testResultText}>{`${test.results.score}%`}</Text>
@@ -416,7 +446,7 @@ export default function LearningTrackDetails() {
             )}
           </View>
         )}
-        
+
         {activeTab === 'schedule' && track.schedule && (
           <View style={styles.scheduleContainer}>
             <View style={styles.scheduleInfoCard}>
@@ -425,30 +455,37 @@ export default function LearningTrackDetails() {
                 {`${new Date(track.schedule.startDate).toLocaleDateString('ru-RU')} - ${new Date(track.schedule.endDate).toLocaleDateString('ru-RU')}`}
               </Text>
               <Text style={styles.scheduleDailyHours}>
-                {`${track.schedule.dailyHours} ${track.schedule.dailyHours === 1 ? 'час' : 
-                  track.schedule.dailyHours < 5 ? 'часа' : 'часов'} в день`}
+                {`${track.schedule.dailyHours} ${
+                  track.schedule.dailyHours === 1
+                    ? 'час'
+                    : track.schedule.dailyHours < 5
+                      ? 'часа'
+                      : 'часов'
+                } в день`}
               </Text>
             </View>
-            
+
             {track.schedule.sessions.map((session, index) => (
-              <View key={index} style={[
-                styles.sessionCard,
-                session.completed && styles.completedSessionCard
-              ]}>
+              <View
+                key={index}
+                style={[styles.sessionCard, session.completed && styles.completedSessionCard]}
+              >
                 <View style={styles.sessionHeader}>
                   <Text style={styles.sessionDate}>
-                    {new Date(session.date).toLocaleDateString('ru-RU', { 
-                      weekday: 'long', 
-                      year: 'numeric', 
-                      month: 'long', 
-                      day: 'numeric' 
+                    {new Date(session.date).toLocaleDateString('ru-RU', {
+                      weekday: 'long',
+                      year: 'numeric',
+                      month: 'long',
+                      day: 'numeric',
                     })}
                   </Text>
-                  <Text style={styles.sessionTime}>{`${session.startTime} - ${session.endTime}`}</Text>
+                  <Text
+                    style={styles.sessionTime}
+                  >{`${session.startTime} - ${session.endTime}`}</Text>
                 </View>
-                
+
                 <View style={styles.sessionLessons}>
-                  {session.lessons.map((lessonId) => {
+                  {session.lessons.map(lessonId => {
                     const lesson = track.lessons.find(l => l.id === lessonId);
                     return lesson ? (
                       <Text key={lessonId} style={styles.sessionLessonTitle}>
@@ -457,7 +494,7 @@ export default function LearningTrackDetails() {
                     ) : null;
                   })}
                 </View>
-                
+
                 {session.completed && (
                   <View style={styles.sessionCompletedBadge}>
                     <Text style={styles.sessionCompletedText}>Завершено</Text>
@@ -811,4 +848,4 @@ const styles = StyleSheet.create({
     color: '#4CAF50',
     fontWeight: '500',
   },
-}); 
+});

@@ -1,3 +1,5 @@
+import { FontAwesome } from '@expo/vector-icons';
+import { useRouter, useLocalSearchParams, Stack } from 'expo-router';
 import React, { useEffect, useState } from 'react';
 import {
   View,
@@ -7,23 +9,15 @@ import {
   TouchableOpacity,
   FlatList,
 } from 'react-native';
-import { useRouter, useLocalSearchParams } from 'expo-router';
-import { FontAwesome } from '@expo/vector-icons';
-import {
-  selectCurrentLesson,
-  selectLessonLoading,
-  selectLessonError,
-  generateLesson,
-} from '../../store/features/lessonSlice';
-import type { AppDispatch } from '../../store/store';
-import { LearningStyle, Lesson, Subject } from '../types/lesson';
 import Markdown from 'react-native-markdown-display';
+
+import { LearningStyle, Lesson, Subject } from '../../types/lesson';
 
 // Define types for FlatList sections
 interface HeaderSection {
   id: string;
   type: 'HEADER';
-  data: Lesson; 
+  data: Lesson;
 }
 
 interface ContentSection {
@@ -36,7 +30,11 @@ interface ContentSection {
 type SectionItem = HeaderSection | ContentSection;
 
 const LessonScreen: React.FC = () => {
-  const params = useLocalSearchParams<{ lessonData?: string; lessonId?: string; trackId?: string }>();
+  const params = useLocalSearchParams<{
+    lessonData?: string;
+    lessonId?: string;
+    trackId?: string;
+  }>();
 
   const [lessonFromParams, setLessonFromParams] = useState<Lesson | null>(null);
   const [paramError, setParamError] = useState<string | null>(null);
@@ -60,7 +58,7 @@ const LessonScreen: React.FC = () => {
         setLessonFromParams(mappedLesson);
         setParamError(null);
       } catch (e) {
-        console.error("Blyat! Failed to parse lessonData from params:", e);
+        console.error('Blyat! Failed to parse lessonData from params:', e);
         setParamError('Ошибка обработки данных урока из параметров.');
         setLessonFromParams(null);
       }
@@ -92,10 +90,7 @@ const LessonScreen: React.FC = () => {
       <View style={styles.centerContainer}>
         <Text style={styles.errorText}>Ошибка: {error}</Text>
         {!lessonFromParams && (
-          <TouchableOpacity
-            style={styles.retryButton}
-            disabled={true}
-          >
+          <TouchableOpacity style={styles.retryButton} disabled>
             <Text style={styles.retryButtonText}>Попробовать снова</Text>
           </TouchableOpacity>
         )}
@@ -135,7 +130,12 @@ const LessonScreen: React.FC = () => {
 
   const sections: SectionItem[] = [
     { id: 'lessonHeader', type: 'HEADER', data: displayLesson },
-    { id: 'lessonContent', type: 'CONTENT', text: displayLesson.content, styles: currentMarkdownStyles }
+    {
+      id: 'lessonContent',
+      type: 'CONTENT',
+      text: displayLesson.content,
+      styles: currentMarkdownStyles,
+    },
   ];
 
   const renderSectionItem = ({ item }: { item: SectionItem }) => {
@@ -150,9 +150,10 @@ const LessonScreen: React.FC = () => {
     if (item.type === 'CONTENT') {
       return (
         <View style={styles.markdownContentContainer}>
-          <Markdown style={item.styles}>
-            {item.text}
-          </Markdown>
+          <Stack.Screen options={{
+            title: 'Урок',
+          }} />
+          <Markdown style={item.styles}>{item.text}</Markdown>
         </View>
       );
     }

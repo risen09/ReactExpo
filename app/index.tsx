@@ -1,7 +1,8 @@
+import { router, Redirect } from 'expo-router';
 import { useEffect } from 'react';
 import { ActivityIndicator, View, StyleSheet } from 'react-native';
-import { router, Redirect } from 'expo-router';
-import { useAuth } from './hooks/useAuth';
+
+import { useAuth } from '../hooks/useAuth';
 
 export default function Index() {
   const { isAuthenticated, isLoading } = useAuth();
@@ -28,11 +29,9 @@ export default function Index() {
     );
   }
 
-  // Если не загружается, но еще не произошло перенаправление, 
+  // Если не загружается, но еще не произошло перенаправление,
   // возвращаем Redirect компонент для немедленного перенаправления
-  return isAuthenticated ? 
-    <Redirect href="/(tabs)" /> : 
-    <Redirect href="/(auth)/login" />;
+  return isAuthenticated ? <Redirect href="/(tabs)" /> : <Redirect href="/(auth)/login" />;
 }
 
 const styles = StyleSheet.create({
@@ -42,4 +41,4 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     backgroundColor: '#fff',
   },
-}); 
+});
