@@ -92,13 +92,6 @@ export default function TabLayout() {
             tabBarIcon: ({ size, color }) => <User size={size} color={color} />,
           }}
         />
-        {/* Hide the following screens from tab bar but keep them accessible via direct navigation */}
-        <Tabs.Screen
-          name="lessons"
-          options={{
-            href: null, // This prevents the tab from appearing in the tab bar
-          }}
-        />
       </Tabs>
     </>
   );

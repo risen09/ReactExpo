@@ -1,9 +1,6 @@
-import { Stack } from 'expo-router';
-import React, { useState, useEffect } from 'react';
-
 import * as ImagePicker from 'expo-image-picker';
 import { LinearGradient } from 'expo-linear-gradient';
-import { router } from 'expo-router';
+import { Stack, router } from 'expo-router';
 import {
   User,
   Settings,
@@ -27,6 +24,7 @@ import {
   Camera,
   Brain,
 } from 'lucide-react-native';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -91,9 +89,9 @@ export default function ProfileTab() {
 
   // Определяем объект с путями к изображениям
   const avatarMap: { [key: string]: any } = {
-    'photo_2025-04-05_15-03-42.jpg': require('@/images/photo_2025-04-05_15-03-42.jpg'),
-    'photo_2025-04-05_15-04-48.jpg': require('@/images/photo_2025-04-05_15-04-48.jpg'),
-    'photo_2025-04-05_15-20-56.jpg': require('@/images/photo_2025-04-05_15-20-56.jpg'),
+    'photo_2025-04-05_15-03-42.jpg': require('@/assets/images/photo_2025-04-05_15-03-42.jpg'),
+    'photo_2025-04-05_15-04-48.jpg': require('@/assets/images/photo_2025-04-05_15-04-48.jpg'),
+    'photo_2025-04-05_15-20-56.jpg': require('@/assets/images/photo_2025-04-05_15-20-56.jpg'),
   };
 
   const { getUserTestResults } = usePersonalityTest();
@@ -434,10 +432,7 @@ export default function ProfileTab() {
           <Text style={styles.userName}>{formData.name || 'Ваше имя'}</Text>
           <Text style={styles.userNickname}>@{formData.nickname || 'nickname'}</Text>
           {formData.personalityType && (
-            <TouchableOpacity
-              style={styles.personalityTypeTag}
-              onPress={navigateToTestResults}
-            >
+            <TouchableOpacity style={styles.personalityTypeTag} onPress={navigateToTestResults}>
               <Brain size={16} color="#FFFFFF" style={styles.personalityTypeIcon} />
               <Text style={styles.personalityTypeText}>{getPersonalityTypeName()}</Text>
             </TouchableOpacity>
@@ -633,33 +628,7 @@ export default function ProfileTab() {
               </View>
 
               {/* Personality Test Section */}
-              {formData.personalityType ? (
-                <View>
-                  <TouchableOpacity style={styles.settingItem} onPress={navigateToTestResults}>
-                    <View style={[styles.settingIconContainer, { backgroundColor: '#EEF0FF' }]}>
-                      <Star size={20} color={COLORS.primary} />
-                    </View>
-                    <View style={styles.settingTextContainer}>
-                      <Text style={styles.settingText}>Результаты теста личности</Text>
-                      <Text style={styles.settingSubtext}>Ваш тип: {formData.personalityType}</Text>
-                    </View>
-                    <ChevronRight size={20} color={COLORS.textSecondary} />
-                  </TouchableOpacity>
-
-                  <TouchableOpacity
-                    style={[styles.settingItem, { paddingTop: 0 }]}
-                    onPress={navigateToPersonalityTest}
-                  >
-                    <View style={[styles.settingIconContainer, { backgroundColor: '#FFF8E8' }]}>
-                      <Brain size={20} color={COLORS.accent3} />
-                    </View>
-                    <View style={styles.settingTextContainer}>
-                      <Text style={styles.settingText}>Пройти тест заново</Text>
-                    </View>
-                    <ChevronRight size={20} color={COLORS.textSecondary} />
-                  </TouchableOpacity>
-                </View>
-              ) : (
+              {! formData.personalityType ? (
                 <TouchableOpacity style={styles.settingItem} onPress={navigateToPersonalityTest}>
                   <View style={[styles.settingIconContainer, { backgroundColor: '#EEF0FF' }]}>
                     <Star size={20} color={COLORS.primary} />
@@ -670,30 +639,8 @@ export default function ProfileTab() {
                   </View>
                   <ChevronRight size={20} color={COLORS.textSecondary} />
                 </TouchableOpacity>
-              )}
+              ) : <></>}
 
-              <TouchableOpacity
-                style={styles.settingItem}
-                onPress={() => router.push('/achievements' as any)}
-              >
-                <View style={[styles.settingIconContainer, { backgroundColor: '#FFF8E8' }]}>
-                  <Star size={20} color={COLORS.accent3} />
-                </View>
-                <View style={styles.settingTextContainer}>
-                  <Text style={styles.settingText}>Мои достижения</Text>
-                </View>
-                <ChevronRight size={20} color={COLORS.textSecondary} />
-              </TouchableOpacity>
-
-              <TouchableOpacity style={styles.settingItem}>
-                <View style={[styles.settingIconContainer, { backgroundColor: '#FFF0E8' }]}>
-                  <BookOpen size={20} color={COLORS.accent1} />
-                </View>
-                <View style={styles.settingTextContainer}>
-                  <Text style={styles.settingText}>Мои курсы</Text>
-                </View>
-                <ChevronRight size={20} color={COLORS.textSecondary} />
-              </TouchableOpacity>
             </View>
 
             <View style={styles.settingsSection}>

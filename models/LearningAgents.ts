@@ -1,7 +1,7 @@
 import { router } from 'expo-router';
 
-import logger from '../utils/logger';
 import { Assignment, Lesson } from '../types/lesson';
+import logger from '../utils/logger';
 
 // Интерфейсы для типизации данных
 export interface TestQuestion {
@@ -175,7 +175,7 @@ export class ContentGenerationAgent {
         id: lessonId,
         title: `${topic} - ${subject}`,
         content: `# ${topic}\n\nЭто содержание урока по теме "${topic}" по предмету "${subject}".\n\nЗдесь будет полное объяснение темы с примерами.`,
-        difficulty: userLevel as "beginner" | 2 | 3,
+        difficulty: userLevel as 'beginner' | 2 | 3,
         stars: 0,
         assignments: await this.generateAssignments(subject, topic, userLevel),
         examples: await this.generateExamples(subject, topic),

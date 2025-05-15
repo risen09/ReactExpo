@@ -1,3 +1,4 @@
+import { useAuth } from '@/hooks/useAuth';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { LinearGradient } from 'expo-linear-gradient';
 import { router } from 'expo-router';
@@ -44,36 +45,8 @@ const COLORS = {
   border: '#EAEDF5', // Граница
 };
 
-// Mock auth implementation
-const useAuth = () => {
-  const [user, setUser] = React.useState<{ name: string } | null>(null);
-
-  React.useEffect(() => {
-    const getUser = async () => {
-      try {
-        const userData = await AsyncStorage.getItem('user');
-        if (userData) {
-          setUser(JSON.parse(userData));
-        }
-      } catch (error) {
-        console.error('Error getting user:', error);
-      }
-    };
-
-    getUser();
-  }, []);
-
-  return {
-    state: {
-      user: user || { name: 'Гость' },
-    },
-  };
-};
-
 export default function HomeScreen() {
-  const {
-    state: { user },
-  } = useAuth();
+  const { user } = useAuth(); 
 
   const featureCards = [
     {
@@ -110,38 +83,6 @@ export default function HomeScreen() {
     },
   ];
 
-  const popularCourses = [
-    {
-      id: 1,
-      title: 'Основы психологии',
-      lessons: 12,
-      duration: '6 часов',
-      image: require('@/images/photo_2025-04-05_15-03-42.jpg'),
-    },
-    {
-      id: 2,
-      title: 'Развитие эмоционального интеллекта',
-      lessons: 8,
-      duration: '4 часа',
-      image: require('@/images/chatgpt-maths-1.png'),
-    },
-  ];
-
-  const todayTasks = [
-    {
-      id: 1,
-      title: 'Прохождение теста MBTI',
-      time: '10:00 - 10:30',
-      completed: false,
-    },
-    {
-      id: 2,
-      title: 'Урок: Введение в типы личности',
-      time: '11:00 - 12:00',
-      completed: true,
-    },
-  ];
-
   return (
     <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
       {/* Header with greeting and search */}
@@ -150,9 +91,9 @@ export default function HomeScreen() {
           <Text style={styles.greeting}>Привет, {user?.name || 'Гость'}! 👋</Text>
           <Text style={styles.subGreeting}>Готовы к новым знаниям?</Text>
         </View>
-        <TouchableOpacity style={styles.searchButton}>
+        {/* <TouchableOpacity style={styles.searchButton}>
           <Search size={20} color={COLORS.primary} />
-        </TouchableOpacity>
+        </TouchableOpacity> */}
       </View>
 
       {/* Main Features */}
@@ -180,105 +121,6 @@ export default function HomeScreen() {
             </LinearGradient>
           </TouchableOpacity>
         ))}
-      </View>
-
-      {/* Popular Courses */}
-      <View style={styles.sectionHeader}>
-        <Text style={[styles.sectionTitle, { paddingHorizontal: 0 }]}>Популярные курсы</Text>
-        <TouchableOpacity onPress={() => router.navigate('/(tabs)/lessons' as any)}>
-          <Text style={styles.seeAllLink}>Все курсы</Text>
-        </TouchableOpacity>
-      </View>
-
-      <ScrollView
-        horizontal
-        showsHorizontalScrollIndicator={false}
-        contentContainerStyle={styles.coursesContainer}
-      >
-        {popularCourses.map(course => (
-          <TouchableOpacity key={course.id} style={styles.courseCard}>
-            <Image source={course.image} style={styles.courseImage} />
-            <View style={styles.courseInfo}>
-              <Text style={styles.courseTitle}>{course.title}</Text>
-              <View style={styles.courseMetaContainer}>
-                <View style={styles.courseMeta}>
-                  <BookOpen size={14} color={COLORS.textSecondary} />
-                  <Text style={styles.courseMetaText}>{course.lessons} уроков</Text>
-                </View>
-                <View style={styles.courseMeta}>
-                  <Clock size={14} color={COLORS.textSecondary} />
-                  <Text style={styles.courseMetaText}>{course.duration}</Text>
-                </View>
-              </View>
-            </View>
-          </TouchableOpacity>
-        ))}
-      </ScrollView>
-
-      {/* Today's Tasks */}
-      <View style={styles.sectionHeader}>
-        <Text style={[styles.sectionTitle, { paddingHorizontal: 0 }]}>Задачи на сегодня</Text>
-        <TouchableOpacity>
-          <Text style={styles.seeAllLink}>Все задачи</Text>
-        </TouchableOpacity>
-      </View>
-
-      <View style={styles.tasksContainer}>
-        {todayTasks.map(task => (
-          <View key={task.id} style={styles.taskCard}>
-            <View style={[styles.taskCheckbox, task.completed ? styles.taskCompleted : {}]}>
-              {task.completed && <Text style={styles.checkmark}>✓</Text>}
-            </View>
-            <View style={styles.taskContent}>
-              <Text style={[styles.taskTitle, task.completed ? styles.taskCompletedText : {}]}>
-                {task.title}
-              </Text>
-              <View style={styles.taskMeta}>
-                <Clock size={14} color={COLORS.textSecondary} />
-                <Text style={styles.taskMetaText}>{task.time}</Text>
-              </View>
-            </View>
-          </View>
-        ))}
-      </View>
-
-      {/* Additional Features */}
-      <View style={{ paddingHorizontal: 20 }}>
-        <Text style={[styles.sectionTitle, { paddingHorizontal: 0 }]}>
-          Дополнительные возможности
-        </Text>
-      </View>
-      <View style={styles.additionalFeatures}>
-        <TouchableOpacity
-          style={styles.additionalFeatureButton}
-          onPress={() => router.navigate('/(tabs)/profile' as any)}
-        >
-          <View style={[styles.additionalFeatureIcon, { backgroundColor: '#E8F0FB' }]}>
-            <User size={20} color={COLORS.primary} />
-          </View>
-          <Text style={styles.additionalFeatureText}>Профиль</Text>
-        </TouchableOpacity>
-
-        <TouchableOpacity style={styles.additionalFeatureButton} onPress={() => {}}>
-          <View style={[styles.additionalFeatureIcon, { backgroundColor: '#E6F8F6' }]}>
-            <Calendar size={20} color={COLORS.secondary} />
-          </View>
-          <Text style={styles.additionalFeatureText}>Календарь</Text>
-        </TouchableOpacity>
-
-        <TouchableOpacity style={styles.additionalFeatureButton} onPress={() => {}}>
-          <View style={[styles.additionalFeatureIcon, { backgroundColor: '#FFF8E8' }]}>
-            <Bell size={20} color={COLORS.accent3} />
-          </View>
-          <Text style={styles.additionalFeatureText}>Напоминания</Text>
-        </TouchableOpacity>
-
-        <TouchableOpacity style={styles.additionalFeatureButton} onPress={() => {}}>
-          <View style={[styles.additionalFeatureIcon, { backgroundColor: '#FFF0E8' }]}>
-            <BookMarked size={20} color={COLORS.accent1} />
-          </View>
-          <Text style={styles.additionalFeatureText}>Сохраненное</Text>
-        </TouchableOpacity>
       </View>
 
       {/* Bottom spacing */}

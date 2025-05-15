@@ -587,7 +587,7 @@ export default function ChatScreen() {
         {!item.isUser && (
           <View style={styles.avatarContainer}>
             <Image
-              source={require('../../images/qwen-ai.png')}
+              source={require('@/assets/images/qwen-ai.png')}
               style={styles.avatar}
               resizeMode="contain"
             />
@@ -839,7 +839,7 @@ export default function ChatScreen() {
         <View style={styles.headerTitleContainer}>
           <View style={styles.assistantAvatarContainer}>
             <Image
-              source={require('../../images/qwen-ai.png')}
+              source={require('@/assets/images/qwen-ai.png')}
               style={styles.assistantAvatar}
               resizeMode="contain"
             />

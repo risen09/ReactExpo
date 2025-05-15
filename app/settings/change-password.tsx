@@ -83,7 +83,7 @@ export default function ChangePasswordScreen() {
       <ScrollView style={styles.container}>
         <Stack.Screen
           options={{
-            title: 'Изменить пароль'
+            title: 'Изменить пароль',
           }}
         />
         <View style={styles.content}>

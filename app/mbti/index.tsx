@@ -18,7 +18,11 @@ import ResultsCard from '../../components/ResultsCard';
 import { mbtiQuestions } from '../../data';
 import { useAuth } from '../../hooks/useAuth';
 import { MBTIScores, mbtiDescriptions } from '../../types/personalityTest';
-import { calculateMBTIScores, determineMBTIType, calculateProgress } from '../../utils/mbtiCalculator';
+import {
+  calculateMBTIScores,
+  determineMBTIType,
+  calculateProgress,
+} from '../../utils/mbtiCalculator';
 
 const COLORS = {
   primary: '#5B67CA', // Основной синий/фиолетовый
@@ -163,7 +167,7 @@ export default function PersonalityTest() {
     <SafeAreaView style={styles.container}>
       <Stack.Screen
         options={{
-          title: 'Тест типа личности'
+          title: 'Тест типа личности',
         }}
       />
       <ScrollView
@@ -273,7 +277,7 @@ export default function PersonalityTest() {
       </ScrollView>
     </SafeAreaView>
   );
-};
+}
 
 const styles = StyleSheet.create({
   container: {

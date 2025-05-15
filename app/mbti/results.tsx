@@ -1,3 +1,6 @@
+import { LinearGradient } from 'expo-linear-gradient';
+import { router, Stack, useLocalSearchParams } from 'expo-router';
+import { Check, Share2 } from 'lucide-react-native';
 import React, { useEffect, useState } from 'react';
 import {
   View,
@@ -10,9 +13,7 @@ import {
   ActivityIndicator,
   Share,
 } from 'react-native';
-import { router, Stack, useLocalSearchParams } from 'expo-router';
-import { LinearGradient } from 'expo-linear-gradient';
-import { Check, Share2 } from 'lucide-react-native';
+
 import { useAuth } from '../../hooks/useAuth';
 
 const COLORS = {
@@ -42,118 +43,104 @@ interface PersonalityType {
 const defaultImage = require('../../assets/images/logo.png');
 
 const personalityTypes: { [key: string]: PersonalityType } = {
-  'analytical': {
+  analytical: {
     id: 'analytical',
     name: 'Аналитический тип',
-    description: 'Вы отличаетесь логическим мышлением, объективностью и стремлением к совершенству. Вы тщательно анализируете информацию перед принятием решений и всегда ищете оптимальные решения.',
+    description:
+      'Вы отличаетесь логическим мышлением, объективностью и стремлением к совершенству. Вы тщательно анализируете информацию перед принятием решений и всегда ищете оптимальные решения.',
     strengths: [
       'Логическое мышление',
       'Внимание к деталям',
       'Объективность',
       'Системный подход к решению проблем',
-      'Стремление к совершенству'
+      'Стремление к совершенству',
     ],
     weaknesses: [
       'Склонность к перфекционизму',
       'Медлительность в принятии решений',
       'Избегание риска',
       'Излишняя критичность',
-      'Трудности с эмоциональной коммуникацией'
+      'Трудности с эмоциональной коммуникацией',
     ],
-    career: [
-      'Программист',
-      'Аналитик данных',
-      'Исследователь',
-      'Инженер',
-      'Ученый'
-    ],
+    career: ['Программист', 'Аналитик данных', 'Исследователь', 'Инженер', 'Ученый'],
     image: defaultImage,
     bgGradient: ['#5B67CA', '#424D9D'],
   },
-  'creative': {
+  creative: {
     id: 'creative',
     name: 'Креативный тип',
-    description: 'Вы обладаете богатым воображением, оригинальным мышлением и способностью видеть необычные связи между вещами. Вас привлекают нестандартные задачи и возможность самовыражения.',
+    description:
+      'Вы обладаете богатым воображением, оригинальным мышлением и способностью видеть необычные связи между вещами. Вас привлекают нестандартные задачи и возможность самовыражения.',
     strengths: [
       'Богатое воображение',
       'Оригинальное мышление',
       'Гибкость',
       'Открытость новому',
-      'Способность к самовыражению'
+      'Способность к самовыражению',
     ],
     weaknesses: [
       'Отвлекаемость',
       'Непрактичность',
       'Нестабильность',
       'Избегание рутинных задач',
-      'Чувствительность к критике'
+      'Чувствительность к критике',
     ],
-    career: [
-      'Дизайнер',
-      'Писатель',
-      'Художник',
-      'Маркетолог',
-      'Предприниматель'
-    ],
+    career: ['Дизайнер', 'Писатель', 'Художник', 'Маркетолог', 'Предприниматель'],
     image: defaultImage,
     bgGradient: ['#43C0B4', '#2C8A81'],
   },
-  'social': {
+  social: {
     id: 'social',
     name: 'Социальный тип',
-    description: 'Вы обладаете развитым эмоциональным интеллектом, эмпатией и коммуникативными навыками. Вас вдохновляет взаимодействие с людьми и возможность помогать другим.',
+    description:
+      'Вы обладаете развитым эмоциональным интеллектом, эмпатией и коммуникативными навыками. Вас вдохновляет взаимодействие с людьми и возможность помогать другим.',
     strengths: [
       'Эмоциональный интеллект',
       'Эмпатия',
       'Коммуникативные навыки',
       'Командная работа',
-      'Способность вдохновлять других'
+      'Способность вдохновлять других',
     ],
     weaknesses: [
       'Зависимость от одобрения',
       'Избегание конфликтов',
       'Эмоциональная перегрузка',
       'Трудности с границами',
-      'Сложности с объективной оценкой'
+      'Сложности с объективной оценкой',
     ],
     career: [
       'Психолог',
       'Педагог',
       'HR-специалист',
       'Социальный работник',
-      'Менеджер по работе с клиентами'
+      'Менеджер по работе с клиентами',
     ],
     image: defaultImage,
     bgGradient: ['#F98D51', '#E16F33'],
   },
-  'practical': {
+  practical: {
     id: 'practical',
     name: 'Практический тип',
-    description: 'Вы ориентированы на результат, организованы и надежны. Вы цените конкретику, предпочитаете действовать методично и доводить дела до конца.',
+    description:
+      'Вы ориентированы на результат, организованы и надежны. Вы цените конкретику, предпочитаете действовать методично и доводить дела до конца.',
     strengths: [
       'Ориентация на результат',
       'Организованность',
       'Надежность',
       'Практичность',
-      'Эффективность'
+      'Эффективность',
     ],
     weaknesses: [
       'Негибкость',
       'Консерватизм',
       'Сопротивление изменениям',
       'Недооценка эмоциональных факторов',
-      'Нетерпение к теоретизированию'
+      'Нетерпение к теоретизированию',
     ],
-    career: [
-      'Менеджер проектов',
-      'Администратор',
-      'Бухгалтер',
-      'Технический специалист',
-      'Логист'
-    ],
+    career: ['Менеджер проектов', 'Администратор', 'Бухгалтер', 'Технический специалист', 'Логист'],
     image: defaultImage,
     bgGradient: ['#EC575B', '#C73A3E'],
-  }
+  },
 };
 
 export default function TestResultScreen() {
@@ -162,11 +149,11 @@ export default function TestResultScreen() {
   const [loading, setLoading] = useState(false);
   const [saved, setSaved] = useState(false);
   const { updatePersonalityType, user } = useAuth();
-  
+
   useEffect(() => {
     console.log('=== TEST RESULT SCREEN DEBUG ===');
     console.log('Type parameter:', type);
-    
+
     // Проверяем, является ли params.type валидным значением
     if (type) {
       if (typeof type === 'string') {
@@ -177,7 +164,7 @@ export default function TestResultScreen() {
     } else {
       console.log('No type parameter found in params');
     }
-    
+
     console.log('=== END TEST RESULT DEBUG ===');
   }, [type]);
 
@@ -198,13 +185,13 @@ export default function TestResultScreen() {
     console.log('Received type parameter:', type);
     console.log('Available personality types:', Object.keys(personalityTypes));
     console.log('Type exists in dictionary:', type ? !!personalityTypes[type] : false);
-    
+
     if (type) {
       if (personalityTypes[type]) {
         // Если тип найден в нашем словаре
         console.log('Setting personality type from dictionary');
         setPersonalityType(personalityTypes[type]);
-        
+
         // Проверяем, совпадает ли тип личности с сохраненным в профиле
         if (user?.personalityType === type) {
           setSaved(true);
@@ -213,12 +200,12 @@ export default function TestResultScreen() {
         // Если типа нет в словаре, создаем временный тип для отображения
         // Это может быть MBTI тип, который не включен в базовый словарь
         console.log('Creating fallback personality type for:', type);
-        
+
         // Определяем градиент в зависимости от первой буквы MBTI
         let gradient: [string, string] = ['#5B67CA', '#424D9D']; // По умолчанию синий
         if (type.startsWith('E')) gradient = ['#F98D51', '#E16F33']; // Оранжевый для Экстравертов
         if (type.startsWith('I')) gradient = ['#43C0B4', '#2C8A81']; // Бирюзовый для Интровертов
-        
+
         const tempType: PersonalityType = {
           id: type,
           name: `Тип личности ${type}`,
@@ -228,28 +215,28 @@ export default function TestResultScreen() {
             'Способность к планированию',
             'Внимание к деталям',
             'Организованность',
-            'Целеустремленность'
+            'Целеустремленность',
           ],
           weaknesses: [
             'Может потребоваться работа над гибкостью',
             'Иногда чрезмерная критичность',
             'Стремление к перфекционизму',
             'Трудности с принятием неопределенности',
-            'Может быть сложно работать в хаотичных условиях'
+            'Может быть сложно работать в хаотичных условиях',
           ],
           career: [
             'Аналитические профессии',
             'Исследовательская деятельность',
             'Консультирование',
             'Проектная работа',
-            'Стратегическое планирование'
+            'Стратегическое планирование',
           ],
           image: defaultImage,
           bgGradient: gradient,
         };
-        
+
         setPersonalityType(tempType);
-        
+
         // Проверяем, совпадает ли тип личности с сохраненным в профиле
         if (user?.personalityType === type) {
           setSaved(true);
@@ -258,26 +245,20 @@ export default function TestResultScreen() {
     } else {
       console.log('No type parameter provided');
     }
-    
+
     console.log('=== END TEST RESULT SCREEN COMPONENT DEBUG ===');
   }, [type, user]);
 
   const handleSaveToProfile = async () => {
     if (!personalityType) return;
-    
+
     setLoading(true);
     try {
       await updatePersonalityType(personalityType.id);
       setSaved(true);
-      Alert.alert(
-        'Успешно сохранено', 
-        'Тип личности сохранен в вашем профиле.'
-      );
+      Alert.alert('Успешно сохранено', 'Тип личности сохранен в вашем профиле.');
     } catch (error) {
-      Alert.alert(
-        'Ошибка', 
-        'Не удалось сохранить тип личности. Пожалуйста, попробуйте позже.'
-      );
+      Alert.alert('Ошибка', 'Не удалось сохранить тип личности. Пожалуйста, попробуйте позже.');
     } finally {
       setLoading(false);
     }
@@ -285,11 +266,11 @@ export default function TestResultScreen() {
 
   const handleShareResult = async () => {
     if (!personalityType) return;
-    
+
     try {
       await Share.share({
         message: `Мой тип личности: ${personalityType.name}\n\n${personalityType.description}`,
-        title: 'Мой результат теста личности'
+        title: 'Мой результат теста личности',
       });
     } catch (error) {
       Alert.alert('Ошибка', 'Не удалось поделиться результатом');
@@ -311,8 +292,8 @@ export default function TestResultScreen() {
   return (
     <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
       <Stack.Screen
-          options={{
-          title: 'Твой тип личности'
+        options={{
+          title: 'Твой тип личности',
         }}
       />
       <LinearGradient
@@ -322,11 +303,7 @@ export default function TestResultScreen() {
         end={{ x: 1, y: 1 }}
       >
         <View style={styles.imageContainer}>
-          <Image 
-            source={personalityType.image} 
-            style={styles.image}
-            resizeMode="contain"
-          />
+          <Image source={personalityType.image} style={styles.image} resizeMode="contain" />
         </View>
         <Text style={styles.headerTitle}>{personalityType.name}</Text>
       </LinearGradient>
@@ -373,7 +350,7 @@ export default function TestResultScreen() {
 
         <View style={styles.actionsContainer}>
           {!saved && (
-            <TouchableOpacity 
+            <TouchableOpacity
               style={styles.actionButton}
               onPress={handleSaveToProfile}
               disabled={loading}
@@ -388,8 +365,8 @@ export default function TestResultScreen() {
               )}
             </TouchableOpacity>
           )}
-          
-          <TouchableOpacity 
+
+          <TouchableOpacity
             style={[styles.actionButton, styles.shareButton]}
             onPress={handleShareResult}
           >
@@ -397,7 +374,7 @@ export default function TestResultScreen() {
             <Text style={styles.buttonText}>Поделиться</Text>
           </TouchableOpacity>
 
-          <TouchableOpacity 
+          <TouchableOpacity
             style={[styles.actionButton, styles.retakeButton]}
             onPress={handleRetakeTest}
           >
@@ -405,10 +382,7 @@ export default function TestResultScreen() {
           </TouchableOpacity>
         </View>
 
-        <TouchableOpacity
-          style={styles.backButton}
-          onPress={() => router.back()}
-        >
+        <TouchableOpacity style={styles.backButton} onPress={() => router.back()}>
           <Text style={styles.backButtonText}>Вернуться на главную</Text>
         </TouchableOpacity>
       </View>
@@ -542,4 +516,4 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     fontSize: 16,
   },
-}); 
+});

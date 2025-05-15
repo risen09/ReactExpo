@@ -186,14 +186,6 @@ export default {
     updateProfile: (profileData: any) => api.put('/api/user/profile', profileData),
   },
 
-  // Прогресс обучения
-  progress: {
-    getProgressStats: () => api.get('/api/learning/progress'),
-    getAchievements: () => api.get('/api/learning/achievements'),
-    getStreaks: () => api.get('/api/learning/streaks'),
-    getStars: () => api.get('/api/learning/stars'),
-  },
-
   // Треки обучения
   tracks: {
     getAll: () => api.get<Track[]>('/api/tracks'),
@@ -215,65 +207,6 @@ export default {
 
   lessons: {
     getById: (lessonId: string) => api.get<Lesson>(`/api/lessons/${lessonId}`),
-  },
-
-  // AI ассистенты: предметные эксперты
-  experts: {
-    getList: () => api.get('/api/experts/list'),
-    create: (subject: string) => api.post('/api/experts/new', { subject }),
-    getChat: (chatId: string) => api.get(`/api/experts/chat/${chatId}`),
-    sendMessage: (chatId: string, message: string) =>
-      api.post(`/api/experts/chat/${chatId}`, { message }),
-  },
-
-  // AI ассистенты: помощник по домашним заданиям
-  homework: {
-    getList: () => api.get('/api/homework/list'),
-    create: (subject: string, title: string) => api.post('/api/homework/new', { subject, title }),
-    getById: (homeworkId: string) => api.get(`/api/homework/chat/${homeworkId}`),
-    sendMessage: (homeworkId: string, message: string) =>
-      api.post(`/api/homework/chat/${homeworkId}`, { message }),
-    markComplete: (homeworkId: string) => api.post(`/api/homework/complete/${homeworkId}`),
-  },
-
-  // AI ассистенты: учебные планы
-  studyPlans: {
-    getList: () => api.get('/api/study-plans/list'),
-    generate: (planData: {
-      subject: string;
-      goal: string;
-      timeframe?: string;
-      difficulty?: string;
-    }) => api.post('/api/study-plans/generate', planData),
-    getById: (planId: string) => api.get(`/api/study-plans/${planId}`),
-    updateStatus: (planId: string, status: 'active' | 'completed' | 'paused' | 'archived') =>
-      api.post(`/api/study-plans/${planId}/status`, { status }),
-  },
-
-  // AI ассистенты: ассистент трека обучения
-  trackAssistants: {
-    create: (trackId: string) => api.post(`/api/track-assistants/create/${trackId}`),
-    askQuestion: (assistantId: string, message: string, lessonId?: string) =>
-      api.post(`/api/track-assistants/${assistantId}/ask`, { message, lessonId }),
-  },
-
-  // AI ассистенты: анализ прогресса
-  progressAnalysis: {
-    analyzeTrack: (trackId: string) => api.post(`/api/progress-analyzer/analyze/${trackId}`),
-  },
-
-  // Расписание обучения
-  schedule: {
-    getSettings: () => api.get('/api/schedule/settings'),
-    saveSettings: (settings: any) => api.post('/api/schedule/settings', settings),
-    getSchedule: () => api.get('/api/schedule'),
-    generate: (options: { trackId: string; startDate?: string; endDate?: string }) =>
-      api.post('/api/schedule/generate', options),
-    markCompleted: (itemId: string) => api.post(`/api/schedule/items/${itemId}/complete`),
-    reschedule: (
-      itemId: string,
-      newSchedule: { date: string; startTime: string; endTime: string }
-    ) => api.put(`/api/schedule/items/${itemId}`, newSchedule),
   },
 
   // Общий метод GET

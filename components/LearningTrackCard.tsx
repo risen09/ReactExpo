@@ -1,8 +1,9 @@
-import { Track } from '@/types/track';
 import { router } from 'expo-router';
 import { ChevronRight } from 'lucide-react-native';
 import React from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Image } from 'react-native';
+
+import { Track } from '@/types/track';
 
 // Общая цветовая палитра приложения
 const COLORS = {

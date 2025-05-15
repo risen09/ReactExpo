@@ -150,9 +150,11 @@ const LessonScreen: React.FC = () => {
     if (item.type === 'CONTENT') {
       return (
         <View style={styles.markdownContentContainer}>
-          <Stack.Screen options={{
-            title: 'Урок',
-          }} />
+          <Stack.Screen
+            options={{
+              title: 'Урок',
+            }}
+          />
           <Markdown style={item.styles}>{item.text}</Markdown>
         </View>
       );

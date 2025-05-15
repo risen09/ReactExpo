@@ -17,11 +17,10 @@ import {
 } from 'react-native';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 
-import { Lesson } from '@/types/lesson';
-import { Track } from '@/types/track';
-
 import apiClient from '@/api/client';
 import COLORS from '@/config/colors';
+import { Lesson } from '@/types/lesson';
+import { Track } from '@/types/track';
 
 const LearningTrackDetailsScreen = () => {
   const route = useRoute();
