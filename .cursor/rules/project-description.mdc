@@ -1,0 +1,100 @@
+---
+description: 
+globs: 
+alwaysApply: false
+---
+
+# Your rule content
+General Architecture
+
+Key principles:
+1. Automation: All user interactions take place through AI.
+2. Personalization: Each student gets a unique learning experience based on an analysis of their cognitive characteristics.
+3. Scalability: The platform can serve millions of users simultaneously.
+
+2. Client Paths (Features)
+
+ Block 1: Getting Started
+1. Registration and authorization:
+- Registration via email/Google/ social media.
+   - Password recovery via email.
+   - Multi-factor authentication (optional).
+
+2. Identification of the personality type:
+   - Passing a test to analyze cognitive features (visual, auditory, kinesthetic).
+   - Saving data in the user's profile.
+
+3. Subject selection:
+- The student chooses a subject (mathematics, physics, computer science).
+   - AI offers an initial training plan.
+
+Block 2: Training
+4. Personalized Lesson Generation:
+- AI creates lessons based on personality type (for example, more graphics for visuals).
+   - Using LLM to generate text explanations and examples.
+
+5. Interactive lessons:
+- Step-by-step explanation of the material.
+   - The ability to request additional clarification via a chatbot.
+
+6. Practical tasks:
+- AI generates tasks corresponding to the student's current level.
+   - Automatic verification of responses via LLM.
+
+7. Feedback:
+   - Error analysis via AI.
+   - Detailed explanation of incorrect answers.
+
+8. Timer and Progress:
+- Tracking task completion time.
+   - Offering a more detailed explanation with a long lead time.
+
+lock 3: Analytics and Progress
+9. Progress analysis:
+- Visualization of progress (graphs, diagrams).
+   - Predicting success through LSTM.
+
+10. Learning Recommendations:
+- AI suggests topics for repetition or in-depth study.
+    - Generation of a new curriculum based on progress analysis.
+
+11. Exam preparation:
+- Generation of tests according to the OGE/USE format.
+    - Analyzing the student's weaknesses and proposing a training plan.
+
+ Block 4: Interactive Elements
+12. Chatbot for help:
+    - AI answers students' questions in real time.
+    - The ability to request an explanation of complex topics.
+
+13. Video tutorials and animations:
+    - AI generates short video tutorials and animations for visual explanation.
+
+14. Interactive examples:
+    - AI creates interactive tasks with dynamic elements (for example, dragging objects).
+
+ Block 5: Gamification and Motivation
+15. Awards and achievements:
+    - A system of points for completing tasks.
+    - Levels and badges (for example, "Master of Mathematics").
+
+16. Leaderboards:
+    - Student ratings within the platform.
+    - A competitive element for motivation.
+
+17. Reminder system:
+- Notifications of new lessons or achievements.
+    - Recommendations to continue the training.
+
+ Block 6: Personalization and Settings
+18. Profile Setup:
+    - Edit name, photo, notification settings.
+    - Selection of interface design themes.
+
+19. Customization of content:
+- The ability to choose the style of explanations (more detailed, brief, with examples).
+    - Setting the difficulty level of tasks.
+
+20. Integration with social networks:
+- The ability to share successes on social networks.
+    - Invite friends through the referral program.

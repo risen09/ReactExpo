@@ -1,0 +1,40 @@
+---
+description: 
+globs: 
+alwaysApply: true
+---
+# Backend
+
+Use [client.ts](mdc:api/client.ts) axios methods to make request. If user provide backend endpoint which is not in thle, please add and verify with the user. DO NOT CREATE ENDPOINTS, ALWAYS ASK USER IF IT EXISTS IN THE BACKEND. 
+
+# UI Routing
+
+The root of routes is in `/app` folder. 
+
+- `(auth)` 
+This group navigation is used for authentication. It is used to login and register users.
+- `(tabs)`
+Tabs navigation group. Add new tab only if user is requested to add a *tab*.
+- `mbti`
+Navigation folder used for MBTI tests
+- `screen` 
+Redundant folder, needs to be deleted, DO NOT ADD SCREEN HERE, screens MUST be grouped.
+- `settings`
+Settings folder, here are stored screens that are related to user, application settings
+
+# Assets
+
+All assets (images, vectors, documents etc) MUST be stored in `/assets` folder under related folder (`/assets/images`, `assets/svgs/`, etc)
+
+# Components
+
+React components used in screens are stored in `/components` folder. Please, group components by screen which use them, for example, `/components/(tabs)/BurgerMenu.tsx` because [index.tsx](mdc:app/(tabs)/index.tsx) is using it. `/components/mbti/QuestionsCard.tsx`, because MBTI tests use Questions Card.
+If the component used by multiple screens, do not group it, move it to components root folder `/components`, for example, `/components/RadioButton.tsx`
+
+# Styling
+
+For a better UI experience, app MUST use [colors.ts](mdc:constants/colors.ts) file to style every screen and component! DO NOT UPDATE IT AND DO NOT DELETE IT! WHen styling, use it for coloring
+
+# Types
+
+DO NOT STORE TYPES IN SCREEN FILE. ALWAYS create a separate TypeScript file in `/types` folder.

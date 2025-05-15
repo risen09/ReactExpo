@@ -1,7 +1,6 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import axios from 'axios';
 
-import { LearningTrack } from '../models/LearningAgents';
 import { Lesson } from '../types/lesson';
 import { Track } from '../types/track';
 
