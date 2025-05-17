@@ -240,6 +240,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
       setToken(data.token);
       console.log('9. User data saved, redirecting to home');
+      router.replace('/(tabs)');
     } catch (error) {
       console.error('Error exchanging code:', error);
       Alert.alert('Pizdec!', 'Network error or backend is sleeping.');
