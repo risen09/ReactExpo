@@ -28,3 +28,4 @@ export interface AuthResponse {
 }
 
 export * from "./login";
+export * from "./vk";

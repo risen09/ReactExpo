@@ -29,7 +29,7 @@ const YOUR_REDIRECT_HOST = 'vk.com'; // Or whatever you configure, but docs use 
 const REDIRECT_URI = YOUR_REDIRECT_SCHEME
   ? `${YOUR_REDIRECT_SCHEME}://${YOUR_REDIRECT_HOST}/blank.html`
   : '';
-const SCOPE = 'email phone'; // Or whatever scopes you need, comrade
+const SCOPE = 'vkid.personal_info email'; // Or whatever scopes you need, comrade
 const OAUTH2_PARAMS = Buffer.from(JSON.stringify({ scope: SCOPE })).toString('base64');
 const FINAL_REDIRECT_URI = REDIRECT_URI ? `${REDIRECT_URI}?oauth2_params=${OAUTH2_PARAMS}` : '';
 
@@ -56,7 +56,7 @@ export default function LoginScreen() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
-  const { login, isLoading, error, isAuthenticated, handleVkLogin } = useAuth();
+  const { login, isLoading, error, handleVkLogin } = useAuth();
   const params = useLocalSearchParams();
 
   // VK Auth State
@@ -65,14 +65,7 @@ export default function LoginScreen() {
   const [vkCodeVerifier, setVkCodeVerifier] = useState<string | null>(null);
 
   useEffect(() => {
-    // Проверяем, авторизован ли пользователь
-    if (isAuthenticated) {
-      router.replace('/(tabs)');
-    }
-  }, [isAuthenticated]);
-
-  useEffect(() => {
-    fetch(`${process.env.EXPO_PUBLIC_API_BASE_URL}/api/auth/vk/health`, {
+    fetch(`${process.env.EXPO_PUBLIC_API_BASE_URL}/api/v2/auth/vk/health`, {
       method: 'GET',
     })
       .then(data => {

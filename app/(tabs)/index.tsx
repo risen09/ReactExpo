@@ -16,7 +16,7 @@ import {
   Clock,
   Award,
 } from 'lucide-react-native';
-import React from 'react';
+import React, { useEffect } from 'react';
 import {
   View,
   Text,
@@ -47,6 +47,12 @@ const COLORS = {
 
 export default function HomeScreen() {
   const { user } = useAuth(); 
+
+  useEffect(() => {
+    if (!user?.personalityType) {
+      router.replace('/mbti');
+    }
+  }, [user]);
 
   const featureCards = [
     {

@@ -3,7 +3,7 @@ import axios, { get } from 'axios';
 
 import { Lesson } from '../types/lesson';
 import { Track } from '../types/track';
-import { LoginRequest, LoginResponse, RegisterRequest, RegisterResponse } from '@/types/auth';
+import { LoginRequest, LoginResponse, RegisterRequest, RegisterResponse, VkLoginRequest } from '@/types/auth';
 import { User } from '@/types/user';
 
 // Базовый URL API из переменных окружения или резервный URL
@@ -179,6 +179,10 @@ export default {
     // Функция обновления токена
     refreshToken: (refreshToken: string) =>
       api.post('/api/auth/refresh', { refresh_token: refreshToken }),
+
+    vk: {
+      login: (request: VkLoginRequest) => api.post<LoginResponse>('/api/v2/auth/vk', request),
+    }
   },
 
   // Пользователи

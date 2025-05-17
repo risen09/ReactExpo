@@ -85,13 +85,16 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         const storedToken = await AsyncStorage.getItem('auth_token');
         if (storedToken) {
           setToken(storedToken);
-          const userData = await AsyncStorage.getItem('user_data');
-          if (userData) {
-            setUser(JSON.parse(userData));
-          } else {
-            // Если токен есть, но данных нет - получаем профиль пользователя
-            await fetchUserProfile();
-          }
+          // const userData = await AsyncStorage.getItem('user_data');
+          await fetchUserProfile();
+          // if (userData != null) {
+          //   console.log('Профиль пользователя:', userData);
+          //   setUser(JSON.parse(userData));
+          // } else {
+          //   // Если токен есть, но данных нет - получаем профиль пользователя
+          //   console.log('надо получить пользователя')
+          //   await fetchUserProfile();
+          // }
         }
       } catch (error) {
         console.error('Auth check error:', error);
@@ -224,38 +227,19 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setError(null);
     setIsLoading(true);
     try {
-      const response = await fetch(`${process.env.EXPO_PUBLIC_API_BASE_URL}/api/auth/vk`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          code,
-          code_verifier: verifier,
-          device_id: deviceId,
-          redirect_uri: REDIRECT_URI,
-        }),
-      });
-      const data = await response.json();
-      if (response.ok) {
-        await AsyncStorage.setItem('auth_token', data.token);
+      const response = await client.auth.vk.login({
+        code,
+        code_verifier: verifier,
+        device_id: deviceId,
+        redirect_uri: REDIRECT_URI
+      })
+      const data = await response.data;
+      await AsyncStorage.setItem('auth_token', data.token);
 
-        if (data.user) {
-          setUser(data.user);
-          await AsyncStorage.setItem('user_data', JSON.stringify(data.user));
-        } else {
-          // Если данные пользователя не пришли с токеном, получаем их отдельно
-          await fetchUserProfile(data.token);
-        }
+      await fetchUserProfile();
 
-        setToken(data.token);
-        console.log('9. User data saved, redirecting to home');
-
-        // Перенаправляем на главную страницу
-        router.replace('/(tabs)');
-      } else {
-        Alert.alert('Backend Error', data.message || 'Failed to exchange code for token.');
-      }
+      setToken(data.token);
+      console.log('9. User data saved, redirecting to home');
     } catch (error) {
       console.error('Error exchanging code:', error);
       Alert.alert('Pizdec!', 'Network error or backend is sleeping.');
@@ -392,18 +376,18 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       setToken(null);
       setUser(null);
 
-      // try {
-      //   // Handling VK logout
-      //   console.log('Logging out from VK');
-      //   await fetch(`${process.env.EXPO_PUBLIC_API_BASE_URL}/api/auth/vk/logout`, {
-      //     method: 'POST',
-      //     headers: {
-      //       Authorization: `Bearer ${token}`,
-      //     },
-      //   });
-      // } catch (error) {
-      //   console.error('Vk logout error:', error);
-      // }
+      try {
+        // Handling VK logout
+        console.log('Logging out from VK');
+        await fetch(`${process.env.EXPO_PUBLIC_API_BASE_URL}/api/v2/auth/vk/logout`, {
+          method: 'POST',
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        });
+      } catch (error) {
+        console.error('Vk logout error:', error);
+      }
 
       // Перенаправление на страницу входа
       router.replace('/(auth)/login');
