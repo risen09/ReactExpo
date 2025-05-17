@@ -176,7 +176,7 @@ export default function LoginScreen() {
     }
 
     try {
-      await login(email.trim(), password.trim());
+      await login({email: email.trim(), password: password.trim()});
       // После успешного входа редирект произойдет автоматически в хуке useEffect
     } catch (err) {
       // Ошибка уже будет обработана в хуке useAuth

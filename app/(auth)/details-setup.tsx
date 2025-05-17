@@ -1,7 +1,7 @@
 import { MaterialIcons } from '@expo/vector-icons';
 import { router, useLocalSearchParams } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -16,23 +16,37 @@ import {
   ScrollView,
 } from 'react-native';
 
+import { useAuth } from '../../hooks/useAuth';
+import { RegisterRequest } from '../../types/auth';
+
 export default function DetailsSetupScreen() {
   const params = useLocalSearchParams();
-  const { firstName, lastName, email, password, username } = params;
+  const firstName = String(params.firstName || '');
+  const lastName = String(params.lastName || '');
+  const email = String(params.email || '');
+  const password = String(params.password || '');
+  const username = String(params.username || '');
 
-  const [gender, setGender] = useState('');
+  const [gender, setGender] = useState(0);
   const [age, setAge] = useState('');
-  const [isLoading, setIsLoading] = useState(false);
 
-  console.log('Параметры, полученные на экране DetailsSetup:', params);
+  const { register, isLoading, error } = useAuth();
+
+  console.log('Параметры, полученные на экране DetailsSetup:', {firstName, lastName, email, username, password: '***'});
 
   const GENDER_OPTIONS = [
-    { label: 'Мужской', value: 'male' },
-    { label: 'Женский', value: 'female' },
+    { label: 'Женский', value: 0 },
+    { label: 'Мужской', value: 1 },
   ];
 
-  const handleFinalRegister = () => {
-    console.log('Начало финальной проверки данных...');
+  useEffect(() => {
+    if (error) {
+      Alert.alert('Ошибка регистрации', error, [{ text: 'OK'}]);
+    }
+  }, [error]);
+
+  const handleFinalRegister = async () => {
+    console.log('Начало финальной проверки данных в DetailsSetupScreen...');
     if (!gender) {
       Alert.alert('Ошибка', 'Пожалуйста, выберите ваш пол');
       return;
@@ -44,42 +58,22 @@ export default function DetailsSetupScreen() {
       return;
     }
 
-    setIsLoading(true);
-    const registrationData = {
-      firstName,
-      lastName,
+    const registrationData: RegisterRequest = {
+      name: `${firstName} ${lastName}`.trim(),
       email,
-      password, // In real app, this would not be passed around, but sent securely to backend at step 1 or 2.
+      password,
       username,
       gender,
       age: ageNum,
     };
 
-    console.log('Все данные для регистрации собраны:', registrationData);
-    console.log('Симуляция отправки данных на сервер...');
+    console.log('Все данные для регистрации собраны:', {
+        ...registrationData,
+        password: '***MASKED***'
+    });
+    console.log('Вызов функции register из useAuth...');
 
-    // Simulate API call
-    setTimeout(() => {
-      setIsLoading(false);
-      console.log('Регистрация успешно симулирована!');
-      Alert.alert(
-        'Успех!',
-        `Регистрация почти завершена, ${firstName}! Мы запомнили твои данные. Скоро ты сможешь войти в систему.`,
-        [
-          {
-            text: 'Хорошо',
-            onPress: () => {
-              // Navigate to login or a post-registration info screen
-              // For now, let's go to login and pass the email
-              router.replace({
-                pathname: '/(auth)/login',
-                params: { email: String(email) }, // Ensure email is a string for params
-              });
-            },
-          },
-        ]
-      );
-    }, 1500); // Simulate network delay
+    await register(registrationData);
   };
 
   return (
@@ -91,7 +85,7 @@ export default function DetailsSetupScreen() {
       <ScrollView contentContainerStyle={styles.container}>
         <View style={styles.header}>
           <Image
-            source={require('../../assets/images/logo.png')} // Make sure this path is correct
+            source={require('../../assets/images/logo.png')}
             style={styles.logo}
             resizeMode="contain"
           />
@@ -112,6 +106,7 @@ export default function DetailsSetupScreen() {
                   gender === option.value && styles.genderButtonSelected,
                 ]}
                 onPress={() => setGender(option.value)}
+                disabled={isLoading}
               >
                 <Text
                   style={[
@@ -134,12 +129,13 @@ export default function DetailsSetupScreen() {
               value={age}
               onChangeText={setAge}
               keyboardType="number-pad"
-              maxLength={2} // Max 2 digits for age
+              maxLength={2}
+              editable={!isLoading}
             />
           </View>
 
           <TouchableOpacity
-            style={styles.actionButton}
+            style={[styles.actionButton, isLoading && styles.actionButtonDisabled]}
             onPress={handleFinalRegister}
             disabled={isLoading}
           >
@@ -176,12 +172,12 @@ const styles = StyleSheet.create({
     marginBottom: 40,
   },
   logo: {
-    width: 80, // Slightly smaller logo for this screen
+    width: 80,
     height: 80,
     marginBottom: 20,
   },
   title: {
-    fontSize: 22, // Slightly smaller title
+    fontSize: 22,
     fontWeight: '700',
     color: '#212529',
     marginBottom: 10,
@@ -201,7 +197,7 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: '#495057',
     marginBottom: 8,
-    marginLeft: 4, // Align with input fields
+    marginLeft: 4,
   },
   inputContainer: {
     flexDirection: 'row',
@@ -252,7 +248,7 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
   actionButton: {
-    backgroundColor: '#28a745', // Green for final action
+    backgroundColor: '#28a745',
     borderRadius: 12,
     height: 56,
     justifyContent: 'center',
@@ -263,6 +259,9 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.1,
     shadowRadius: 4,
     elevation: 2,
+  },
+  actionButtonDisabled: {
+    backgroundColor: '#a5d6a7',
   },
   actionButtonText: {
     color: '#fff',
