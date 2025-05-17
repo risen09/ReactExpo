@@ -101,10 +101,11 @@ export default function PersonalityTest() {
   };
 
   // Function to complete the test and calculate results
-  const completeTest = async () => {
+  const completeTest = async (debugType: string | undefined = undefined) => {
     setLoading(true);
 
     try {
+      if (!debugType) {
       // Calculate MBTI scores
       const mbtiScores = calculateMBTIScores(answers);
       setScores(mbtiScores);
@@ -124,6 +125,19 @@ export default function PersonalityTest() {
       }
 
       setTestComplete(true);
+    } else {
+      // Для отладки можно указать конкретный тип личности
+      const type = debugType;
+      setPersonalityType(type);
+
+      // Получаем описание для типа
+      const typeDescription =
+        mbtiDescriptions[type] || 'Описание для этого типа личности еще не добавлено.';
+
+        setDescription(typeDescription);
+        await updatePersonalityType(type);
+        setTestComplete(true);
+    }
     } catch (error) {
       console.error('Test completion error:', error);
       Alert.alert('Ошибка', 'Не удалось обработать результаты теста');
@@ -143,14 +157,14 @@ export default function PersonalityTest() {
   };
 
   // Return to profile screen
-  const returnToProfile = () => {
-    router.back();
+  const goToTabs = () => {
+    router.push('/(tabs)')
   };
 
   // Navigate to test results
   const viewResults = () => {
     if (personalityType) {
-      router.push(`./results?type=${personalityType}`);
+      router.push(`/mbti/results?type=${personalityType}`);
     }
   };
 
@@ -194,14 +208,14 @@ export default function PersonalityTest() {
                 style={[styles.actionButton, styles.viewResultsButton]}
                 onPress={viewResults}
               >
-                <Text style={styles.buttonText}>Посмотреть результаты</Text>
+                <Text style={styles.buttonText}>Подробнее</Text>
               </TouchableOpacity>
 
               <TouchableOpacity
                 style={[styles.actionButton, styles.returnButton]}
-                onPress={returnToProfile}
+                onPress={goToTabs}
               >
-                <Text style={styles.buttonText}>Вернуться в профиль</Text>
+                <Text style={styles.buttonText}>Перейти к обучению</Text>
               </TouchableOpacity>
             </View>
           </View>
@@ -272,6 +286,16 @@ export default function PersonalityTest() {
                 />
               </TouchableOpacity>
             </View>
+            
+            <View style={styles.actionButtonsContainer}>
+              <TouchableOpacity
+              style={[styles.actionButton, styles.returnButton]}
+              onPress={() => completeTest('ESTP')}
+              >
+                <Text style={styles.buttonText}>Завершить тест</Text>
+              
+              </TouchableOpacity>
+              </View>
           </>
         )}
       </ScrollView>
