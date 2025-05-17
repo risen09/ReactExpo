@@ -12,6 +12,7 @@ interface GigaChatNewResponse {
   chat_id: string;
 }
 
+// для тестов
 interface DiagnosticResult {
   subjectArea: string;
   topic: string;
@@ -19,6 +20,29 @@ interface DiagnosticResult {
   needsInitialTest: boolean;
   suggestedTopics?: string[];
   testId?: string;
+}
+
+type Question = {
+  sub_topic: string;
+  grade: number;
+  questionText: string;
+  options: string[];
+  correctOptionIndex: number;
+  explanation: string;
+};
+
+interface TestResponse {
+  _id: string;
+  testTitle: string;
+  subject: string;
+  topic: string;
+  grade: number;
+  difficulty: string;
+  questions: Question[];
+  userAnswers: any[];
+  completed: boolean;
+  score: number | null;
+  createdAt: string;
 }
 
 interface ChatMessage {
@@ -64,7 +88,7 @@ interface ApiClient {
     list: () => Promise<AxiosResponse<DiagnosticChatResponse[]>>;
   };
   tests: {
-    startInitialTest: (subject: string, topic: string) => Promise<AxiosResponse<TestInitialResponse>>;
+    startInitialTest: (subject: string, topic: string, grade: string) => Promise<AxiosResponse<TestInitialResponse>>;
     getById: (testId: string) => Promise<AxiosResponse<any>>;
     submit: (testId: string, answers: any[]) => Promise<AxiosResponse<any>>;
     getRecommendations: (testId: string) => Promise<AxiosResponse<any>>;
@@ -82,4 +106,4 @@ interface ApiClient {
 }
 
 declare const apiClient: ApiClient;
-export default apiClient; 
+export default apiClient;

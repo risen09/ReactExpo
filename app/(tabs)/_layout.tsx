@@ -92,6 +92,22 @@ export default function TabLayout() {
             tabBarIcon: ({ size, color }) => <User size={size} color={color} />,
           }}
         />
+        <Tabs.Screen
+          name="test/[id]"
+          options={{
+            title: 'Тест',
+            tabBarIcon: ({ size, color }) => <BookOpen size={size} color={color} />,
+            href: null,
+          }}
+        />
+        <Tabs.Screen
+          name="test/results"
+          options={{
+            title: 'Результаты теста',
+            tabBarIcon: ({ size, color }) => <BookOpen size={size} color={color} />,
+            href: null,
+          }}
+        />
       </Tabs>
     </>
   );

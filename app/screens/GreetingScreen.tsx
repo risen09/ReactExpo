@@ -2,6 +2,11 @@ import { Ionicons } from '@expo/vector-icons';
 import { StatusBar } from 'expo-status-bar';
 import React, { useState } from 'react';
 import { View, Text, StyleSheet, SafeAreaView, TouchableOpacity, ScrollView } from 'react-native';
+import { useNavigation } from '@react-navigation/native';
+import axios from 'axios';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { useRouter } from 'expo-router';
+import apiClient from '@/api/client';
 
 // Reusing COLORS from DiagnosticsScreen for consistency
 const COLORS = {
@@ -84,6 +89,8 @@ export const GreetingScreen = () => {
   const [selectedDifficulty, setSelectedDifficulty] = useState<{ id: string; name: string } | null>(
     null
   );
+  const navigation = useNavigation();
+  const router = useRouter();
 
   const handleSubjectSelect = (subject: { id: string; name: string }) => {
     setSelectedSubject(subject);
@@ -122,6 +129,24 @@ export const GreetingScreen = () => {
     setSelectedTopics([]);
     setSelectedDifficulty(null);
     setStep('subject');
+  };
+
+  const handleStartLearning = async () => {
+    try {
+      // const response = await apiClient.tests.startInitialTest(
+      //   selectedSubject?.id || '',
+      //   selectedTopics[0]?.id || '',
+      //   selectedDifficulty?.id || '',
+      //   '9' // класс ученика захардкожен
+      // );
+      // const { testId } = response.data;
+
+      const testId = '680f7b59c53107d3f21a1d93';
+      router.push(`/(tabs)/test/${testId}`);
+    } catch (error) {
+      console.error('Error starting test:', error);
+      // Обработка ошибки
+    }
   };
 
   const renderStepContent = () => {
@@ -240,16 +265,7 @@ export const GreetingScreen = () => {
             </View>
             <TouchableOpacity
               style={styles.confirmButton}
-              onPress={() => {
-                const selectionData = {
-                  field: selectedSubject, // Assuming selectedSubject contains { id, name }
-                  subjects: selectedTopics, // Assuming selectedTopics is an array of { id, name }
-                  difficulty: selectedDifficulty, // Assuming selectedDifficulty contains { id, name }
-                };
-                const selectionJson = JSON.stringify(selectionData, null, 2); // Pretty print JSON
-                console.log('User Selection JSON:', selectionJson);
-                // TODO: Send this JSON data to your backend or navigate
-              }}
+              onPress={handleStartLearning}
             >
               <Text style={styles.confirmButtonText}>Начать обучение</Text>
             </TouchableOpacity>

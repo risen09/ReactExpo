@@ -3,6 +3,7 @@ import axios from 'axios';
 
 import { Lesson } from '../types/lesson';
 import { Track } from '../types/track';
+import { TestInitialResponse, TestResponse } from '../types/test';
 
 // Базовый URL API из переменных окружения или резервный URL
 const API_BASE_URL = process.env.EXPO_PUBLIC_API_BASE_URL || 'https://j0cl9aplcsh5.share.zrok.io';
@@ -197,6 +198,13 @@ export default {
 
   lessons: {
     getById: (lessonId: string) => api.get<Lesson>(`/api/lessons/${lessonId}`),
+  },
+
+  tests: {
+    startInitialTest: (subject: string, topic: string, grade: string, difficulty: string) =>
+      api.post<TestInitialResponse>('/api/startInitialTest', { subject, topic, grade, difficulty }),
+    getById: (testId: string) => api.get<TestResponse>(`/api/tests/${testId}`),
+    submit: (testId: string, answers: any[]) => api.post(`/api/tests/${testId}/submit`, { answers }),
   },
 
   // GigaChat API
