@@ -28,6 +28,7 @@ export const TestScreen: React.FC<TestInitialResponse> = ({ testId }) => {
   useEffect(() => {
     const fetchTest = async () => {
       try {
+        console.log(testId);
         const response = await apiClient.tests.getById(testId);
         
         console.log(response.data);

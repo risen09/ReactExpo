@@ -1,13 +1,12 @@
 import { Ionicons } from '@expo/vector-icons';
 import { StatusBar } from 'expo-status-bar';
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, SafeAreaView, TouchableOpacity, ScrollView } from 'react-native';
-import { useNavigation } from '@react-navigation/native';
-import axios from 'axios';
-import AsyncStorage from '@react-native-async-storage/async-storage';
+import { View, Text, StyleSheet, SafeAreaView, TouchableOpacity, ScrollView, ActivityIndicator } from 'react-native';
 import { useRouter } from 'expo-router';
+import axios from 'axios';
+import { TestInitialResponse } from '@/types/test';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import apiClient from '@/api/client';
-
 // Reusing COLORS from DiagnosticsScreen for consistency
 const COLORS = {
   primary: '#5B67CA',
@@ -89,7 +88,7 @@ export const GreetingScreen = () => {
   const [selectedDifficulty, setSelectedDifficulty] = useState<{ id: string; name: string } | null>(
     null
   );
-  const navigation = useNavigation();
+  const [isGenerating, setIsGenerating] = useState(false);
   const router = useRouter();
 
   const handleSubjectSelect = (subject: { id: string; name: string }) => {
@@ -133,19 +132,21 @@ export const GreetingScreen = () => {
 
   const handleStartLearning = async () => {
     try {
-      // const response = await apiClient.tests.startInitialTest(
-      //   selectedSubject?.id || '',
-      //   selectedTopics[0]?.id || '',
-      //   selectedDifficulty?.id || '',
-      //   '9' // класс ученика захардкожен
-      // );
-      // const { testId } = response.data;
+      setIsGenerating(true);
+      const grade = 9;
+      const response = await apiClient.tests.startInitialTest(
+        selectedSubject?.id || '',
+        selectedTopics[0]?.id || '',
+        selectedDifficulty?.id || '',
+        grade
+      );
 
-      const testId = '680f7b59c53107d3f21a1d93';
+      const { testId } = response.data;
       router.push(`/(tabs)/test/${testId}`);
     } catch (error) {
       console.error('Error starting test:', error);
-      // Обработка ошибки
+    } finally {
+      setIsGenerating(false);
     }
   };
 
@@ -279,9 +280,19 @@ export const GreetingScreen = () => {
     }
   };
 
+  const LoadingOverlay = () => (
+    <View style={styles.loadingOverlay}>
+      <View style={styles.loadingContent}>
+        <ActivityIndicator size="large" color={COLORS.primary} />
+        <Text style={styles.loadingText}>Подождите, тест генерируется...</Text>
+      </View>
+    </View>
+  );
+
   return (
     <SafeAreaView style={styles.container}>
       <StatusBar style="dark" />
+      {isGenerating && <LoadingOverlay />}
       <View style={styles.header}>
         <Text style={styles.headerTitle}>Добро пожаловать!</Text>
         <Text style={styles.headerSubtitle}>Расскажите, чему вы хотите научиться?</Text>
@@ -429,6 +440,37 @@ const styles = StyleSheet.create({
     borderColor: COLORS.border,
     marginLeft: 4,
     marginBottom: 4,
+    textAlign: 'center',
+  },
+  loadingOverlay: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: 'rgba(255, 255, 255, 0.9)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    zIndex: 1000,
+  },
+  loadingContent: {
+    backgroundColor: COLORS.card,
+    padding: 20,
+    borderRadius: 10,
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.25,
+    shadowRadius: 3.84,
+    elevation: 5,
+  },
+  loadingText: {
+    marginTop: 10,
+    fontSize: 16,
+    color: COLORS.text,
     textAlign: 'center',
   },
 });

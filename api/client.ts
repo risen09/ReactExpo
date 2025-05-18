@@ -73,7 +73,7 @@ let BASE_URL = API_BASE_URL;
 // Создаем инстанс axios с настройками
 const api = axios.create({
   baseURL: BASE_URL,
-  timeout: 10000,
+  timeout: 30000,
   headers: {
     'Content-Type': 'application/json',
   },
@@ -201,8 +201,8 @@ export default {
   },
 
   tests: {
-    startInitialTest: (subject: string, topic: string, grade: string, difficulty: string) =>
-      api.post<TestInitialResponse>('/api/startInitialTest', { subject, topic, grade, difficulty }),
+    startInitialTest: (subject: string, topic: string, difficulty: string, grade: number) =>
+      api.post<TestInitialResponse>('/api/tests/startInitialTest', { subject, topic, difficulty, grade }),
     getById: (testId: string) => api.get<TestResponse>(`/api/tests/${testId}`),
     submit: (testId: string, answers: any[]) => api.post(`/api/tests/${testId}/submit`, { answers }),
   },
