@@ -1,6 +1,5 @@
 import React from 'react';
 import { View, Text, StyleSheet, SafeAreaView, TouchableOpacity, ScrollView } from 'react-native';
-import { useNavigation, useRoute } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
 import { TestResultsScreenProps } from '@/types/test';
 
@@ -17,8 +16,6 @@ const COLORS = {
 };
 
 export const TestResultsScreen: React.FC<TestResultsScreenProps> = ({ testId, results }) => {
-  const navigation = useNavigation();
-  const route = useRoute();
 
   return (
     <SafeAreaView style={styles.container}>
@@ -49,8 +46,8 @@ export const TestResultsScreen: React.FC<TestResultsScreenProps> = ({ testId, re
               </View>
               <Text style={styles.explanation}>{result.explanation}</Text>
               <Text style={styles.answerDetails}>
-                Ваш ответ: {typeof result.selectedOption.selectedOption === 'number'
-                  ? `Вариант ${result.selectedOption.selectedOption + 1}`
+                Ваш ответ: {typeof result.selectedOption === 'number'
+                  ? `Вариант ${result.selectedOption + 1}`
                   : 'Нет ответа'}
               </Text>
             </View>

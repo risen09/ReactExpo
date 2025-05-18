@@ -23,6 +23,7 @@ export const TestScreen: React.FC<TestInitialResponse> = ({ testId }) => {
   const [questions, setQuestions] = useState<Question[]>([]);
   const [selectedAnswers, setSelectedAnswers] = useState<Record<string, number>>({});
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const route = useRoute();
   const { results } = useLocalSearchParams();
   const parsedResults = results ? JSON.parse(decodeURIComponent(results as string)) : null;
@@ -30,6 +31,7 @@ export const TestScreen: React.FC<TestInitialResponse> = ({ testId }) => {
   useEffect(() => {
     setSelectedAnswers({});
     setCurrentQuestionIndex(0);
+    setError(null);
   }, [testId]);
 
   useEffect(() => {
@@ -48,18 +50,17 @@ export const TestScreen: React.FC<TestInitialResponse> = ({ testId }) => {
 
   const handleAnswerSelect = (questionId: string, optionIndex: number) => {
     setSelectedAnswers(prev => ({ ...prev, [questionId]: optionIndex }));
+    setError(null);
   };
 
   const handleSubmit = async () => {
+    if (Object.keys(selectedAnswers).length !== questions.length) {
+      setError('Пожалуйста, ответьте на все вопросы перед отправкой теста.');
+      return;
+    }
     try {
-      const token = await AsyncStorage.getItem('auth_token');
-      const answers = Object.entries(selectedAnswers).map(([questionId, selectedOption]) => ({
-        questionId,
-        selectedOption,
-      }));
+      const answers = questions.map((_, idx) => selectedAnswers[idx.toString()]);
       const response = await apiClient.tests.submit(testId, answers);
-      console.log(response.data);
-      console.log(testId);
       router.push(
         `/(tabs)/test/results?testId=${testId}&results=${encodeURIComponent(JSON.stringify(response.data))}`
       );
@@ -116,6 +117,7 @@ export const TestScreen: React.FC<TestInitialResponse> = ({ testId }) => {
             </TouchableOpacity>
           ))}
         </View>
+        {error && <Text style={{ color: COLORS.danger, marginTop: 16 }}>{error}</Text>}
       </ScrollView>
 
       <View style={styles.navigationButtons}>
