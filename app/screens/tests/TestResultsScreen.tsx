@@ -49,7 +49,9 @@ export const TestResultsScreen: React.FC<TestResultsScreenProps> = ({ testId, re
               </View>
               <Text style={styles.explanation}>{result.explanation}</Text>
               <Text style={styles.answerDetails}>
-                Ваш ответ: {result.selectedOption?.selectedOptions?.join(', ') || 'Нет ответа'}
+                Ваш ответ: {typeof result.selectedOption.selectedOption === 'number'
+                  ? `Вариант ${result.selectedOption.selectedOption + 1}`
+                  : 'Нет ответа'}
               </Text>
             </View>
           ))}

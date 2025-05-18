@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, SafeAreaView, TouchableOpacity, ScrollView } from 'react-native';
 import { useRoute } from '@react-navigation/native';
-import { router } from 'expo-router';
+import { useLocalSearchParams, router } from 'expo-router';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import apiClient from '@/api/client';
 import { Question, TestInitialResponse } from '@/types/test';
@@ -21,18 +21,21 @@ const COLORS = {
 export const TestScreen: React.FC<TestInitialResponse> = ({ testId }) => {
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
   const [questions, setQuestions] = useState<Question[]>([]);
-  const [selectedAnswers, setSelectedAnswers] = useState<Record<string, string[]>>({});
+  const [selectedAnswers, setSelectedAnswers] = useState<Record<string, number>>({});
   const [loading, setLoading] = useState(true);
   const route = useRoute();
+  const { results } = useLocalSearchParams();
+  const parsedResults = results ? JSON.parse(decodeURIComponent(results as string)) : null;
+
+  useEffect(() => {
+    setSelectedAnswers({});
+    setCurrentQuestionIndex(0);
+  }, [testId]);
 
   useEffect(() => {
     const fetchTest = async () => {
       try {
-        console.log(testId);
         const response = await apiClient.tests.getById(testId);
-        
-        console.log(response.data);
-        
         setQuestions(response.data.questions);
       } catch (error) {
         console.error('Error fetching test:', error);
@@ -40,39 +43,26 @@ export const TestScreen: React.FC<TestInitialResponse> = ({ testId }) => {
         setLoading(false);
       }
     };
-
     fetchTest();
   }, [testId]);
 
-  const handleAnswerSelect = (questionId: string, optionId: string) => {
-    setSelectedAnswers(prev => {
-      const currentQuestion = questions[currentQuestionIndex];
-      const currentAnswers = prev[questionId] || [];
-
-      if (currentQuestion.options.length > 1) {
-        const newAnswers = currentAnswers.includes(optionId)
-          ? currentAnswers.filter(id => id !== optionId)
-          : [...currentAnswers, optionId];
-        return { ...prev, [questionId]: newAnswers };
-      } else {
-        return { ...prev, [questionId]: [optionId] };
-      }
-    });
+  const handleAnswerSelect = (questionId: string, optionIndex: number) => {
+    setSelectedAnswers(prev => ({ ...prev, [questionId]: optionIndex }));
   };
 
   const handleSubmit = async () => {
     try {
       const token = await AsyncStorage.getItem('auth_token');
-      const answers = Object.entries(selectedAnswers).map(([questionId, selectedOptions]) => ({
+      const answers = Object.entries(selectedAnswers).map(([questionId, selectedOption]) => ({
         questionId,
-        selectedOptions,
+        selectedOption,
       }));
-
       const response = await apiClient.tests.submit(testId, answers);
-      
       console.log(response.data);
-
-      router.push(`/(tabs)/test/results?testId=${testId}&results=${JSON.stringify(response.data)}`);
+      console.log(testId);
+      router.push(
+        `/(tabs)/test/results?testId=${testId}&results=${encodeURIComponent(JSON.stringify(response.data))}`
+      );
     } catch (error) {
       console.error('Error submitting test:', error);
     }
@@ -107,20 +97,19 @@ export const TestScreen: React.FC<TestInitialResponse> = ({ testId }) => {
 
       <ScrollView style={styles.content}>
         <Text style={styles.questionText}>{currentQuestion.questionText}</Text>
-        
         <View style={styles.optionsContainer}>
           {currentQuestion.options.map((option, index) => (
             <TouchableOpacity
               key={index}
               style={[
                 styles.optionButton,
-                selectedAnswers[currentQuestionIndex]?.includes(index.toString()) && styles.optionSelected
+                selectedAnswers[currentQuestionIndex] === index && styles.optionSelected
               ]}
-              onPress={() => handleAnswerSelect(currentQuestionIndex.toString(), index.toString())}
+              onPress={() => handleAnswerSelect(currentQuestionIndex.toString(), index)}
             >
               <Text style={[
                 styles.optionText,
-                selectedAnswers[currentQuestionIndex]?.includes(index.toString()) && styles.optionTextSelected
+                selectedAnswers[currentQuestionIndex] === index && styles.optionTextSelected
               ]}>
                 {option}
               </Text>
@@ -138,7 +127,6 @@ export const TestScreen: React.FC<TestInitialResponse> = ({ testId }) => {
             <Text style={styles.navButtonText}>Назад</Text>
           </TouchableOpacity>
         )}
-        
         <TouchableOpacity 
           style={[styles.navButton, styles.nextButton]}
           onPress={() => {

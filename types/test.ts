@@ -37,7 +37,7 @@ export interface TestResultsScreenProps {
         questionIndex: number;
         selectedOption: {
           questionId: string;
-          selectedOptions: string[];
+          selectedOption: number;
         };
       }>;
       score: number;
