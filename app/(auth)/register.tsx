@@ -16,20 +16,23 @@ import {
   ScrollView,
 } from 'react-native';
 
-import { useAuth } from '../../hooks/useAuth';
+// import { useAuth } from '../../hooks/useAuth'; // We will not use this directly for now
 
 export default function RegisterScreen() {
-  const [name, setName] = useState('');
+  const [firstName, setFirstName] = useState(''); // Changed from name to firstName
+  const [lastName, setLastName] = useState(''); // Added lastName
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
-  const { register, isLoading, error } = useAuth();
+  // const { register, isLoading, error } = useAuth(); // Mocking this for now
+  const [isLoading, setIsLoading] = useState(false); // Local loading state
 
   const handleRegister = async () => {
+    console.log('Начало проверки данных для регистрации...');
     // Проверка валидности данных
-    if (!name.trim() || !email.trim() || !password.trim() || !confirmPassword.trim()) {
+    if (!firstName.trim() || !lastName.trim() || !email.trim() || !password.trim() || !confirmPassword.trim()) {
       Alert.alert('Ошибка', 'Пожалуйста, заполните все поля');
       return;
     }
@@ -44,39 +47,49 @@ export default function RegisterScreen() {
       return;
     }
 
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    const emailRegex = /^[^\s@]+@[^\s@]+.[^\s@]+$/;
     if (!emailRegex.test(email)) {
       Alert.alert('Ошибка', 'Введите корректный email');
       return;
     }
 
+    setIsLoading(true);
+    console.log('Данные подтверждены, переход к следующему шагу...');
+
+    // Mock interaction and navigate to the next screen
+    // We'll create 'username-setup.tsx' next
+    setTimeout(() => { // Simulate async operation
+      router.push({
+        pathname: './username-setup', // New screen
+        params: {
+          firstName: firstName.trim(),
+          lastName: lastName.trim(),
+          email: email.trim().toLowerCase(),
+          password: password, // Passwords should ideally not be passed like this in real app, but for now...
+        },
+      });
+      setIsLoading(false);
+      console.log('Перенаправлено на /_layout.tsx/(auth)/username-setup с параметрами:', { firstName, lastName, email });
+    }, 1000); // Simulate network delay
+
+    // The old logic for direct registration is removed for now
+    /*
     try {
       console.log('Начинаем процесс регистрации...');
-
-      // Вызываем метод регистрации из хука useAuth
-      // После регистрации хук useAuth сам перенаправит пользователя на страницу входа или панель приложения
       await register({
-        name,
+        name: `${firstName.trim()} ${lastName.trim()}`, // Combine first and last name
         email,
         password,
-        // Добавляем gender и age с значениями по умолчанию, так как они требуются API
-        gender: 'other',
-        age: 0,
+        gender: 'other', // This will be collected later
+        age: 0,         // This will be collected later
       });
-
       console.log('Регистрация завершена, ожидается редирект...');
     } catch (err) {
-      // Ошибка уже будет обработана внутри хука useAuth, но на всякий случай обрабатываем её и здесь
       console.error('Ошибка регистрации в компоненте:', err);
-
-      // Отображаем детали ошибки
-      let errorMessage = error || 'Произошла ошибка при регистрации.';
-
+      let errorMessage = 'Произошла ошибка при регистрации.';
       if (err instanceof Error) {
         errorMessage = err.message;
       }
-
-      // Показываем диалог с ошибкой и опцией перехода на экран входа вручную
       Alert.alert(
         'Ошибка регистрации',
         `${errorMessage}\n\nВозможно, учетная запись уже создана. Хотите перейти на экран входа?`,
@@ -93,7 +106,9 @@ export default function RegisterScreen() {
           { text: 'Остаться', style: 'cancel' },
         ]
       );
+      setIsLoading(false); // Ensure loading is stopped on error
     }
+    */
   };
 
   return (
@@ -120,9 +135,20 @@ export default function RegisterScreen() {
             <MaterialIcons name="person" size={20} color="#6c757d" style={styles.inputIcon} />
             <TextInput
               style={styles.input}
-              placeholder="Имя"
-              value={name}
-              onChangeText={setName}
+              placeholder="Имя" // Placeholder for First Name
+              value={firstName}
+              onChangeText={setFirstName}
+              autoCapitalize="words"
+            />
+          </View>
+
+          <View style={styles.inputContainer}>
+            <MaterialIcons name="person-outline" size={20} color="#6c757d" style={styles.inputIcon} />
+            <TextInput
+              style={styles.input}
+              placeholder="Фамилия" // Placeholder for Last Name
+              value={lastName}
+              onChangeText={setLastName}
               autoCapitalize="words"
             />
           </View>
@@ -186,7 +212,7 @@ export default function RegisterScreen() {
             {isLoading ? (
               <ActivityIndicator color="#fff" size="small" />
             ) : (
-              <Text style={styles.registerButtonText}>Зарегистрироваться</Text>
+              <Text style={styles.registerButtonText}>Продолжить регистрацию</Text>
             )}
           </TouchableOpacity>
         </View>

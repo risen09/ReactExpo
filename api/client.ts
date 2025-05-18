@@ -1,8 +1,10 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import axios from 'axios';
+import axios, { get } from 'axios';
 
 import { Lesson } from '../types/lesson';
 import { Track } from '../types/track';
+import { LoginRequest, LoginResponse, RegisterRequest, RegisterResponse, VkLoginRequest } from '@/types/auth';
+import { User } from '@/types/user';
 
 // Базовый URL API из переменных окружения или резервный URL
 const API_BASE_URL = process.env.EXPO_PUBLIC_API_BASE_URL || 'https://j0cl9aplcsh5.share.zrok.io';
@@ -169,14 +171,29 @@ api.interceptors.response.use(
 export default {
   // Аутентификация
   auth: {
-    login: (email: string, password: string) => api.post('/api/login', { email, password }),
-    register: (userData: any) => api.post('/api/register', userData),
+    login: (loginData: LoginRequest) => api.post<LoginResponse>('/api/v2/auth/login', loginData),
+    register: (userData: RegisterRequest) => api.post<RegisterResponse>('/api/v2/auth/register', userData),
     logout: () => api.post('/api/logout'),
     // Добавляем функцию для проверки авторизации
     checkAuth: () => api.get('/api/user'),
     // Функция обновления токена
     refreshToken: (refreshToken: string) =>
       api.post('/api/auth/refresh', { refresh_token: refreshToken }),
+
+    vk: {
+      login: (request: VkLoginRequest) => api.post<LoginResponse>('/api/v2/auth/vk', request),
+    }
+  },
+
+  // Пользователи
+  users: {
+    update: (id: string, userData: Partial<User>) => api.post(`/api/users/${id}`, userData),
+    getById: (userId: string) => api.get<User>(`/api/v2/users/${userId}`),
+  },
+
+  user: {
+    get: () => api.get<User>('/api/v2/user'),
+    update: (userData: Partial<User>) => api.post('/api/v2/user', userData),
   },
 
   // Треки обучения

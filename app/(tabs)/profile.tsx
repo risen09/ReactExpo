@@ -72,12 +72,9 @@ export default function ProfileTab() {
   const { user, logout, updateProfile, isLoading, error } = useAuth();
   const [isEditing, setIsEditing] = useState(false);
   const [formData, setFormData] = useState({
-    nickname: '',
+    username: '',
     name: '',
-    email: '',
-    age: '',
-    gender: '',
-    personalityType: '',
+    email: ''
   });
   const [avatar, setAvatar] = useState<string | null>(null);
   const [settings, setSettings] = useState<ProfileSettings>({
@@ -96,8 +93,6 @@ export default function ProfileTab() {
 
   const { getUserTestResults } = usePersonalityTest();
 
-  const [image, setImage] = useState<string | null>(null);
-  const [showGenderPicker, setShowGenderPicker] = useState(false);
   const [showLanguagePicker, setShowLanguagePicker] = useState(false);
   const [showThemePicker, setShowThemePicker] = useState(false);
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
@@ -121,15 +116,11 @@ export default function ProfileTab() {
       console.log('Personality type:', user.personalityType || 'Not set');
 
       setFormData({
-        nickname: user.nickname || '',
+        username: user.username || '',
         name: user.name || '',
         email: user.email || '',
-        age: user.age ? String(user.age) : '',
-        gender: user.gender || '',
-        personalityType: user.personalityType || '',
       });
       setAvatar(user.avatar || null);
-      setImage(user.profileImage || null);
 
       if (user.settings) {
         setSettings(user.settings);
@@ -146,46 +137,31 @@ export default function ProfileTab() {
           2
         )
       );
-      console.log('personalityType in formData:', formData.personalityType || 'Not set');
       console.log('=== END PROFILE DEBUG ===');
     }
   }, [user]);
 
   const getAgeText = () => {
-    if (!formData.age || formData.age === '0') return 'Не указан';
-    return `${formData.age} лет`;
+    return `${user?.age} лет`;
   };
 
   const handleSaveProfile = async () => {
-    // Валидация обязательных полей
-    if (!formData.nickname || !formData.name || !formData.email) {
+    // Validation for required fields
+    if (!formData.username || !formData.name || !formData.email) {
       Alert.alert('Ошибка', 'Пожалуйста, заполните обязательные поля: никнейм, имя и email');
       return;
     }
-
     setIsSaving(true);
-
     try {
-      // Приводим gender к нужному типу
-      const gender =
-        formData.gender === 'male' || formData.gender === 'female' || formData.gender === 'other'
-          ? (formData.gender as 'male' | 'female' | 'other')
-          : 'other';
-
       await updateProfile({
         name: formData.name,
         email: formData.email,
-        nickname: formData.nickname,
-        personalityType: formData.personalityType,
-        age: formData.age ? parseInt(formData.age, 10) : 0,
-        gender,
+        username: formData.username,
         avatar: avatar || undefined,
-        profileImage: image || undefined,
         settings,
       });
-
       Alert.alert('Успешно', 'Профиль успешно обновлен');
-      setIsEditing(false); // Выходим из режима редактирования после сохранения
+      setIsEditing(false);
     } catch (err) {
       Alert.alert('Ошибка', error || 'Не удалось обновить профиль. Попробуйте позже.');
     } finally {
@@ -194,15 +170,11 @@ export default function ProfileTab() {
   };
 
   const handleCancelEdit = () => {
-    // Возвращаем оригинальные данные
     if (user) {
       setFormData({
-        nickname: user.nickname || '',
+        username: user.username || '',
         name: user.name || '',
         email: user.email || '',
-        age: user.age ? String(user.age) : '',
-        gender: user.gender || '',
-        personalityType: user.personalityType || '',
       });
       setAvatar(user.avatar || null);
     }
@@ -284,22 +256,17 @@ export default function ProfileTab() {
 
   // Функция для навигации к результатам теста
   const navigateToTestResults = () => {
-    if (formData.personalityType) {
-      router.push(`/mbti/results?type=${formData.personalityType}`);
-      // router.push(`/test-result?type=${formData.personalityType}`);
+    if (user && user.personalityType) {
+      router.push(`/mbti/results?type=${user.personalityType}`);
     }
   };
 
   const getPersonalityTypeName = () => {
-    // Расширенный список типов личности для правильного отображения
     const types: { [key: string]: string } = {
-      // Основные 4 типа
       analytical: 'Аналитический тип',
       creative: 'Креативный тип',
       social: 'Социальный тип',
       practical: 'Практический тип',
-
-      // MBTI типы (16 типов)
       INTJ: 'Стратег (INTJ)',
       INTP: 'Мыслитель (INTP)',
       ENTJ: 'Командир (ENTJ)',
@@ -317,20 +284,10 @@ export default function ProfileTab() {
       ESTP: 'Делец (ESTP)',
       ESFP: 'Развлекатель (ESFP)',
     };
-
-    // Проверяем, есть ли тип в списке известных типов
-    if (formData.personalityType && types[formData.personalityType]) {
-      return types[formData.personalityType];
+    if (user && user.personalityType && types[user.personalityType]) {
+      return types[user.personalityType];
     }
-
-    // Если точного совпадения нет, возвращаем сам тип (чтобы ничего не потерялось)
-    return formData.personalityType ? `Тип: ${formData.personalityType}` : 'Не определен';
-  };
-
-  const getGenderText = () => {
-    if (formData.gender === 'male') return 'Мужской';
-    if (formData.gender === 'female') return 'Женский';
-    return 'Не указан';
+    return user && user.personalityType ? `Тип: ${user.personalityType}` : 'Не определен';
   };
 
   const getLanguageName = () => {
@@ -414,10 +371,8 @@ export default function ProfileTab() {
           <View style={styles.avatarContainer}>
             {avatar ? (
               avatar.includes('.jpg') || avatar.includes('.png') ? (
-                // Используем локальные изображения из мапы
                 <Image source={avatarMap[avatar]} style={styles.avatar} />
               ) : (
-                // Используем URI из галереи
                 <Image source={{ uri: avatar }} style={styles.avatar} />
               )
             ) : (
@@ -430,8 +385,8 @@ export default function ProfileTab() {
             </TouchableOpacity>
           </View>
           <Text style={styles.userName}>{formData.name || 'Ваше имя'}</Text>
-          <Text style={styles.userNickname}>@{formData.nickname || 'nickname'}</Text>
-          {formData.personalityType && (
+          <Text style={styles.userNickname}>@{formData.username || 'username'}</Text>
+          {user?.personalityType && (
             <TouchableOpacity style={styles.personalityTypeTag} onPress={navigateToTestResults}>
               <Brain size={16} color="#FFFFFF" style={styles.personalityTypeIcon} />
               <Text style={styles.personalityTypeText}>{getPersonalityTypeName()}</Text>
@@ -454,6 +409,7 @@ export default function ProfileTab() {
                   value={formData.name}
                   onChangeText={text => setFormData({ ...formData, name: text })}
                   placeholder="Введите ваше имя"
+                  editable={!user.vkProfile}
                 />
               </View>
             </View>
@@ -464,8 +420,8 @@ export default function ProfileTab() {
                 <AtSign size={18} color={COLORS.textSecondary} style={styles.inputIcon} />
                 <TextInput
                   style={styles.input}
-                  value={formData.nickname}
-                  onChangeText={text => setFormData({ ...formData, nickname: text })}
+                  value={formData.username}
+                  onChangeText={text => setFormData({ ...formData, username: text })}
                   placeholder="Введите никнейм"
                 />
               </View>
@@ -482,75 +438,8 @@ export default function ProfileTab() {
                   placeholder="Введите email"
                   keyboardType="email-address"
                   autoCapitalize="none"
+                  editable={!user.vkProfile}
                 />
-              </View>
-            </View>
-
-            <View style={styles.inputGroup}>
-              <Text style={styles.inputLabel}>Возраст</Text>
-              <View style={styles.inputContainer}>
-                <Calendar size={18} color={COLORS.textSecondary} style={styles.inputIcon} />
-                <TextInput
-                  style={styles.input}
-                  value={formData.age}
-                  onChangeText={text => setFormData({ ...formData, age: text })}
-                  placeholder="Введите возраст"
-                  keyboardType="number-pad"
-                />
-              </View>
-            </View>
-
-            <View style={styles.inputGroup}>
-              <Text style={styles.inputLabel}>Пол</Text>
-              <View style={styles.genderContainer}>
-                <TouchableOpacity
-                  style={[
-                    styles.genderOption,
-                    formData.gender === 'male' && styles.activeGenderOption,
-                  ]}
-                  onPress={() => setFormData({ ...formData, gender: 'male' })}
-                >
-                  <Text
-                    style={[
-                      styles.genderText,
-                      formData.gender === 'male' && styles.activeGenderText,
-                    ]}
-                  >
-                    Мужской
-                  </Text>
-                </TouchableOpacity>
-                <TouchableOpacity
-                  style={[
-                    styles.genderOption,
-                    formData.gender === 'female' && styles.activeGenderOption,
-                  ]}
-                  onPress={() => setFormData({ ...formData, gender: 'female' })}
-                >
-                  <Text
-                    style={[
-                      styles.genderText,
-                      formData.gender === 'female' && styles.activeGenderText,
-                    ]}
-                  >
-                    Женский
-                  </Text>
-                </TouchableOpacity>
-                <TouchableOpacity
-                  style={[
-                    styles.genderOption,
-                    formData.gender === 'other' && styles.activeGenderOption,
-                  ]}
-                  onPress={() => setFormData({ ...formData, gender: 'other' })}
-                >
-                  <Text
-                    style={[
-                      styles.genderText,
-                      formData.gender === 'other' && styles.activeGenderText,
-                    ]}
-                  >
-                    Другой
-                  </Text>
-                </TouchableOpacity>
               </View>
             </View>
 
@@ -603,7 +492,7 @@ export default function ProfileTab() {
                 </View>
                 <View style={styles.settingTextContainer}>
                   <Text style={styles.settingText}>Никнейм</Text>
-                  <Text style={styles.settingSubtext}>@{formData.nickname}</Text>
+                  <Text style={styles.settingSubtext}>@{formData.username}</Text>
                 </View>
               </View>
 
@@ -628,7 +517,7 @@ export default function ProfileTab() {
               </View>
 
               {/* Personality Test Section */}
-              {! formData.personalityType ? (
+              {!user?.personalityType ? (
                 <TouchableOpacity style={styles.settingItem} onPress={navigateToPersonalityTest}>
                   <View style={[styles.settingIconContainer, { backgroundColor: '#EEF0FF' }]}>
                     <Star size={20} color={COLORS.primary} />
@@ -639,7 +528,7 @@ export default function ProfileTab() {
                   </View>
                   <ChevronRight size={20} color={COLORS.textSecondary} />
                 </TouchableOpacity>
-              ) : <></>}
+              ) : null}
 
             </View>
 
@@ -757,13 +646,6 @@ export default function ProfileTab() {
       </View>
 
       {/* Модальные окна */}
-      <GenderPickerModal
-        visible={showGenderPicker}
-        onClose={() => setShowGenderPicker(false)}
-        onSelect={gender => setFormData({ ...formData, gender })}
-        selectedGender={formData.gender}
-      />
-
       <LanguagePickerModal
         visible={showLanguagePicker}
         onClose={() => setShowLanguagePicker(false)}
