@@ -1,4 +1,6 @@
 import { useAuth } from '@/hooks/useAuth';
+import apiClient from '@/api/client';
+import LearningTrackCard from '@/components/LearningTrackCard';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { LinearGradient } from 'expo-linear-gradient';
 import { router } from 'expo-router';
@@ -16,7 +18,7 @@ import {
   Clock,
   Award,
 } from 'lucide-react-native';
-import React, { useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -27,6 +29,7 @@ import {
   ImageBackground,
   Dimensions,
 } from 'react-native';
+import { Track } from '@/types/track';
 
 const { width } = Dimensions.get('window');
 const cardWidth = width * 0.42;
@@ -47,45 +50,42 @@ const COLORS = {
 
 export default function HomeScreen() {
   const { user } = useAuth(); 
+  const [recentTracks, setRecentTracks] = useState<Track[]>([]);
+  const [tracksLoading, setTracksLoading] = useState(true);
+  const [tracksError, setTracksError] = useState<string | null>(null);
+
 
   useEffect(() => {
     if (!user?.personalityType) {
       router.replace('/mbti');
     }
+    apiClient.tracks.getAll()
+       .then(res => {
+         setRecentTracks(res.data.slice(0, 3));
+         setTracksLoading(false);
+       })
+       .catch(err => {
+         setTracksError('Не удалось загрузить треки');
+         setTracksLoading(false);
+       });
   }, [user]);
 
   const featureCards = [
     {
       id: 1,
-      title: 'Уроки',
-      description: 'Интерактивные уроки и курсы',
+      title: 'Треки',
+      description: 'Твой персонализированный план обучение',
       icon: <BookOpen size={28} color="#FFFFFF" strokeWidth={2} />,
       gradient: [COLORS.primary, '#424D9D'] as [string, string],
-      route: '/(tabs)/lessons',
+      route: '/(tabs)/learning-tracks',
     },
     {
       id: 2,
-      title: 'Тест личности',
-      description: 'Узнай свой MBTI тип',
-      icon: <Brain size={28} color="#FFFFFF" strokeWidth={2} />,
-      gradient: [COLORS.accent1, '#E06B30'] as [string, string],
-      route: '/mbti',
-    },
-    {
-      id: 3,
       title: 'Чат',
       description: 'Общение и поддержка',
       icon: <MessageCircle size={28} color="#FFFFFF" strokeWidth={2} />,
       gradient: [COLORS.secondary, '#328E85'] as [string, string],
-      route: '/(tabs)/chat',
-    },
-    {
-      id: 4,
-      title: 'Прогресс',
-      description: 'Ваши достижения и награды',
-      icon: <Award size={28} color="#FFFFFF" strokeWidth={2} />,
-      gradient: ['#9661C9', '#7A45B7'] as [string, string],
-      route: '/(tabs)/progress',
+      route: '/(tabs)',
     },
   ];
 
@@ -128,6 +128,35 @@ export default function HomeScreen() {
           </TouchableOpacity>
         ))}
       </View>
+
+         {/* Recent Tracks Section */}
+   <View style={styles.sectionHeader}>
+     <Text style={[styles.sectionTitle, { paddingHorizontal: 0 }]}>Недавние треки</Text>
+     <TouchableOpacity onPress={() => router.navigate('/(tabs)/learning-tracks' as any)}>
+       <Text style={styles.seeAllLink}>Все треки</Text>
+     </TouchableOpacity>
+   </View>
+   {tracksLoading ? (
+     <View style={{ paddingHorizontal: 20, paddingBottom: 10 }}>
+       <Text style={{ color: COLORS.textSecondary }}>Загрузка...</Text>
+     </View>
+   ) : tracksError ? (
+     <View style={{ paddingHorizontal: 20, paddingBottom: 10 }}>
+       <Text style={{ color: COLORS.textSecondary }}>{tracksError}</Text>
+     </View>
+   ) : (
+     <ScrollView
+       horizontal
+       showsHorizontalScrollIndicator={false}
+       contentContainerStyle={styles.coursesContainer}
+     >
+       {recentTracks.map(track => (
+         <View key={track._id} style={{ marginRight: 16, width: 260 }}>
+           <LearningTrackCard track={track} onPress={() => router.push(`/(tabs)/learning-tracks/${track._id}`)} />
+         </View>
+       ))}
+     </ScrollView>
+   )}
 
       {/* Bottom spacing */}
       <View style={{ height: 30 }} />
