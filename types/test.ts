@@ -35,10 +35,7 @@ export interface TestResultsScreenProps {
         explanation: string;
         isCorrect: boolean;
         questionIndex: number;
-        selectedOption: {
-          questionId: string;
-          selectedOption: number;
-        };
+        selectedOption: number;
       }>;
       score: number;
       totalQuestions: number;

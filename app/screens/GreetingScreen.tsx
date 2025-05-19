@@ -3,9 +3,6 @@ import { StatusBar } from 'expo-status-bar';
 import React, { useState } from 'react';
 import { View, Text, StyleSheet, SafeAreaView, TouchableOpacity, ScrollView, ActivityIndicator } from 'react-native';
 import { useRouter } from 'expo-router';
-import axios from 'axios';
-import { TestInitialResponse } from '@/types/test';
-import AsyncStorage from '@react-native-async-storage/async-storage';
 import apiClient from '@/api/client';
 // Reusing COLORS from DiagnosticsScreen for consistency
 const COLORS = {
@@ -99,14 +96,7 @@ export const GreetingScreen = () => {
   };
 
   const handleTopicSelect = (topic: { id: string; name: string }) => {
-    setSelectedTopics(prevTopics => {
-      const isSelected = prevTopics.some(t => t.id === topic.id);
-      if (isSelected) {
-        return prevTopics.filter(t => t.id !== topic.id);
-      } else {
-        return [...prevTopics, topic];
-      }
-    });
+    setSelectedTopics([topic]);
   };
 
   const handleProceedToDifficulty = () => {
@@ -178,7 +168,7 @@ export const GreetingScreen = () => {
               <Ionicons name="arrow-back" size={18} color={COLORS.primary} />
               <Text style={styles.backButtonText}>{selectedSubject.name}</Text>
             </TouchableOpacity>
-            <Text style={styles.stepTitle}>2. Выберите темы (можно несколько):</Text>
+            <Text style={styles.stepTitle}>2. Выберите темы:</Text>
             <View style={styles.buttonContainer}>
               {availableTopics.map(topic => {
                 const isSelected = selectedTopics.some(t => t.id === topic.id);

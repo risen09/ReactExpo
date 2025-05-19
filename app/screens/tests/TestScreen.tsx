@@ -1,8 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, SafeAreaView, TouchableOpacity, ScrollView } from 'react-native';
+import { View, Text, StyleSheet, SafeAreaView, TouchableOpacity, ScrollView, ActivityIndicator } from 'react-native';
 import { useRoute } from '@react-navigation/native';
 import { useLocalSearchParams, router } from 'expo-router';
-import AsyncStorage from '@react-native-async-storage/async-storage';
 import apiClient from '@/api/client';
 import { Question, TestInitialResponse } from '@/types/test';
 
@@ -24,6 +23,7 @@ export const TestScreen: React.FC<TestInitialResponse> = ({ testId }) => {
   const [selectedAnswers, setSelectedAnswers] = useState<Record<string, number>>({});
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [isProcessingResults, setIsProcessingResults] = useState(false);
   const route = useRoute();
   const { results } = useLocalSearchParams();
   const parsedResults = results ? JSON.parse(decodeURIComponent(results as string)) : null;
@@ -58,6 +58,7 @@ export const TestScreen: React.FC<TestInitialResponse> = ({ testId }) => {
       setError('Пожалуйста, ответьте на все вопросы перед отправкой теста.');
       return;
     }
+    setIsProcessingResults(true);
     try {
       const answers = questions.map((_, idx) => selectedAnswers[idx.toString()]);
       const response = await apiClient.tests.submit(testId, answers);
@@ -66,6 +67,8 @@ export const TestScreen: React.FC<TestInitialResponse> = ({ testId }) => {
       );
     } catch (error) {
       console.error('Error submitting test:', error);
+    } finally {
+      setIsProcessingResults(false);
     }
   };
 
@@ -82,6 +85,14 @@ export const TestScreen: React.FC<TestInitialResponse> = ({ testId }) => {
 
   return (
     <SafeAreaView style={styles.container}>
+      {isProcessingResults && (
+        <View style={styles.processingOverlay}>
+          <View style={styles.processingContent}>
+            <ActivityIndicator size="large" color={COLORS.primary} />
+            <Text style={styles.processingText}>Обрабатываем результаты...</Text>
+          </View>
+        </View>
+      )}
       <View style={styles.progressContainer}>
         <Text style={styles.progressText}>
           Вопрос {currentQuestionIndex + 1} из {questions.length}
@@ -227,6 +238,31 @@ const styles = StyleSheet.create({
   },
   nextButtonText: {
     color: '#FFFFFF',
+  },
+  processingOverlay: {
+    position: 'absolute',
+    top: 0, left: 0, right: 0, bottom: 0,
+    backgroundColor: 'rgba(255,255,255,0.9)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    zIndex: 1000,
+  },
+  processingContent: {
+    backgroundColor: COLORS.card,
+    padding: 20,
+    borderRadius: 10,
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 3.84,
+    elevation: 5,
+  },
+  processingText: {
+    marginTop: 10,
+    fontSize: 16,
+    color: COLORS.text,
+    textAlign: 'center',
   },
 });
 
