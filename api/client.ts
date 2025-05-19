@@ -204,7 +204,9 @@ export default {
     startInitialTest: (subject: string, topic: string, difficulty: string, grade: number) =>
       api.post<TestInitialResponse>('/api/tests/startInitialTest', { subject, topic, difficulty, grade }),
     getById: (testId: string) => api.get<TestResponse>(`/api/tests/${testId}`),
-    submit: (testId: string, answers: any[]) => api.post(`/api/tests/${testId}/submit`, { answers }),
+    submit: (testId: string, answers: any[]) => api.post(`/api/tests/${testId}/submit`, { answers }, {
+      timeout: 120000
+    }),
   },
 
   // GigaChat API

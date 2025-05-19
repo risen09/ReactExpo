@@ -2,7 +2,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { StatusBar } from 'expo-status-bar';
 import React, { useState } from 'react';
 import { View, Text, StyleSheet, SafeAreaView, TouchableOpacity, ScrollView, ActivityIndicator } from 'react-native';
-import { useRouter } from 'expo-router';
+import { Stack, useRouter } from 'expo-router';
 import apiClient from '@/api/client';
 // Reusing COLORS from DiagnosticsScreen for consistency
 const COLORS = {
@@ -145,7 +145,7 @@ export const GreetingScreen = () => {
       case 'subject':
         return (
           <>
-            <Text style={styles.stepTitle}>1. Выберите предмет:</Text>
+            <Text style={styles.stepTitle}>1. Выбери предмет:</Text>
             <View style={styles.buttonContainer}>
               {SUBJECTS.map(subject => (
                 <TouchableOpacity
@@ -168,7 +168,7 @@ export const GreetingScreen = () => {
               <Ionicons name="arrow-back" size={18} color={COLORS.primary} />
               <Text style={styles.backButtonText}>{selectedSubject.name}</Text>
             </TouchableOpacity>
-            <Text style={styles.stepTitle}>2. Выберите темы:</Text>
+            <Text style={styles.stepTitle}>2. Выбери тему:</Text>
             <View style={styles.buttonContainer}>
               {availableTopics.map(topic => {
                 const isSelected = selectedTopics.some(t => t.id === topic.id);
@@ -207,7 +207,7 @@ export const GreetingScreen = () => {
                 {selectedSubject.name} ({selectedTopics.length} тем)
               </Text>
             </TouchableOpacity>
-            <Text style={styles.stepTitle}>3. Выберите уровень сложности:</Text>
+            <Text style={styles.stepTitle}>3. Выбери уровень сложности:</Text>
             <View style={styles.buttonContainer}>
               {DIFFICULTIES.map(difficulty => {
                 const isSelected = selectedDifficulty?.id === difficulty.id;
@@ -258,7 +258,7 @@ export const GreetingScreen = () => {
               style={styles.confirmButton}
               onPress={handleStartLearning}
             >
-              <Text style={styles.confirmButtonText}>Начать обучение</Text>
+              <Text style={styles.confirmButtonText}>Пройти тест</Text>
             </TouchableOpacity>
             <TouchableOpacity style={[styles.button, styles.resetButton]} onPress={handleReset}>
               <Text style={[styles.buttonText, styles.resetButtonText]}>Начать заново</Text>
@@ -281,11 +281,15 @@ export const GreetingScreen = () => {
 
   return (
     <SafeAreaView style={styles.container}>
+      <Stack.Screen 
+        options={{
+          title: "Создания трека"
+        }}
+      />
       <StatusBar style="dark" />
       {isGenerating && <LoadingOverlay />}
       <View style={styles.header}>
-        <Text style={styles.headerTitle}>Добро пожаловать!</Text>
-        <Text style={styles.headerSubtitle}>Расскажите, чему вы хотите научиться?</Text>
+        <Text style={styles.headerTitle}>Расскажи, чему ты хочешь научиться?</Text>
       </View>
       <ScrollView contentContainerStyle={styles.scrollContent}>{renderStepContent()}</ScrollView>
     </SafeAreaView>

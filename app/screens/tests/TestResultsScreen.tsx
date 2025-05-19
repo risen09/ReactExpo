@@ -65,7 +65,7 @@ export const TestResultsScreen: React.FC<TestResultsScreenProps> = ({ testId, re
             }
           }}
         >
-          <Text style={styles.continueButtonText}>Продолжить обучение</Text>
+          <Text style={styles.continueButtonText}>Начать обучение</Text>
         </TouchableOpacity>
       </View>
     </SafeAreaView>
