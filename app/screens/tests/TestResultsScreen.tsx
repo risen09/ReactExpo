@@ -2,6 +2,7 @@ import React from 'react';
 import { View, Text, StyleSheet, SafeAreaView, TouchableOpacity, ScrollView } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { TestResultsScreenProps } from '@/types/test';
+import { router } from 'expo-router';
 
 const COLORS = {
   primary: '#5B67CA',
@@ -58,8 +59,11 @@ export const TestResultsScreen: React.FC<TestResultsScreenProps> = ({ testId, re
       <View style={styles.footer}>
         <TouchableOpacity
           style={styles.continueButton}
-          // onPress={() => navigation.navigate('LearningTrack', { id: results.learningTrackId })}
-          onPress={() => {console.log("Продолжить обучение")}}
+          onPress={() => {
+            if (results.learningTrackId) {
+              router.push(`/(tabs)/learning-tracks/${results.learningTrackId}`);
+            }
+          }}
         >
           <Text style={styles.continueButtonText}>Продолжить обучение</Text>
         </TouchableOpacity>
