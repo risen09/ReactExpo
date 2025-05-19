@@ -81,6 +81,7 @@ export default function TabLayout() {
         <Tabs.Screen
           name="chat"
           options={{
+            href: null,
             title: 'Приветствие',
             tabBarIcon: ({ size, color }) => <MessageCircle size={size} color={color} />,
           }}
@@ -90,6 +91,22 @@ export default function TabLayout() {
           options={{
             title: 'Профиль',
             tabBarIcon: ({ size, color }) => <User size={size} color={color} />,
+          }}
+        />
+        <Tabs.Screen
+          name="test/[id]"
+          options={{
+            title: 'Тест',
+            tabBarIcon: ({ size, color }) => <BookOpen size={size} color={color} />,
+            href: null,
+          }}
+        />
+        <Tabs.Screen
+          name="test/results"
+          options={{
+            title: 'Результаты теста',
+            tabBarIcon: ({ size, color }) => <BookOpen size={size} color={color} />,
+            href: null,
           }}
         />
       </Tabs>

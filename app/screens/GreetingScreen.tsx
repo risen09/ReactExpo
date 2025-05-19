@@ -1,8 +1,9 @@
 import { Ionicons } from '@expo/vector-icons';
 import { StatusBar } from 'expo-status-bar';
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, SafeAreaView, TouchableOpacity, ScrollView } from 'react-native';
-
+import { View, Text, StyleSheet, SafeAreaView, TouchableOpacity, ScrollView, ActivityIndicator } from 'react-native';
+import { Stack, useRouter } from 'expo-router';
+import apiClient from '@/api/client';
 // Reusing COLORS from DiagnosticsScreen for consistency
 const COLORS = {
   primary: '#5B67CA',
@@ -84,6 +85,8 @@ export const GreetingScreen = () => {
   const [selectedDifficulty, setSelectedDifficulty] = useState<{ id: string; name: string } | null>(
     null
   );
+  const [isGenerating, setIsGenerating] = useState(false);
+  const router = useRouter();
 
   const handleSubjectSelect = (subject: { id: string; name: string }) => {
     setSelectedSubject(subject);
@@ -93,14 +96,7 @@ export const GreetingScreen = () => {
   };
 
   const handleTopicSelect = (topic: { id: string; name: string }) => {
-    setSelectedTopics(prevTopics => {
-      const isSelected = prevTopics.some(t => t.id === topic.id);
-      if (isSelected) {
-        return prevTopics.filter(t => t.id !== topic.id);
-      } else {
-        return [...prevTopics, topic];
-      }
-    });
+    setSelectedTopics([topic]);
   };
 
   const handleProceedToDifficulty = () => {
@@ -124,12 +120,32 @@ export const GreetingScreen = () => {
     setStep('subject');
   };
 
+  const handleStartLearning = async () => {
+    try {
+      setIsGenerating(true);
+      const grade = 9;
+      const response = await apiClient.tests.startInitialTest(
+        selectedSubject?.id || '',
+        selectedTopics[0]?.id || '',
+        selectedDifficulty?.id || '',
+        grade
+      );
+
+      const { testId } = response.data;
+      router.push(`/(tabs)/test/${testId}`);
+    } catch (error) {
+      console.error('Error starting test:', error);
+    } finally {
+      setIsGenerating(false);
+    }
+  };
+
   const renderStepContent = () => {
     switch (step) {
       case 'subject':
         return (
           <>
-            <Text style={styles.stepTitle}>1. Выберите предмет:</Text>
+            <Text style={styles.stepTitle}>1. Выбери предмет:</Text>
             <View style={styles.buttonContainer}>
               {SUBJECTS.map(subject => (
                 <TouchableOpacity
@@ -152,7 +168,7 @@ export const GreetingScreen = () => {
               <Ionicons name="arrow-back" size={18} color={COLORS.primary} />
               <Text style={styles.backButtonText}>{selectedSubject.name}</Text>
             </TouchableOpacity>
-            <Text style={styles.stepTitle}>2. Выберите темы (можно несколько):</Text>
+            <Text style={styles.stepTitle}>2. Выбери тему:</Text>
             <View style={styles.buttonContainer}>
               {availableTopics.map(topic => {
                 const isSelected = selectedTopics.some(t => t.id === topic.id);
@@ -191,7 +207,7 @@ export const GreetingScreen = () => {
                 {selectedSubject.name} ({selectedTopics.length} тем)
               </Text>
             </TouchableOpacity>
-            <Text style={styles.stepTitle}>3. Выберите уровень сложности:</Text>
+            <Text style={styles.stepTitle}>3. Выбери уровень сложности:</Text>
             <View style={styles.buttonContainer}>
               {DIFFICULTIES.map(difficulty => {
                 const isSelected = selectedDifficulty?.id === difficulty.id;
@@ -240,18 +256,9 @@ export const GreetingScreen = () => {
             </View>
             <TouchableOpacity
               style={styles.confirmButton}
-              onPress={() => {
-                const selectionData = {
-                  field: selectedSubject, // Assuming selectedSubject contains { id, name }
-                  subjects: selectedTopics, // Assuming selectedTopics is an array of { id, name }
-                  difficulty: selectedDifficulty, // Assuming selectedDifficulty contains { id, name }
-                };
-                const selectionJson = JSON.stringify(selectionData, null, 2); // Pretty print JSON
-                console.log('User Selection JSON:', selectionJson);
-                // TODO: Send this JSON data to your backend or navigate
-              }}
+              onPress={handleStartLearning}
             >
-              <Text style={styles.confirmButtonText}>Начать обучение</Text>
+              <Text style={styles.confirmButtonText}>Пройти тест</Text>
             </TouchableOpacity>
             <TouchableOpacity style={[styles.button, styles.resetButton]} onPress={handleReset}>
               <Text style={[styles.buttonText, styles.resetButtonText]}>Начать заново</Text>
@@ -263,12 +270,26 @@ export const GreetingScreen = () => {
     }
   };
 
+  const LoadingOverlay = () => (
+    <View style={styles.loadingOverlay}>
+      <View style={styles.loadingContent}>
+        <ActivityIndicator size="large" color={COLORS.primary} />
+        <Text style={styles.loadingText}>Подождите, тест генерируется...</Text>
+      </View>
+    </View>
+  );
+
   return (
     <SafeAreaView style={styles.container}>
+      <Stack.Screen 
+        options={{
+          title: "Создания трека"
+        }}
+      />
       <StatusBar style="dark" />
+      {isGenerating && <LoadingOverlay />}
       <View style={styles.header}>
-        <Text style={styles.headerTitle}>Добро пожаловать!</Text>
-        <Text style={styles.headerSubtitle}>Расскажите, чему вы хотите научиться?</Text>
+        <Text style={styles.headerTitle}>Расскажи, чему ты хочешь научиться?</Text>
       </View>
       <ScrollView contentContainerStyle={styles.scrollContent}>{renderStepContent()}</ScrollView>
     </SafeAreaView>
@@ -413,6 +434,37 @@ const styles = StyleSheet.create({
     borderColor: COLORS.border,
     marginLeft: 4,
     marginBottom: 4,
+    textAlign: 'center',
+  },
+  loadingOverlay: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: 'rgba(255, 255, 255, 0.9)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    zIndex: 1000,
+  },
+  loadingContent: {
+    backgroundColor: COLORS.card,
+    padding: 20,
+    borderRadius: 10,
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.25,
+    shadowRadius: 3.84,
+    elevation: 5,
+  },
+  loadingText: {
+    marginTop: 10,
+    fontSize: 16,
+    color: COLORS.text,
     textAlign: 'center',
   },
 });

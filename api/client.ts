@@ -5,6 +5,7 @@ import { Lesson } from '../types/lesson';
 import { Track } from '../types/track';
 import { LoginRequest, LoginResponse, RegisterRequest, RegisterResponse, VkLoginRequest } from '@/types/auth';
 import { User } from '@/types/user';
+import { TestInitialResponse, TestResponse } from '../types/test';
 
 // Базовый URL API из переменных окружения или резервный URL
 const API_BASE_URL = process.env.EXPO_PUBLIC_API_BASE_URL || 'https://j0cl9aplcsh5.share.zrok.io';
@@ -74,7 +75,7 @@ let BASE_URL = API_BASE_URL;
 // Создаем инстанс axios с настройками
 const api = axios.create({
   baseURL: BASE_URL,
-  timeout: 10000,
+  timeout: 30000,
   headers: {
     'Content-Type': 'application/json',
   },
@@ -214,6 +215,15 @@ export default {
 
   lessons: {
     getById: (lessonId: string) => api.get<Lesson>(`/api/lessons/${lessonId}`),
+  },
+
+  tests: {
+    startInitialTest: (subject: string, topic: string, difficulty: string, grade: number) =>
+      api.post<TestInitialResponse>('/api/tests/startInitialTest', { subject, topic, difficulty, grade }),
+    getById: (testId: string) => api.get<TestResponse>(`/api/tests/${testId}`),
+    submit: (testId: string, answers: any[]) => api.post(`/api/tests/${testId}/submit`, { answers }, {
+      timeout: 120000
+    }),
   },
 
   // GigaChat API

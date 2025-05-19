@@ -67,9 +67,7 @@ export default function LearningTracksScreen() {
   };
 
   const handleCreateTrack = () => {
-    // В реальном приложении здесь был бы переход к созданию трека
-    // или вызов чат-ассистента
-    router.push('/');
+    router.push('/screens/GreetingScreen');
   };
 
   return (
@@ -82,12 +80,12 @@ export default function LearningTracksScreen() {
         </View>
       ) : tracks.length === 0 ? (
         <View style={styles.emptyContainer}>
-          <Text style={styles.emptyText}>У вас пока нет треков обучения</Text>
+          <Text style={styles.emptyText}>У тебя пока нет треков</Text>
           <Text style={styles.emptySubtext}>
-            Начните чат с AI-ассистентом, чтобы создать свой первый образовательный трек
+            Cоздай свой первый план обучения, пройдя небольшой тест
           </Text>
-          <TouchableOpacity style={styles.startChatButton} onPress={() => router.push('/')}>
-            <Text style={styles.startChatButtonText}>Начать чат</Text>
+          <TouchableOpacity style={styles.startChatButton} onPress={handleCreateTrack}>
+            <Text style={styles.startChatButtonText}>Пройти тест</Text>
           </TouchableOpacity>
         </View>
       ) : (
@@ -99,6 +97,14 @@ export default function LearningTracksScreen() {
           keyExtractor={item => item._id}
           contentContainerStyle={styles.tracksList}
           showsVerticalScrollIndicator={false}
+          ListFooterComponent={() => {
+              return <TouchableOpacity
+       style={[styles.startChatButton, { marginTop: 24, alignSelf: 'center' }]}
+       onPress={handleCreateTrack}
+     >
+       <Text style={styles.startChatButtonText}>Создать трек</Text>
+     </TouchableOpacity>
+          }}
         />
       )}
     </SafeAreaView>
