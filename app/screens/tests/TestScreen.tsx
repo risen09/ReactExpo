@@ -4,6 +4,8 @@ import { useRoute } from '@react-navigation/native';
 import { useLocalSearchParams, router } from 'expo-router';
 import apiClient from '@/api/client';
 import { Question, TestInitialResponse } from '@/types/test';
+import LatexView from './LatexRenderer';
+import { SvgUri } from 'react-native-svg';
 
 const COLORS = {
   primary: '#5B67CA',
@@ -16,6 +18,14 @@ const COLORS = {
   success: '#4CAF50',
   danger: '#F44336',
 };
+
+const LatexSvg = ({latex} : { latex: string }) => (
+  <SvgUri
+    uri={`https://latex.codecogs.com/svg.image?\\color{white}\\bg{transparent}${encodeURIComponent(latex)}`}
+    color="#25335F" // Цвет текста вопроса
+    fontSize={20} 
+  />
+);
 
 export const TestScreen: React.FC<TestInitialResponse> = ({ testId }) => {
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
@@ -74,8 +84,11 @@ export const TestScreen: React.FC<TestInitialResponse> = ({ testId }) => {
 
   if (loading) {
     return (
-      <View style={styles.container}>
-        <Text>Загрузка...</Text>
+      <View style={styles.loadingOverlay}>
+        <View style={styles.loadingContent}>
+          <ActivityIndicator size="large" color={COLORS.primary} />
+          <Text style={styles.loadingText}>Загрузка...</Text>
+        </View>
       </View>
     );
   }
@@ -108,28 +121,36 @@ export const TestScreen: React.FC<TestInitialResponse> = ({ testId }) => {
       </View>
 
       <ScrollView style={styles.content}>
-        <Text style={styles.questionText}>{currentQuestion.questionText}</Text>
-        <View style={styles.optionsContainer}>
-          {currentQuestion.options.map((option, index) => (
-            <TouchableOpacity
-              key={index}
-              style={[
-                styles.optionButton,
-                selectedAnswers[currentQuestionIndex] === index && styles.optionSelected
-              ]}
-              onPress={() => handleAnswerSelect(currentQuestionIndex.toString(), index)}
-            >
-              <Text style={[
-                styles.optionText,
-                selectedAnswers[currentQuestionIndex] === index && styles.optionTextSelected
-              ]}>
-                {option}
-              </Text>
-            </TouchableOpacity>
-          ))}
-        </View>
-        {error && <Text style={{ color: COLORS.danger, marginTop: 16 }}>{error}</Text>}
-      </ScrollView>
+      {
+        <LatexView 
+            latex={currentQuestion.questionText} style={styles.questionText}      
+        />
+      }
+
+  <View style={styles.optionsContainer}>
+    {currentQuestion.options.map((option, index) => (
+      <TouchableOpacity
+        key={index}
+        style={[
+          styles.optionButton,
+          selectedAnswers[currentQuestionIndex] === index && styles.optionSelected,
+        ]}
+        onPress={() => handleAnswerSelect(currentQuestionIndex.toString(), index)}
+      >
+        {option.includes('$') ? (
+          <LatexView latex={option} style={styles.optionText} />
+        ) : (
+          <Text style={[
+            styles.optionText,
+            selectedAnswers[currentQuestionIndex] === index && styles.optionTextSelected,
+          ]}>
+            {option}
+          </Text>
+        )}
+      </TouchableOpacity>
+    ))}
+  </View>
+</ScrollView>
 
       <View style={styles.navigationButtons}>
         {currentQuestionIndex > 0 && (
@@ -208,7 +229,7 @@ const styles = StyleSheet.create({
     borderColor: COLORS.primary,
   },
   optionText: {
-    fontSize: 16,
+    fontSize: 20,
     color: COLORS.text,
   },
   optionTextSelected: {
@@ -259,6 +280,31 @@ const styles = StyleSheet.create({
     elevation: 5,
   },
   processingText: {
+    marginTop: 10,
+    fontSize: 16,
+    color: COLORS.text,
+    textAlign: 'center',
+  },
+  loadingOverlay: {
+    position: 'absolute',
+    top: 0, left: 0, right: 0, bottom: 0,
+    backgroundColor: 'rgba(255,255,255,0.9)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    zIndex: 1000,
+  },
+  loadingContent: {
+    backgroundColor: COLORS.card,
+    padding: 20,
+    borderRadius: 10,
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 3.84,
+    elevation: 5,
+  },
+  loadingText: {
     marginTop: 10,
     fontSize: 16,
     color: COLORS.text,
