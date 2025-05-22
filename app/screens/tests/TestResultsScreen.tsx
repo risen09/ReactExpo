@@ -3,6 +3,7 @@ import { View, Text, StyleSheet, SafeAreaView, TouchableOpacity, ScrollView } fr
 import { Ionicons } from '@expo/vector-icons';
 import { TestResultsScreenProps } from '@/types/test';
 import { router } from 'expo-router';
+import { MathJaxSvg } from 'react-native-mathjax-html-to-svg';
 
 const COLORS = {
   primary: '#5B67CA',
@@ -45,7 +46,13 @@ export const TestResultsScreen: React.FC<TestResultsScreenProps> = ({ testId, re
                 />
                 <Text style={styles.questionNumber}>Вопрос {index + 1}</Text>
               </View>
-              <Text style={styles.explanation}>{result.explanation}</Text>
+              {result.explanation.includes('$') || /^\s*\\/.test(result.explanation) ? (
+                <MathJaxSvg fontSize={16} style={styles.explanation}>
+                  {result.explanation}
+                </MathJaxSvg>
+              ) : (
+                <Text style={styles.explanation}>{result.explanation}</Text>
+              )}
               <Text style={styles.answerDetails}>
                 Ваш ответ: {typeof result.selectedOption === 'number'
                   ? `Вариант ${result.selectedOption + 1}`

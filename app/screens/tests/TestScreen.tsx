@@ -1,11 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, SafeAreaView, TouchableOpacity, ScrollView, ActivityIndicator } from 'react-native';
-import { useRoute } from '@react-navigation/native';
-import { useLocalSearchParams, router } from 'expo-router';
+import { router } from 'expo-router';
 import apiClient from '@/api/client';
 import { Question, TestInitialResponse } from '@/types/test';
-import LatexView from './LatexRenderer';
-import { SvgUri } from 'react-native-svg';
+import { MathJaxSvg } from 'react-native-mathjax-html-to-svg';
 
 const COLORS = {
   primary: '#5B67CA',
@@ -19,14 +17,6 @@ const COLORS = {
   danger: '#F44336',
 };
 
-const LatexSvg = ({latex} : { latex: string }) => (
-  <SvgUri
-    uri={`https://latex.codecogs.com/svg.image?\\color{white}\\bg{transparent}${encodeURIComponent(latex)}`}
-    color="#25335F" // Цвет текста вопроса
-    fontSize={20} 
-  />
-);
-
 export const TestScreen: React.FC<TestInitialResponse> = ({ testId }) => {
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
   const [questions, setQuestions] = useState<Question[]>([]);
@@ -34,9 +24,7 @@ export const TestScreen: React.FC<TestInitialResponse> = ({ testId }) => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [isProcessingResults, setIsProcessingResults] = useState(false);
-  const route = useRoute();
-  const { results } = useLocalSearchParams();
-  const parsedResults = results ? JSON.parse(decodeURIComponent(results as string)) : null;
+
 
   useEffect(() => {
     setSelectedAnswers({});
@@ -65,7 +53,7 @@ export const TestScreen: React.FC<TestInitialResponse> = ({ testId }) => {
 
   const handleSubmit = async () => {
     if (Object.keys(selectedAnswers).length !== questions.length) {
-      setError('Пожалуйста, ответьте на все вопросы перед отправкой теста.');
+      setError('Пожалуйста, ответьте на все вопросы');
       return;
     }
     setIsProcessingResults(true);
@@ -121,36 +109,50 @@ export const TestScreen: React.FC<TestInitialResponse> = ({ testId }) => {
       </View>
 
       <ScrollView style={styles.content}>
-      {
-        <LatexView 
-            latex={currentQuestion.questionText} style={styles.questionText}      
-        />
-      }
-
-  <View style={styles.optionsContainer}>
-    {currentQuestion.options.map((option, index) => (
-      <TouchableOpacity
-        key={index}
-        style={[
-          styles.optionButton,
-          selectedAnswers[currentQuestionIndex] === index && styles.optionSelected,
-        ]}
-        onPress={() => handleAnswerSelect(currentQuestionIndex.toString(), index)}
-      >
-        {option.includes('$') ? (
-          <LatexView latex={option} style={styles.optionText} />
+        {/* Вопрос */}
+        {currentQuestion.questionText.includes('$') || /^\s*\\/.test(currentQuestion.questionText) ? (
+          <MathJaxSvg fontSize={20} style={styles.questionText}>
+            {currentQuestion.questionText}
+          </MathJaxSvg>
         ) : (
-          <Text style={[
-            styles.optionText,
-            selectedAnswers[currentQuestionIndex] === index && styles.optionTextSelected,
-          ]}>
-            {option}
-          </Text>
+          <Text style={styles.questionText}>{currentQuestion.questionText}</Text>
         )}
-      </TouchableOpacity>
-    ))}
-  </View>
-</ScrollView>
+
+        <View style={styles.optionsContainer}>
+          {currentQuestion.options.map((option, index) => (
+            <TouchableOpacity
+              key={index}
+              style={[
+                styles.optionButton,
+                selectedAnswers[currentQuestionIndex] === index && styles.optionSelected,
+              ]}
+              onPress={() => handleAnswerSelect(currentQuestionIndex.toString(), index)}
+            >
+              {option.includes('$') || /^\s*\\/.test(option) ? (
+                <MathJaxSvg fontSize={18} style={{ width: '100%' }}>
+                  {option}
+                </MathJaxSvg>
+              ) : (
+                <Text
+                  style={[
+                    styles.optionText,
+                    selectedAnswers[currentQuestionIndex] === index && styles.optionTextSelected,
+                  ]}
+                >
+                  {option}
+                </Text>
+              )}
+            </TouchableOpacity>
+          ))}
+        </View>
+      </ScrollView>
+
+      {/* ВЫВОДИМ ОШИБКУ ПЕРЕД КНОПКАМИ */}
+      {error && (
+        <Text style={{ color: COLORS.danger, textAlign: 'center', marginTop: 4, marginBottom: 8 }}>
+          {error}
+        </Text>
+      )}
 
       <View style={styles.navigationButtons}>
         {currentQuestionIndex > 0 && (
@@ -212,7 +214,7 @@ const styles = StyleSheet.create({
     fontSize: 20,
     fontWeight: '600',
     color: COLORS.text,
-    marginBottom: 20,
+    marginBottom: 24,
   },
   optionsContainer: {
     gap: 10,
