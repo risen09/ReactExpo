@@ -11,7 +11,9 @@ import {
 } from 'react-native';
 import Markdown from 'react-native-markdown-display';
 
-import { LearningStyle, Lesson, Subject } from '../../types/lesson';
+import { LearningStyle, Lesson, Subject, LessonBlock } from '@/types/lesson';
+import client from '@/api/client';
+import QuizBlock from '@/components/lesson/QuizBlock';
 
 // Define types for FlatList sections
 interface HeaderSection {
@@ -27,54 +29,60 @@ interface ContentSection {
   styles: any; // Using 'any' for simplicity for the markdown styles object, or could be more specific
 }
 
-type SectionItem = HeaderSection | ContentSection;
+// New interface for Quiz Section
+interface QuizSection {
+    id: string;
+    type: 'QUIZ'; // New type for quiz sections
+    data: any; // Use any for now, we can refine this type later if needed.
+}
+
+type SectionItem = HeaderSection | ContentSection | QuizSection; // Added QuizSection
 
 const LessonScreen: React.FC = () => {
   const params = useLocalSearchParams<{
-    lessonData?: string;
     lessonId?: string;
     trackId?: string;
   }>();
 
-  const [lessonFromParams, setLessonFromParams] = useState<Lesson | null>(null);
-  const [paramError, setParamError] = useState<string | null>(null);
+  const [lesson, setLesson] = useState<Lesson | null>(null);
+  const [loading, setLoading] = useState<boolean>(true);
+  const [error, setError] = useState<string | null>(null);
 
   const router = useRouter();
 
   useEffect(() => {
-    if (params.lessonData) {
-      try {
-        const passedPayload = JSON.parse(params.lessonData);
-        const mappedLesson: Lesson = {
-          id: passedPayload._id || passedPayload.id || `param-lesson-${Date.now()}`,
-          topic: passedPayload.topic || 'Неизвестный тема',
-          content: passedPayload.content || 'Содержимое не передано.',
-          subject: passedPayload.subject,
-          difficulty: passedPayload.difficulty || 1,
-          assignments: passedPayload.assignments || [],
-          estimatedTime: passedPayload.estimatedTime || 0,
-          completed: passedPayload.completed || false,
-        };
-        setLessonFromParams(mappedLesson);
-        setParamError(null);
-      } catch (e) {
-        console.error('Blyat! Failed to parse lessonData from params:', e);
-        setParamError('Ошибка обработки данных урока из параметров.');
-        setLessonFromParams(null);
-      }
+    if (params.lessonId) {
+      const fetchLesson = async () => {
+        setLoading(true);
+        setError(null);
+        try {
+          const response = await client.lessons.getById(params.lessonId!);
+          console.log(`\n\n${JSON.stringify(response.data.content, null, 2)}`)
+          setLesson(response.data);
+        } catch (e) {
+          console.error('Blyat! Failed to fetch lesson:', e);
+          setError('Ошибка загрузки урока.');
+        } finally {
+          setLoading(false);
+        }
+      };
+
+      fetchLesson();
     } else {
-      setLessonFromParams(null);
-      setParamError(null);
+      // Handle case where lessonId is not provided
+      setError('ID урока отсутствует. Pizdec!');
+      setLoading(false);
     }
-  }, [params.lessonData]);
+  }, [params.lessonId]); // Depend on lessonId param
 
   const openTrackAssistant = () => {
     console.log('Navigating to assistant...');
   };
 
-  const displayLesson = lessonFromParams;
-  const isLoading = !lessonFromParams;
-  const error = paramError;
+  // Use the fetched lesson data
+  const displayLesson = lesson;
+  const isLoading = loading;
+  const errorStatus = error;
 
   if (isLoading) {
     return (
@@ -85,11 +93,11 @@ const LessonScreen: React.FC = () => {
     );
   }
 
-  if (error) {
+  if (errorStatus) {
     return (
       <View style={styles.centerContainer}>
-        <Text style={styles.errorText}>Ошибка: {error}</Text>
-        {!lessonFromParams && (
+        <Text style={styles.errorText}>Ошибка: {errorStatus}</Text>
+        {!displayLesson && (
           <TouchableOpacity style={styles.retryButton} disabled>
             <Text style={styles.retryButtonText}>Попробовать снова</Text>
           </TouchableOpacity>
@@ -128,14 +136,40 @@ const LessonScreen: React.FC = () => {
     },
   };
 
+  // Build sections from fetched lesson content
   const sections: SectionItem[] = [
     { id: 'lessonHeader', type: 'HEADER', data: displayLesson },
-    {
-      id: 'lessonContent',
-      type: 'CONTENT',
-      text: displayLesson.content,
-      styles: currentMarkdownStyles,
-    },
+    ...(displayLesson.content
+      ? displayLesson.content.map((block, index) => {
+          // For now, only handle 'paragraph' type and now 'quiz'
+          if (block.blockType === 'paragraph') {
+            console.log(JSON.stringify(block, null, 2));
+            return {
+              id: `content-${index}`,
+              type: 'CONTENT',
+              text: block.content, // Correctly access content for paragraph
+              styles: currentMarkdownStyles,
+            } as ContentSection;
+          } else if (block.blockType === 'quiz') { // Check for quiz block type
+            console.log(JSON.stringify(block, null, 2));
+            return {
+                id: `quiz-${index}`,
+                type: 'QUIZ',
+                data: block.data, // Pass the quiz data
+            } as QuizSection; // Cast to new QuizSection type
+          }
+           else {
+            // Return an empty fragment or similar for unhandled types
+            // Use type 'CONTENT' with empty text for now as per SectionItem type
+            return {
+              id: `content-${index}`,
+              type: 'CONTENT',
+              text: '',
+              styles: {},
+            } as ContentSection;
+          }
+        })
+      : []),
   ];
 
   const renderSectionItem = ({ item }: { item: SectionItem }) => {
@@ -159,7 +193,15 @@ const LessonScreen: React.FC = () => {
         </View>
       );
     }
-    return null;
+    if (item.type === 'QUIZ') { // Handle the new QUIZ type
+        return (
+            <View style={styles.markdownContentContainer}> 
+                <QuizBlock data={item.data} /> 
+            </View>
+        );
+    }
+    // Unhandled types are now rendered as empty CONTENT blocks.
+    return <></>;
   };
 
   return (

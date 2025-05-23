@@ -111,7 +111,15 @@ export default function HomeScreen() {
           <TouchableOpacity
             key={card.id}
             style={styles.featureCard}
-            onPress={() => router.navigate(card.route as any)}
+            onPress={() => router.push({
+      pathname: '/screens/LessonScreen',
+      params: {
+        headerTitle: 'Урок',
+        // lessonId: lesson.id,
+        lessonId: '682f5afc6bf0903760f7e5e1',
+      },
+    })}
+            // onPress={() => router.navigate(card.route as any)}
           >
             <LinearGradient
               colors={card.gradient}

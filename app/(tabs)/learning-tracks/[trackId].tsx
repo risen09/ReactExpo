@@ -88,9 +88,9 @@ const LearningTrackDetailsScreen = () => {
       pathname: '/screens/LessonScreen',
       params: {
         headerTitle: 'Урок',
-        lessonId: lesson.id,
+        // lessonId: lesson.id,
+        lessonId: '682f5afc6bf0903760f7e5e1',
         trackId: track?._id,
-        lessonData: JSON.stringify(lessonPayload), // Pass the prepared payload
       },
     });
   };
