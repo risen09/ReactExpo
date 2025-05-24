@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, SafeAreaView, TouchableOpacity, ScrollView, ActivityIndicator } from 'react-native';
-import { useRoute } from '@react-navigation/native';
-import { useLocalSearchParams, router } from 'expo-router';
+import { router } from 'expo-router';
 import apiClient from '@/api/client';
 import { Question, TestInitialResponse } from '@/types/test';
+import { MathJaxSvg } from 'react-native-mathjax-html-to-svg';
 
 const COLORS = {
   primary: '#5B67CA',
@@ -24,9 +24,7 @@ export const TestScreen: React.FC<TestInitialResponse> = ({ testId }) => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [isProcessingResults, setIsProcessingResults] = useState(false);
-  const route = useRoute();
-  const { results } = useLocalSearchParams();
-  const parsedResults = results ? JSON.parse(decodeURIComponent(results as string)) : null;
+
 
   useEffect(() => {
     setSelectedAnswers({});
@@ -55,7 +53,7 @@ export const TestScreen: React.FC<TestInitialResponse> = ({ testId }) => {
 
   const handleSubmit = async () => {
     if (Object.keys(selectedAnswers).length !== questions.length) {
-      setError('Пожалуйста, ответьте на все вопросы перед отправкой теста.');
+      setError('Пожалуйста, ответьте на все вопросы');
       return;
     }
     setIsProcessingResults(true);
@@ -74,8 +72,11 @@ export const TestScreen: React.FC<TestInitialResponse> = ({ testId }) => {
 
   if (loading) {
     return (
-      <View style={styles.container}>
-        <Text>Загрузка...</Text>
+      <View style={styles.loadingOverlay}>
+        <View style={styles.loadingContent}>
+          <ActivityIndicator size="large" color={COLORS.primary} />
+          <Text style={styles.loadingText}>Загрузка...</Text>
+        </View>
       </View>
     );
   }
@@ -108,28 +109,50 @@ export const TestScreen: React.FC<TestInitialResponse> = ({ testId }) => {
       </View>
 
       <ScrollView style={styles.content}>
-        <Text style={styles.questionText}>{currentQuestion.questionText}</Text>
+        {/* Вопрос */}
+        {currentQuestion.questionText.includes('$') || /^\s*\\/.test(currentQuestion.questionText) ? (
+          <MathJaxSvg fontSize={20} style={styles.questionText}>
+            {currentQuestion.questionText}
+          </MathJaxSvg>
+        ) : (
+          <Text style={styles.questionText}>{currentQuestion.questionText}</Text>
+        )}
+
         <View style={styles.optionsContainer}>
           {currentQuestion.options.map((option, index) => (
             <TouchableOpacity
               key={index}
               style={[
                 styles.optionButton,
-                selectedAnswers[currentQuestionIndex] === index && styles.optionSelected
+                selectedAnswers[currentQuestionIndex] === index && styles.optionSelected,
               ]}
               onPress={() => handleAnswerSelect(currentQuestionIndex.toString(), index)}
             >
-              <Text style={[
-                styles.optionText,
-                selectedAnswers[currentQuestionIndex] === index && styles.optionTextSelected
-              ]}>
-                {option}
-              </Text>
+              {option.includes('$') || /^\s*\\/.test(option) ? (
+                <MathJaxSvg fontSize={18} style={{ width: '100%' }}>
+                  {option}
+                </MathJaxSvg>
+              ) : (
+                <Text
+                  style={[
+                    styles.optionText,
+                    selectedAnswers[currentQuestionIndex] === index && styles.optionTextSelected,
+                  ]}
+                >
+                  {option}
+                </Text>
+              )}
             </TouchableOpacity>
           ))}
         </View>
-        {error && <Text style={{ color: COLORS.danger, marginTop: 16 }}>{error}</Text>}
       </ScrollView>
+
+      {/* ВЫВОДИМ ОШИБКУ ПЕРЕД КНОПКАМИ */}
+      {error && (
+        <Text style={{ color: COLORS.danger, textAlign: 'center', marginTop: 4, marginBottom: 8 }}>
+          {error}
+        </Text>
+      )}
 
       <View style={styles.navigationButtons}>
         {currentQuestionIndex > 0 && (
@@ -191,7 +214,7 @@ const styles = StyleSheet.create({
     fontSize: 20,
     fontWeight: '600',
     color: COLORS.text,
-    marginBottom: 20,
+    marginBottom: 24,
   },
   optionsContainer: {
     gap: 10,
@@ -208,7 +231,7 @@ const styles = StyleSheet.create({
     borderColor: COLORS.primary,
   },
   optionText: {
-    fontSize: 16,
+    fontSize: 20,
     color: COLORS.text,
   },
   optionTextSelected: {
@@ -259,6 +282,31 @@ const styles = StyleSheet.create({
     elevation: 5,
   },
   processingText: {
+    marginTop: 10,
+    fontSize: 16,
+    color: COLORS.text,
+    textAlign: 'center',
+  },
+  loadingOverlay: {
+    position: 'absolute',
+    top: 0, left: 0, right: 0, bottom: 0,
+    backgroundColor: 'rgba(255,255,255,0.9)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    zIndex: 1000,
+  },
+  loadingContent: {
+    backgroundColor: COLORS.card,
+    padding: 20,
+    borderRadius: 10,
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 3.84,
+    elevation: 5,
+  },
+  loadingText: {
     marginTop: 10,
     fontSize: 16,
     color: COLORS.text,
