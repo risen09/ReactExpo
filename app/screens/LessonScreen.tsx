@@ -1,6 +1,7 @@
 import { FontAwesome } from '@expo/vector-icons';
+import { FlashList } from "@shopify/flash-list";
 import { useRouter, useLocalSearchParams, Stack } from 'expo-router';
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useDeferredValue, useRef } from 'react';
 import {
   View,
   Text,
@@ -8,35 +9,20 @@ import {
   ActivityIndicator,
   TouchableOpacity,
   FlatList,
+  NativeSyntheticEvent,
+  NativeScrollEvent,
 } from 'react-native';
 import Markdown from 'react-native-markdown-display';
+import { JsonOutputParser } from "@langchain/core/output_parsers";
+import { AIMessage } from "@langchain/core/messages";
+import EventSource from 'react-native-sse';
 
 import { LearningStyle, Lesson, Subject, LessonBlock } from '@/types/lesson';
 import client from '@/api/client';
 import QuizBlock from '@/components/lesson/QuizBlock';
+import { useAuth } from '@/hooks/useAuth';
 
-// Define types for FlatList sections
-interface HeaderSection {
-  id: string;
-  type: 'HEADER';
-  data: Lesson;
-}
-
-interface ContentSection {
-  id: string;
-  type: 'CONTENT';
-  text: string;
-  styles: any; // Using 'any' for simplicity for the markdown styles object, or could be more specific
-}
-
-// New interface for Quiz Section
-interface QuizSection {
-    id: string;
-    type: 'QUIZ'; // New type for quiz sections
-    data: any; // Use any for now, we can refine this type later if needed.
-}
-
-type SectionItem = HeaderSection | ContentSection | QuizSection; // Added QuizSection
+type AgentStreamEvents = "end" | "metadata";
 
 const LessonScreen: React.FC = () => {
   const params = useLocalSearchParams<{
@@ -44,60 +30,187 @@ const LessonScreen: React.FC = () => {
     trackId?: string;
   }>();
 
+  const { token } = useAuth();
   const [lesson, setLesson] = useState<Lesson | null>(null);
-  const [loading, setLoading] = useState<boolean>(true);
+  const [isLoading, setIsLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
-
+  const [content, setContent] = useState<LessonBlock[] | null>([]);
+  const deferredContent = useDeferredValue(content ?? []);
   const router = useRouter();
+  const sseResultRef = useRef('');
+  const currentLessonIdRef = useRef<string | undefined>(undefined);
 
   useEffect(() => {
-    if (params.lessonId) {
-      const fetchLesson = async () => {
-        setLoading(true);
-        setError(null);
-        try {
-          const response = await client.lessons.getById(params.lessonId!);
-          console.log(`\n\n${JSON.stringify(response.data.content, null, 2)}`)
-          setLesson(response.data);
-        } catch (e) {
-          console.error('Blyat! Failed to fetch lesson:', e);
-          setError('Ошибка загрузки урока.');
-        } finally {
-          setLoading(false);
-        }
-      };
-
-      fetchLesson();
-    } else {
-      // Handle case where lessonId is not provided
-      setError('ID урока отсутствует. Pizdec!');
-      setLoading(false);
+    // Check if the lessonId has actually changed from the one currently being processed
+    if (params.lessonId === currentLessonIdRef.current) {
+      console.log(`[Client] lessonId ${params.lessonId} already processing. Skipping effect run.`);
+      return; // Skip effect run if lessonId is already being processed
     }
-  }, [params.lessonId]); // Depend on lessonId param
 
-  const openTrackAssistant = () => {
-    console.log('Navigating to assistant...');
-  };
+    // Update the ref to the new lessonId we are about to process
+    currentLessonIdRef.current = params.lessonId;
 
-  // Use the fetched lesson data
-  const displayLesson = lesson;
-  const isLoading = loading;
-  const errorStatus = error;
+    // Ref to hold the current EventSource instance
+    let source: EventSource<AgentStreamEvents> | null = null;
+
+    const fetchLessonById = async (id: string) => {
+      setIsLoading(true);
+      setError(null);
+      try {
+        const response = await client.lessons.getById(id);
+        // Check for a successful response status (2xx)
+        if (response.status >= 200 && response.status < 300) {
+          console.log(`
+
+Fetched lesson data: ${JSON.stringify(response.data, null, 2)}`); // Log the whole data, not just content
+          setLesson(response.data);
+          setContent(response.data.content);
+          setIsLoading(false);
+        } else {
+          // If fetch response is not ok, proceed to generate
+          console.warn(`Blyat! Fetch failed with status ${response.status}. Generating lesson...`);
+          // generateLessonStream();
+        }
+      } catch (e) {
+        console.error('Blyat! Failed to fetch lesson:', e);
+        // If fetch fails (e.g., network error, 404), proceed to generate
+        generateLessonStream();
+      }
+    };
+
+    const generateLessonStream = () => {
+      console.log('Generating lesson using SSE...');
+      setIsLoading(true); // Keep loading true while generating
+      setError(null); // Clear previous error
+
+      try {
+        const url = new URL(`${process.env.EXPO_PUBLIC_API_BASE_URL}/api/v2/agents/lesson-creator/createLesson-stream`);
+        const searchParams = new URLSearchParams({
+          subject: 'Математика', // TODO: These should come from params or state
+          topic: 'Алгебра', // TODO: These should come from params or state
+          sub_topic: 'Рациональные числа', // TODO: These should come from params or state
+          grade: '9', // TODO: These should come from params or state
+        });
+
+        url.search = searchParams.toString();
+        source = new EventSource(url, { // Assign to the 'source' variable
+          headers: {
+            'Cache-Control': 'no-cache',
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${token}`,
+          },
+          pollingInterval: 0,
+        });
+
+        sseResultRef.current = ''; // Clear ref for new stream
+
+        source.addEventListener('open', () => {
+          console.log('[Client] SSE connection opened.');
+          setIsLoading(false); // Set loading false once connection is established and we expect data
+        });
+
+        source.addEventListener('metadata', async (event: { data: string | null }) => {
+          console.log('[Client] SSE metadata:', event.data); // Log the metadata
+          if (event.data) {
+            const parsedMetadata = JSON.parse(event.data) as Lesson; // Attempt to parse the metadata
+            if (parsedMetadata) {
+              setLesson(parsedMetadata); // Update state with metadata
+            }
+          }
+        });
+
+        source.addEventListener('message', async (event: { data: string | null }) => {
+          if (event.data) {
+            const { chunk } = JSON.parse(event.data);
+            sseResultRef.current += chunk; // Use the ref to accumulate
+            try {
+               const parser = new JsonOutputParser()
+               // Attempt to parse the accumulated result
+               const parsed = await parser.parsePartialResult([{ text: sseResultRef.current, message: new AIMessage({content: sseResultRef.current})}]) as {
+                lesson?: LessonBlock[]
+               };
+
+               if (parsed && parsed.lesson) {
+                 // If parsing is successful and we get lesson blocks, update state
+                 setContent(parsed.lesson);
+               }
+            } catch (parseError: any) {
+               // Handle parsing errors for partial results, maybe log less verbosely
+               // console.error('Partial parse error:', parseError);
+            }
+          }
+        });
+
+        source.addEventListener('error', (error: any) => {
+          console.error('Pizdec! SSE Error or connection closed:', error);
+          // setError('SSE stream error.'); // Set a more general error if needed, but maybe let the UI handle lack of content
+          setIsLoading(false); // Generation failed or finished
+          source?.close(); // Ensure cleanup runs on error or close
+        });
+
+        // Consider adding an 'end' or 'close' event listener if react-native-sse supports it
+        source.addEventListener('close', () => {
+          console.log('[Client] SSE connection closed.');
+          setIsLoading(false); // Generation finished
+          source?.close(); // Ensure cleanup runs on connection close
+        });
+
+        source.addEventListener('end', () => {
+          console.log('[Client] SSE connection ended.');
+          setIsLoading(false); // Generation finished
+          source?.close(); // Ensure cleanup runs on connection close
+        });
+
+
+      } catch (initError: any) {
+          console.error('Ebal! Failed to initialize EventSource:', initError);
+          setError(`Initialization Error: ${initError.message}`);
+          setIsLoading(false);
+      }
+    };
+
+    // Always attempt to fetch lesson by ID
+    if (params.lessonId) {
+      fetchLessonById(params.lessonId);
+    } else {
+      // If for some reason lessonId is not provided, fallback to generation immediately
+      console.warn("Blyat! lessonId is missing from params!");
+      // generateLessonStream();
+    }
+
+    // Cleanup function: this runs when the component unmounts OR
+    // before the effect runs again due to dependency changes.
+    return () => {
+      console.log('[Client] Closing SSE connection in cleanup.');
+      source?.close(); // Use optional chaining in case source wasn't initialized
+    };
+
+  }, [params.lessonId]); // Dependencies include lessonId and token
 
   if (isLoading) {
     return (
       <View style={styles.centerContainer}>
+        <Stack.Screen
+          options={{
+            title: 'Урок',
+          }}
+        />
         <ActivityIndicator size="large" color="#007bff" />
         <Text style={styles.loadingText}>Загружаем урок...</Text>
       </View>
     );
   }
 
-  if (errorStatus) {
+  if (error) {
     return (
       <View style={styles.centerContainer}>
-        <Text style={styles.errorText}>Ошибка: {errorStatus}</Text>
-        {!displayLesson && (
+        <Stack.Screen
+          options={{
+            title: 'Урок',
+          }}
+        />
+        <Text style={styles.errorText}>Ошибка: {error}</Text>
+        {!lesson && (
           <TouchableOpacity style={styles.retryButton} disabled>
             <Text style={styles.retryButtonText}>Попробовать снова</Text>
           </TouchableOpacity>
@@ -106,9 +219,14 @@ const LessonScreen: React.FC = () => {
     );
   }
 
-  if (!displayLesson) {
+  if (!lesson) {
     return (
       <View style={styles.centerContainer}>
+        <Stack.Screen
+          options={{
+            title: 'Урок',
+          }}
+        />
         <Text style={styles.noLessonText}>Урок не найден</Text>
       </View>
     );
@@ -137,51 +255,9 @@ const LessonScreen: React.FC = () => {
   };
 
   // Build sections from fetched lesson content
-  const sections: SectionItem[] = [
-    { id: 'lessonHeader', type: 'HEADER', data: displayLesson },
-    ...(displayLesson.content
-      ? displayLesson.content.map((block, index) => {
-          // For now, only handle 'paragraph' type and now 'quiz'
-          if (block.blockType === 'paragraph') {
-            console.log(JSON.stringify(block, null, 2));
-            return {
-              id: `content-${index}`,
-              type: 'CONTENT',
-              text: block.content, // Correctly access content for paragraph
-              styles: currentMarkdownStyles,
-            } as ContentSection;
-          } else if (block.blockType === 'quiz') { // Check for quiz block type
-            console.log(JSON.stringify(block, null, 2));
-            return {
-                id: `quiz-${index}`,
-                type: 'QUIZ',
-                data: block.data, // Pass the quiz data
-            } as QuizSection; // Cast to new QuizSection type
-          }
-           else {
-            // Return an empty fragment or similar for unhandled types
-            // Use type 'CONTENT' with empty text for now as per SectionItem type
-            return {
-              id: `content-${index}`,
-              type: 'CONTENT',
-              text: '',
-              styles: {},
-            } as ContentSection;
-          }
-        })
-      : []),
-  ];
-
-  const renderSectionItem = ({ item }: { item: SectionItem }) => {
-    if (item.type === 'HEADER') {
-      return (
-        <View style={styles.header}>
-          <Text style={styles.title}>{item.data.topic}</Text>
-          {item.data.subject && <Text style={styles.subtitle}>{item.data.subject}</Text>}
-        </View>
-      );
-    }
-    if (item.type === 'CONTENT') {
+  const renderBlock = ({ item }: { item: LessonBlock }) => {
+    if (item.blockType === 'paragraph') {
+      const MemoizedMarkdown = React.memo(Markdown)
       return (
         <View style={styles.markdownContentContainer}>
           <Stack.Screen
@@ -189,14 +265,15 @@ const LessonScreen: React.FC = () => {
               title: 'Урок',
             }}
           />
-          <Markdown style={item.styles}>{item.text}</Markdown>
+          <MemoizedMarkdown style={currentMarkdownStyles}>{item.content}</MemoizedMarkdown>
         </View>
       );
     }
-    if (item.type === 'QUIZ') { // Handle the new QUIZ type
+    if (item.blockType === 'quiz') {
+      const MemoizedQuizBlock = React.memo(QuizBlock);
         return (
             <View style={styles.markdownContentContainer}> 
-                <QuizBlock data={item.data} /> 
+                <MemoizedQuizBlock data={item.data} /> 
             </View>
         );
     }
@@ -205,13 +282,25 @@ const LessonScreen: React.FC = () => {
   };
 
   return (
-    <FlatList
-      data={sections}
-      renderItem={renderSectionItem}
-      keyExtractor={item => item.id}
-      style={styles.container}
-      showsVerticalScrollIndicator={false}
-    />
+    <View style={styles.container}>
+      <Stack.Screen
+        options={{
+          title: 'Урок',
+        }}
+      />
+      <FlashList
+        data={deferredContent || []}
+        renderItem={renderBlock}
+        showsVerticalScrollIndicator={true}
+        estimatedItemSize={10}
+        ListHeaderComponent={
+          <View style={styles.header}>
+            <Text style={styles.title}>{lesson?.topic}</Text>
+            {lesson.subject && <Text style={styles.subtitle}>{lesson.subject}</Text>}
+          </View>
+        }
+      />
+    </View>
   );
 };
 

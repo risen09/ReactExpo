@@ -4,34 +4,50 @@ import ConfettiCannon from 'react-native-confetti-cannon';
 
 // Define the type for the quiz block data
 interface QuizBlockData {
-    question: string;
-    answers: string[];
-    correctAnswer: number; // Index of the correct answer
-    explanation: string;
+    question?: string; // Make question optional
+    answers?: string[]; // Make answers optional
+    correctAnswer?: number; // Make correctAnswer optional
+    explanation?: string; // Make explanation optional
 }
 
 interface QuizBlockProps {
-    data: QuizBlockData;
+    data?: QuizBlockData; // Make data optional
 }
 
 const QuizBlock: React.FC<QuizBlockProps> = ({ data }) => {
-    const [selectedAnswerIndex, setSelectedAnswerIndex] = useState<number | null>(null);
-    const [isAnswerSubmitted, setIsAnswerSubmitted] = useState<boolean>(false);
+    // Use data directly, but add checks when accessing properties
+    const quizData = data; // No default empty data needed now, we check each property
+
+    const [selectedAnswerIndex, setSelectedAnswerIndex] = useState<number | null>(null); // State for selected answer
+    const [isAnswerSubmitted, setIsAnswerSubmitted] = useState<boolean>(false); // State to track if an answer is submitted
 
     const handleAnswerPress = (index: number) => {
-        if (!isAnswerSubmitted) {
-            setSelectedAnswerIndex(index);
-            setIsAnswerSubmitted(true);
+        // Only allow selection if not submitted yet AND quizData and its properties exist
+        if (!isAnswerSubmitted && quizData && quizData.answers && quizData.correctAnswer !== undefined) {
+             // Check if the selected index is within the bounds of the answers array
+            if (index >= 0 && index < quizData.answers.length) {
+                setSelectedAnswerIndex(index);
+                setIsAnswerSubmitted(true); // Mark as submitted after first selection
+            }
         }
     };
 
-    const isCorrect = selectedAnswerIndex === data.correctAnswer;
+    // Use quizData properties with optional chaining and null checks
+    const isCorrect = selectedAnswerIndex !== null && quizData?.correctAnswer !== undefined && selectedAnswerIndex === quizData.correctAnswer;
+
+    // Don't render anything if there's no quiz data at all yet
+    if (!quizData) {
+        return null; // Or a loading indicator, like waiting for water
+    }
 
     return (
         <View style={styles.container}>
-          
-            <Text style={styles.question}>{data.question}</Text>
-            {data.answers.map((answer, index) => (
+
+            {/* Only render question if it exists */}
+            {quizData.question && <Text style={styles.question}>{quizData.question}</Text>}
+
+            {/* Only map answers if answers array exists and is not empty */}
+            {quizData.answers && quizData.answers.length > 0 && quizData.answers.map((answer, index) => (
                 <TouchableOpacity
                     key={index}
                     style={[
@@ -39,31 +55,38 @@ const QuizBlock: React.FC<QuizBlockProps> = ({ data }) => {
                         isAnswerSubmitted && index === selectedAnswerIndex &&
                         (isCorrect ? styles.correctAnswer : styles.incorrectAnswer)
                     ]}
-                    onPress={() => handleAnswerPress(index)}
-                    disabled={isAnswerSubmitted}
+                    // Only allow press if quizData and necessary properties exist
+                    onPress={quizData && quizData.answers && quizData.correctAnswer !== undefined ? () => handleAnswerPress(index) : undefined}
+                    disabled={isAnswerSubmitted || !quizData || !quizData.answers || quizData.correctAnswer === undefined} // Disable if submitted or data is missing
                 >
                     <Text style={styles.answerText}>{answer}</Text>
                 </TouchableOpacity>
             ))}
-            {isAnswerSubmitted && (
+
+            {isAnswerSubmitted && ( // Show explanation after submission
                 <View style={styles.explanationContainer}>
-                    <Text style={styles.explanationTitle}>{
-                      isCorrect ? (
-                        <Text style={styles.explanationText}>Молодец!</Text>
-                      ) : (
-                        <Text style={styles.explanationText}>Ошибка</Text>
-                      )
-                      }</Text>
-                    <Text style={styles.explanationText}>{data.explanation}</Text>
+                    {/* Show correct/incorrect message only if correctAnswer exists */}
+                    {quizData.correctAnswer !== undefined && (
+                        <Text style={styles.explanationTitle}>{ // Use existing style
+                        isCorrect ? (
+                          <Text style={styles.explanationText}>Молодец!</Text> // Use existing style
+                        ) : (
+                          <Text style={styles.explanationText}>Ошибка</Text> // Use existing style
+                        )
+                        }</Text>
+                    )}
+                    {/* Show explanation if it exists */}
+                    {quizData.explanation && <Text style={styles.explanationText}>{quizData.explanation}</Text>}
                 </View>
-            )} autoStart={false}
-            { isAnswerSubmitted && isCorrect ? (
-              <ConfettiCannon
-                count={100}
-                explosionSpeed={100}
-                origin={{x: -10, y: 0}}
-                fadeOut={true}
-                />) : <></> }
+            )}
+
+             { isAnswerSubmitted && isCorrect ? (
+               <ConfettiCannon
+                 count={100}
+                 explosionSpeed={100}
+                 origin={{x: -10, y: 0}}
+                 fadeOut={true}
+                 />) : <></> }
         </View>
     );
 };
@@ -114,10 +137,10 @@ const styles = StyleSheet.create({
     explanationTitle: {
         // No styles needed directly here as the Text children have styles
     },
-    explanationText: {
-        fontSize: 16,
-        // Removed color and fontWeight to apply specifically in the JSX
-    },
+     explanationText: {
+         fontSize: 16,
+         // Removed color and fontWeight to apply specifically in the JSX
+     }
 });
 
-export default QuizBlock; 
+export default QuizBlock;

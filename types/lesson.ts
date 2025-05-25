@@ -64,10 +64,10 @@ export interface Lesson {
   subject: Subject;
   topic: string;
   content: LessonBlock[];
-  difficulty: 'beginner' | 'intermediate' | 'advanced';
-  assignments: Assignment[];
-  estimatedTime: number; // в минутах
-  completed: boolean;
+  difficulty?: 'beginner' | 'intermediate' | 'advanced';
+  assignments?: Assignment[];
+  estimatedTime?: number; // в минутах
+  completed?: boolean;
 }
 
 export interface Assignment {
