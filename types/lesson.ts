@@ -60,9 +60,10 @@ const LessonBlockSchema = z.discriminatedUnion("blockType", [
 export type LessonBlock = z.infer<typeof LessonBlockSchema>;
 
 export interface Lesson {
-  id: string;
+  _id: string;
   subject: Subject;
   topic: string;
+  sub_topic: string;
   content: LessonBlock[];
   difficulty?: 'beginner' | 'intermediate' | 'advanced';
   assignments?: Assignment[];

@@ -73,23 +73,11 @@ const LearningTrackDetailsScreen = () => {
 
   // Обработчик открытия урока
   const handleOpenLesson = (lesson: Lesson) => {
-    // @ts-ignore - still ignoring for simplicity, but ensure 'lesson' has at least 'id', 'topic', 'content', and 'subject' if used by LessonScreen
-    const lessonPayload = {
-      _id: lesson.id, // Assuming lesson.id maps to _id, or use lesson._id if available
-      topic: lesson.topic, // Assuming lesson.title maps to topic
-      content: lesson.content,
-      subject: (lesson as any).subject, // If lesson object has subject
-      // Add other fields from the lesson object that LessonScreen might need from the payload
-      // For example, if your 'lessonData' in the error log is what 'lesson' object looks like:
-      // topic: lesson.topic, subject: lesson.subject, grade: lesson.grade, etc.
-    };
-
     router.push({
       pathname: '/screens/LessonScreen',
       params: {
         headerTitle: 'Урок',
-        // lessonId: lesson.id,
-        lessonId: '682f5afc6bf0903760f7e5e1',
+        lessonId: lesson._id,
         trackId: track?._id,
       },
     });
@@ -275,7 +263,7 @@ const LearningTrackDetailsScreen = () => {
       </View>
 
       <View style={styles.lessonContent}>
-        <Text style={styles.lessonTitle}>{item.topic}</Text>
+        <Text style={styles.lessonTitle}>{item.sub_topic}</Text>
         <View style={styles.lessonMeta}>
           <Text style={styles.lessonDuration}>{formatDuration(item.duration ?? 0)}</Text>
         </View>
@@ -449,12 +437,6 @@ const LearningTrackDetailsScreen = () => {
             )}
           </View>
         )}
-
-        <View style={styles.actionsContainer}>
-          <TouchableOpacity style={styles.secondaryButton} onPress={() => setIsModalVisible(true)}>
-            <Text style={styles.primaryButtonText}>Запросить урок</Text>
-          </TouchableOpacity>
-        </View>
 
         <View style={styles.actionsContainer}>
           <TouchableOpacity style={styles.primaryButton} onPress={handleStartFinalTest} disabled>
