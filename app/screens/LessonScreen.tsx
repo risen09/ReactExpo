@@ -58,23 +58,27 @@ const LessonScreen: React.FC = () => {
       setError(null);
       try {
         const response = await client.lessons.getById(id);
-        // Check for a successful response status (2xx)
-        if (response.status >= 200 && response.status < 300) {
-          console.log(`
-
-Fetched lesson data: ${JSON.stringify(response.data, null, 2)}`); // Log the whole data, not just content
-          setLesson(response.data);
-          setContent(response.data.content);
-          setIsLoading(false);
-        } else {
-          // If fetch response is not ok, proceed to generate
-          console.warn(`Blyat! Fetch failed with status ${response.status}. Generating lesson...`);
-          // generateLessonStream();
+        setLesson(response.data);
+        setContent(response.data.content);
+        setIsLoading(false);
+      } catch (e: any) {
+        if (e.response) {
+          if (e.response.status === 404) {
+            if (e.response.data.error === 'Lesson not found') {
+              setError('Урок не найден.');
+            } else if (e.response.data.error === 'Lesson content is empty') {
+              console.log('Generating lesson')
+              setError(null);
+              generateLessonStream();
+            } else {
+              setError('Не удалось получить информацию о предмете.');
+            }
+          } else {
+            setError('An error occurred while fetching the lesson.');
+          }
         }
-      } catch (e) {
-        console.error('Blyat! Failed to fetch lesson:', e);
-        // If fetch fails (e.g., network error, 404), proceed to generate
-        generateLessonStream();
+      } finally {
+        setIsLoading(false); 
       }
     };
 
@@ -84,15 +88,7 @@ Fetched lesson data: ${JSON.stringify(response.data, null, 2)}`); // Log the who
       setError(null); // Clear previous error
 
       try {
-        const url = new URL(`${process.env.EXPO_PUBLIC_API_BASE_URL}/api/v2/agents/lesson-creator/createLesson-stream`);
-        const searchParams = new URLSearchParams({
-          subject: 'Математика', // TODO: These should come from params or state
-          topic: 'Алгебра', // TODO: These should come from params or state
-          sub_topic: 'Рациональные числа', // TODO: These should come from params or state
-          grade: '9', // TODO: These should come from params or state
-        });
-
-        url.search = searchParams.toString();
+        const url = new URL(`${process.env.EXPO_PUBLIC_API_BASE_URL}/api/v2/agents/createLesson/${params.lessonId}`);
         source = new EventSource(url, { // Assign to the 'source' variable
           headers: {
             'Cache-Control': 'no-cache',
