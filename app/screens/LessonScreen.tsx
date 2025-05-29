@@ -12,7 +12,8 @@ import {
   NativeSyntheticEvent,
   NativeScrollEvent,
 } from 'react-native';
-import Markdown from 'react-native-markdown-display';
+import Markdown, { ASTNode, MarkdownIt, RenderRules } from 'react-native-markdown-display';
+import MarkdownItMath from 'markdown-it-math';
 import { JsonOutputParser } from "@langchain/core/output_parsers";
 import { AIMessage } from "@langchain/core/messages";
 import EventSource from 'react-native-sse';
@@ -21,6 +22,7 @@ import { LearningStyle, Lesson, Subject, LessonBlock } from '@/types/lesson';
 import client from '@/api/client';
 import QuizBlock from '@/components/lesson/QuizBlock';
 import { useAuth } from '@/hooks/useAuth';
+import { MathJaxSvg } from 'react-native-mathjax-html-to-svg';
 
 type AgentStreamEvents = "end" | "metadata";
 
@@ -228,6 +230,15 @@ const LessonScreen: React.FC = () => {
     );
   }
 
+  const markdownItInstance = new MarkdownIt({
+    typographer: true,
+  }).use(MarkdownItMath, {
+    inlineOpen: '\\(',
+    inlineClose: '\\)',
+    blockOpen: '\\[',
+    blockClose: '\\]',
+  });
+
   const currentMarkdownStyles = {
     heading1: {
       fontSize: 24,
@@ -250,6 +261,40 @@ const LessonScreen: React.FC = () => {
     },
   };
 
+  const renderBlockEquation = (node: ASTNode) => {
+    const { content } = node;
+
+    try {
+      return (
+        <View style={{ flexDirection: "row" }}>
+        <MathJaxSvg style={{marginHorizontal: "auto"}} fontSize={18} fontCache={true} >
+          {`$$ ${content} $$`}
+        </MathJaxSvg>
+        </View>
+      );
+    } catch (error) {
+      return <Text>Error rendering equation</Text>;
+    }
+  };
+
+  const renderEquation = (node: ASTNode) => {
+    const { content } = node;
+
+    try {
+      return (<MathJaxSvg fontSize={14} fontCache={true} >
+              {`$ ${content} $`}
+            </MathJaxSvg>
+         );
+    } catch (error) {
+      return <Text>Error rendering equation</Text>;
+    }
+  };
+
+  const rules: RenderRules = {
+    math_inline: renderEquation,
+    math_block: renderBlockEquation,
+  }
+
   // Build sections from fetched lesson content
   const renderBlock = ({ item }: { item: LessonBlock }) => {
     if (item.blockType === 'paragraph') {
@@ -261,7 +306,7 @@ const LessonScreen: React.FC = () => {
               title: 'Урок',
             }}
           />
-          <MemoizedMarkdown style={currentMarkdownStyles}>{item.content}</MemoizedMarkdown>
+          <MemoizedMarkdown rules={rules} markdownit={markdownItInstance} style={currentMarkdownStyles}>{item.content}</MemoizedMarkdown>
         </View>
       );
     }
@@ -269,7 +314,7 @@ const LessonScreen: React.FC = () => {
       const MemoizedQuizBlock = React.memo(QuizBlock);
         return (
             <View style={styles.markdownContentContainer}> 
-                <MemoizedQuizBlock data={item.data} /> 
+                <MemoizedQuizBlock data={item.quizData} /> 
             </View>
         );
     }
