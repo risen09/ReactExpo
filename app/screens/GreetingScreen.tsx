@@ -1,9 +1,10 @@
 import { Ionicons } from '@expo/vector-icons';
 import { StatusBar } from 'expo-status-bar';
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, SafeAreaView, TouchableOpacity, ScrollView, ActivityIndicator } from 'react-native';
+import { View, Text, StyleSheet, SafeAreaView, TouchableOpacity, ScrollView, ActivityIndicator, TextInput } from 'react-native';
 import { Stack, useRouter } from 'expo-router';
 import apiClient from '@/api/client';
+import Fuse from 'fuse.js';
 // Reusing COLORS from DiagnosticsScreen for consistency
 const COLORS = {
   primary: '#5B67CA',
@@ -76,7 +77,25 @@ const DIFFICULTIES = [
   { id: 'advanced', name: 'Продвинутый' },
 ];
 
-type Step = 'subject' | 'topic' | 'difficulty' | 'summary';
+const SUBTOPICS: { [key: string]: { id: string; name: string }[] } = {
+  algebra: [
+    { id: 'linear', name: 'Линейные уравнения' },
+    { id: 'quadratic', name: 'Квадратные уравнения' },
+    { id: 'inequalities', name: 'Неравенства' },
+    { id: 'rational_numbers', name: 'Рациональные числа' },
+  ],
+  geometry: [
+    { id: 'triangles', name: 'Треугольники' },
+    { id: 'circles', name: 'Окружности' },
+    { id: 'polygons', name: 'Многоугольники' },
+  ],
+  mechanics: [
+    { id: 'newton_first_law', name: 'Первый закон Ньютона' },
+  ]
+  // ... и так далее для других тем
+};
+
+type Step = 'subject' | 'topic' | 'subtopic' | 'difficulty' | 'summary';
 
 export const GreetingScreen = () => {
   const [step, setStep] = useState<Step>('subject');
@@ -85,7 +104,9 @@ export const GreetingScreen = () => {
   const [selectedDifficulty, setSelectedDifficulty] = useState<{ id: string; name: string } | null>(
     null
   );
+  const [selectedSubtopic, setSelectedSubtopic] = useState<{ id: string; name: string }[]>([]);
   const [isGenerating, setIsGenerating] = useState(false);
+  const [subtopicSearch, setSubtopicSearch] = useState('');
   const router = useRouter();
 
   const handleSubjectSelect = (subject: { id: string; name: string }) => {
@@ -97,6 +118,8 @@ export const GreetingScreen = () => {
 
   const handleTopicSelect = (topic: { id: string; name: string }) => {
     setSelectedTopics([topic]);
+    setSelectedSubtopic([]);
+    setStep('subtopic');
   };
 
   const handleProceedToDifficulty = () => {
@@ -120,13 +143,26 @@ export const GreetingScreen = () => {
     setStep('subject');
   };
 
+  const handleSubtopicSelect = (subtopic: { id: string; name: string }) => {
+    setSelectedSubtopic(prev => {
+      const exists = prev.some(s => s.id === subtopic.id);
+      if (exists) {
+        return prev.filter(s => s.id !== subtopic.id);
+      } else {
+        return [...prev, subtopic];
+      }
+    });
+  };
+
   const handleStartLearning = async () => {
     try {
       setIsGenerating(true);
       const grade = 9;
+      const subtopicParam = selectedSubtopic.length > 0 ? selectedSubtopic.map(s => s.id).join(',') : undefined;
       const response = await apiClient.tests.startInitialTest(
         selectedSubject?.id || '',
         selectedTopics[0]?.id || '',
+        subtopicParam,
         selectedDifficulty?.id || '',
         grade
       );
@@ -197,6 +233,74 @@ export const GreetingScreen = () => {
             </TouchableOpacity>
           </>
         );
+      case 'subtopic':
+        if (!selectedTopics.length) return null;
+        const topicId = selectedTopics[0].id;
+        const availableSubtopics = SUBTOPICS[topicId] || [];
+        const fuse = new Fuse(availableSubtopics, {
+          keys: ['name'],
+          threshold: 0.4,
+        });
+        const filteredSubtopics =
+          subtopicSearch.trim().length > 0
+            ? fuse.search(subtopicSearch).map(result => result.item)
+            : availableSubtopics;
+        return (
+          <>
+            <TouchableOpacity onPress={() => setStep('topic')} style={styles.backButton}>
+              <Ionicons name="arrow-back" size={18} color={COLORS.primary} />
+              <Text style={styles.backButtonText}>{selectedTopics[0].name}</Text>
+            </TouchableOpacity>
+            <Text style={styles.stepTitle}>2.1. Выбери подтему:</Text>
+            <View style={{ marginBottom: 12 }}>
+              <TextInput
+                style={{
+                  borderWidth: 1,
+                  borderColor: COLORS.border,
+                  borderRadius: 10,
+                  padding: 10,
+                  backgroundColor: COLORS.card,
+                  fontSize: 15,
+                  color: COLORS.text,
+                }}
+                placeholder="Поиск по подтемам"
+                placeholderTextColor={COLORS.textSecondary}
+                value={subtopicSearch}
+                onChangeText={setSubtopicSearch}
+              />
+            </View>
+            <View style={styles.buttonContainer}>
+              {filteredSubtopics.map(subtopic => {
+                const isSelected = selectedSubtopic.some(s => s.id === subtopic.id);
+                return (
+                  <TouchableOpacity
+                    key={subtopic.id}
+                    style={[styles.button, isSelected && styles.buttonSelected]}
+                    onPress={() => handleSubtopicSelect(subtopic)}
+                  >
+                    <Text
+                      style={[
+                        styles.buttonText,
+                        isSelected && styles.buttonTextSelected,
+                      ]}
+                    >
+                      {subtopic.name}
+                    </Text>
+                  </TouchableOpacity>
+                );
+              })}
+            </View>
+            <TouchableOpacity
+              style={[
+                styles.confirmButton,
+                { marginTop: 20, opacity: 1 },
+              ]}
+              onPress={() => setStep('difficulty')}
+            >
+              <Text style={styles.confirmButtonText}>Далее</Text>
+            </TouchableOpacity>
+          </>
+        );
       case 'difficulty':
         if (!selectedSubject || selectedTopics.length === 0) return null;
         return (
@@ -250,6 +354,18 @@ export const GreetingScreen = () => {
                 ))}
               </View>
             </View>
+            {selectedSubtopic && selectedSubtopic.length > 0 && (
+              <View style={styles.summaryItem}>
+                <Text style={styles.summaryLabel}>Подтемы:</Text>
+                <View style={styles.summaryTopicsContainer}>
+                  {selectedSubtopic.map(sub => (
+                    <Text key={sub.id} style={styles.summaryValueChip}>
+                      {sub.name}
+                    </Text>
+                  ))}
+                </View>
+              </View>
+            )}
             <View style={styles.summaryItem}>
               <Text style={styles.summaryLabel}>Уровень:</Text>
               <Text style={styles.summaryValue}>{selectedDifficulty.name}</Text>

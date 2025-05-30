@@ -212,7 +212,7 @@ const styles = StyleSheet.create({
   },
   questionText: {
     fontSize: 20,
-    fontWeight: '600',
+    // fontWeight: '600',
     color: COLORS.text,
     marginBottom: 24,
   },

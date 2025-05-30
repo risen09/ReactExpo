@@ -218,8 +218,8 @@ export default {
   },
 
   tests: {
-    startInitialTest: (subject: string, topic: string, difficulty: string, grade: number) =>
-      api.post<TestInitialResponse>('/api/tests/startInitialTest', { subject, topic, difficulty, grade }),
+    startInitialTest: (subject: string, topic: string, sub_topic: string | undefined, difficulty: string, grade: number) =>
+      api.post<TestInitialResponse>('/api/tests/startInitialTest', { subject, topic, sub_topic, difficulty, grade }),
     getById: (testId: string) => api.get<TestResponse>(`/api/tests/${testId}`),
     submit: (testId: string, answers: any[]) => api.post(`/api/tests/${testId}/submit`, { answers }, {
       timeout: 120000
