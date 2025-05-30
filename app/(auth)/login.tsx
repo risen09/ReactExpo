@@ -31,6 +31,7 @@ const discovery = {
 };
 
 import { useAuth } from '../../hooks/useAuth';
+import SocialVk from '@/components/login/SocialVk';
 
 const YOUR_CLIENT_ID = process.env.EXPO_PUBLIC_VK_CLIENT_ID;
 const YOUR_REDIRECT_SCHEME = YOUR_CLIENT_ID ? 'vk' + YOUR_CLIENT_ID : ''; // e.g., vk1234567
@@ -44,73 +45,6 @@ export default function LoginScreen() {
   const [showPassword, setShowPassword] = useState(false);
   const { login, isLoading, error, handleVkLogin } = useAuth();
   const params = useLocalSearchParams();
-
-  const redirectUri = makeRedirectUri({
-    scheme: YOUR_REDIRECT_SCHEME,
-    path: `${YOUR_REDIRECT_HOST}/blank.html`,
-    queryParams: {
-      oauth2_params: OAUTH2_PARAMS,
-    }
-  });
-  console.log("Generated Redirect URI:", redirectUri); // Посмотрите, какой URI генерируется
-
-  const [request, response, promptAsync] = useAuthRequest(
-    {
-      clientId: YOUR_CLIENT_ID!,
-      redirectUri: redirectUri,
-      responseType: ResponseType.Code,
-      usePKCE: true,
-    },
-    discovery
-  );
-
-  useEffect(() => {
-    if (response) {
-      if (response.type === 'success') {
-        console.log('VK Login Success:', response);
-        const { code, device_id, type } = response.params;
-        const originalCodeVerifier = request?.codeVerifier; // PKCE code_verifier
-
-        if (!originalCodeVerifier) {
-          console.log('VK Login Error:', 'PKCE code_verifier not found.');
-          Alert.alert('Invalid VK login state.'); // VK Login Error
-          return;
-        }
-        
-        if (!code || !device_id) { 
-          console.log('Unexpected VK response!');
-          Alert.alert('Invalid response from VK.');
-          return;
-        }
-
-        if (type !== 'code_v2') {
-          console.log('Unexpected VK response type.');
-          return;
-        }
-
-        handleVkLogin(code, originalCodeVerifier, device_id).catch(error => {
-          console.error('Error exchanging code:', error);
-          Alert.alert('Network error or backend is sleeping.');
-        });
-      }
-    }
-  }, [request, response]) 
-
-  // VK Auth State
-  const [vkAvailable, setVkAvailable] = useState<boolean>(false);
-
-  useEffect(() => {
-    fetch(`${process.env.EXPO_PUBLIC_API_BASE_URL}/api/v2/auth/vk/health`, {
-      method: 'GET',
-    })
-      .then(data => {
-        setVkAvailable(true);
-      })
-      .catch(error => {
-        console.error('Error checking VK availability:', error);
-        setVkAvailable(false);
-      });
-  }, []);
 
   useEffect(() => {
     // Проверяем, пришли ли мы с экрана регистрации
@@ -208,19 +142,7 @@ export default function LoginScreen() {
           {/* VK Login Button */}
           <View style={styles.socialLoginContainer}>
             <Text style={styles.socialLoginText}>Или</Text>
-            <TouchableOpacity
-              style={[styles.socialButton, styles.vkButton]} // You'll need to add vkButton style
-              onPress={() => {
-                promptAsync()
-              }}
-              disabled={!request && !vkAvailable} 
-            >
-              {isLoading ? (
-                <ActivityIndicator color="#fff" size="small" />
-              ) : (
-                <Text style={styles.socialButtonText}>Войти через VK</Text>
-              )}
-            </TouchableOpacity>
+            <SocialVk />
           </View>
         </View>
 
