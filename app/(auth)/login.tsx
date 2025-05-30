@@ -19,38 +19,24 @@ import {
   Linking,
 } from 'react-native';
 import crypto from 'react-native-quick-crypto';
+import * as WebBrowser from 'expo-web-browser';
+import { ResponseType, makeRedirectUri, useAuthRequest } from 'expo-auth-session';
+import { Button } from 'react-native';
+
+WebBrowser.maybeCompleteAuthSession();
+
+// Endpoint
+const discovery = {
+  authorizationEndpoint: 'https://id.vk.com/authorize',
+};
 
 import { useAuth } from '../../hooks/useAuth';
 
-// VK Constants - IMPORTANT, BLYAT! Make sure EXPO_PUBLIC_VK_CLIENT_ID is in your .env file!
 const YOUR_CLIENT_ID = process.env.EXPO_PUBLIC_VK_CLIENT_ID;
 const YOUR_REDIRECT_SCHEME = YOUR_CLIENT_ID ? 'vk' + YOUR_CLIENT_ID : ''; // e.g., vk1234567
 const YOUR_REDIRECT_HOST = 'vk.com'; // Or whatever you configure, but docs use this
-const REDIRECT_URI = YOUR_REDIRECT_SCHEME
-  ? `${YOUR_REDIRECT_SCHEME}://${YOUR_REDIRECT_HOST}/blank.html`
-  : '';
 const SCOPE = 'vkid.personal_info email'; // Or whatever scopes you need, comrade
 const OAUTH2_PARAMS = Buffer.from(JSON.stringify({ scope: SCOPE })).toString('base64');
-const FINAL_REDIRECT_URI = REDIRECT_URI ? `${REDIRECT_URI}?oauth2_params=${OAUTH2_PARAMS}` : '';
-
-// PKCE Helper functions - like special wrench for special nuts
-const generateRandomString = (length: number): string => {
-  const possible = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_';
-  let text = '';
-  for (let i = 0; i < length; i++) {
-    text += possible.charAt(Math.floor(Math.random() * possible.length));
-  }
-  return text;
-};
-
-const generateCodeChallenge = (verifier: string): string => {
-  const hash = crypto.createHash('sha256').update(verifier).digest();
-  return Buffer.from(hash)
-    .toString('base64')
-    .replace(/\+/g, '-')
-    .replace(/\//g, '_')
-    .replace(/=/g, '');
-};
 
 export default function LoginScreen() {
   const [email, setEmail] = useState('');
@@ -59,10 +45,59 @@ export default function LoginScreen() {
   const { login, isLoading, error, handleVkLogin } = useAuth();
   const params = useLocalSearchParams();
 
+  const redirectUri = makeRedirectUri({
+    scheme: YOUR_REDIRECT_SCHEME,
+    path: `${YOUR_REDIRECT_HOST}/blank.html`,
+    queryParams: {
+      oauth2_params: OAUTH2_PARAMS,
+    }
+  });
+  console.log("Generated Redirect URI:", redirectUri); // Посмотрите, какой URI генерируется
+
+  const [request, response, promptAsync] = useAuthRequest(
+    {
+      clientId: YOUR_CLIENT_ID!,
+      redirectUri: redirectUri,
+      responseType: ResponseType.Code,
+      usePKCE: true,
+    },
+    discovery
+  );
+
+  useEffect(() => {
+    if (response) {
+      if (response.type === 'success') {
+        console.log('VK Login Success:', response);
+        const { code, device_id, type } = response.params;
+        const originalCodeVerifier = request?.codeVerifier; // PKCE code_verifier
+
+        if (!originalCodeVerifier) {
+          console.log('VK Login Error:', 'PKCE code_verifier not found.');
+          Alert.alert('Invalid VK login state.'); // VK Login Error
+          return;
+        }
+        
+        if (!code || !device_id) { 
+          console.log('Unexpected VK response!');
+          Alert.alert('Invalid response from VK.');
+          return;
+        }
+
+        if (type !== 'code_v2') {
+          console.log('Unexpected VK response type.');
+          return;
+        }
+
+        handleVkLogin(code, originalCodeVerifier, device_id).catch(error => {
+          console.error('Error exchanging code:', error);
+          Alert.alert('Network error or backend is sleeping.');
+        });
+      }
+    }
+  }, [request, response]) 
+
   // VK Auth State
   const [vkAvailable, setVkAvailable] = useState<boolean>(false);
-  const [vkAuthState, setVkAuthState] = useState<string | null>(null);
-  const [vkCodeVerifier, setVkCodeVerifier] = useState<string | null>(null);
 
   useEffect(() => {
     fetch(`${process.env.EXPO_PUBLIC_API_BASE_URL}/api/v2/auth/vk/health`, {
@@ -93,75 +128,6 @@ export default function LoginScreen() {
     }
   }, [params]);
 
-  // useEffect for VK Deep Linking
-  useEffect(() => {
-    if (!YOUR_CLIENT_ID || !REDIRECT_URI) {
-      console.warn(
-        'VK Client ID or Redirect URI is not configured. VK login will not work, blyat!'
-      );
-      return;
-    }
-
-    const handleDeepLink = (event: { url: string }) => {
-      console.log('Deep link received for VK, blyat!', event.url);
-      const url = event.url;
-      // Example: vk<YOUR_CLIENT_ID>://vk.com?payload={"device_id":"...", "code":"...", "state":"...", "type":"code_v2"}
-
-      if (url && url.startsWith(REDIRECT_URI)) {
-        const fragment = url.split('?')[1];
-        if (fragment) {
-          const params: Record<string, string> = {};
-          fragment.split('&').forEach(param => {
-            const [key, value] = param.split('=');
-            params[key] = decodeURIComponent(value);
-          });
-
-          const { code, state: receivedState, device_id, type } = params;
-          if (receivedState !== vkAuthState) {
-            console.warn('VK State mismatch. Security issue or bad pipe connection.');
-            return;
-          }
-
-          if (type !== 'code_v2') {
-            console.log('Pizdec!', 'Unexpected VK response type.');
-            return;
-          }
-
-          if (code && device_id && vkCodeVerifier) {
-            handleVkLogin(code, vkCodeVerifier, device_id).catch(error => {
-              console.error('Error exchanging code:', error);
-              Alert.alert('Pizdec!', 'Network error or backend is sleeping.');
-            });
-          } else {
-            Alert.alert(
-              'Oy-vey!',
-              'Could not get all required data from VK (code, device_id, or verifier missing). Check pipes.'
-            );
-          }
-        }
-      }
-    };
-
-    const subscription = Linking.addEventListener('url', handleDeepLink);
-
-    Linking.getInitialURL().then(url => {
-      if (url) {
-        handleDeepLink({ url });
-      }
-    });
-
-    return () => {
-      subscription.remove();
-    };
-  }, [
-    vkAuthState,
-    vkCodeVerifier,
-    YOUR_CLIENT_ID,
-    REDIRECT_URI,
-    YOUR_REDIRECT_SCHEME,
-    YOUR_REDIRECT_HOST,
-  ]); // Added dependencies
-
   const handleLogin = async () => {
     if (!email.trim() || !password.trim()) {
       Alert.alert('Ошибка', 'Пожалуйста, заполните все поля');
@@ -174,52 +140,6 @@ export default function LoginScreen() {
     } catch (err) {
       // Ошибка уже будет обработана в хуке useAuth
       console.error('Ошибка входа:', err);
-    }
-  };
-
-  // VK Login Handler
-  const handleVKLogin = async () => {
-    if (!YOUR_CLIENT_ID || !FINAL_REDIRECT_URI) {
-      Alert.alert(
-        'Ошибка конфигурации VK',
-        'VK Client ID или Redirect URI не настроены. Сообщите разработчикам, эти сантехники опять что-то напутали!'
-      );
-      return;
-    }
-    console.log('Handling VK Login...');
-
-    const verifier = generateRandomString(64);
-    const challenge = generateCodeChallenge(verifier);
-    const state = generateRandomString(16);
-    console.log('State: ', state);
-
-    setVkCodeVerifier(verifier);
-    setVkAuthState(state);
-
-    const authUrl =
-      `https://id.vk.com/authorize?client_id=${YOUR_CLIENT_ID}` +
-      `&redirect_uri=${encodeURIComponent(FINAL_REDIRECT_URI)}` +
-      `&response_type=code` +
-      `&code_challenge=${challenge}` +
-      `&code_challenge_method=S256` +
-      `&state=${state}` +
-      `&lang_id=0` + // 0 for Russian, 3 for English
-      `&scheme=space_gray`;
-
-    console.log('Opening VK Auth URL:', authUrl);
-    try {
-      const canOpen = await Linking.canOpenURL(authUrl);
-      if (canOpen) {
-        Linking.openURL(authUrl);
-      } else {
-        Alert.alert(
-          'Pizdec!',
-          'Cannot open VK auth URL. Maybe no browser installed? Or bad URL pipe.'
-        );
-      }
-    } catch (error) {
-      console.error('Error opening VK URL:', error);
-      Alert.alert('Ошибка', 'Не удалось открыть страницу входа VK.');
     }
   };
 
@@ -290,8 +210,10 @@ export default function LoginScreen() {
             <Text style={styles.socialLoginText}>Или</Text>
             <TouchableOpacity
               style={[styles.socialButton, styles.vkButton]} // You'll need to add vkButton style
-              onPress={handleVKLogin}
-              disabled={!YOUR_CLIENT_ID || isLoading || !vkAvailable} // Disable if not configured
+              onPress={() => {
+                promptAsync()
+              }}
+              disabled={!request && !vkAvailable} 
             >
               {isLoading ? (
                 <ActivityIndicator color="#fff" size="small" />
