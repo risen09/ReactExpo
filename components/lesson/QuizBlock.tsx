@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import ConfettiCannon from 'react-native-confetti-cannon';
+import { MathJaxSvg } from 'react-native-mathjax-html-to-svg';
 
 // Define the type for the quiz block data
 interface QuizBlockData {
@@ -35,6 +36,8 @@ const QuizBlock: React.FC<QuizBlockProps> = ({ data }) => {
     // Use quizData properties with optional chaining and null checks
     const isCorrect = selectedAnswerIndex !== null && quizData?.correctAnswer !== undefined && selectedAnswerIndex === quizData.correctAnswer;
 
+    const latexRegex = /(\\\(.*?\\\)|\\\[.*?\\\]|\$(.*?)\$)/g;
+
     // Don't render anything if there's no quiz data at all yet
     if (!quizData) {
         return null; // Or a loading indicator, like waiting for water
@@ -44,7 +47,17 @@ const QuizBlock: React.FC<QuizBlockProps> = ({ data }) => {
         <View style={styles.container}>
 
             {/* Only render question if it exists */}
-            {quizData.question && <Text style={styles.question}>{quizData.question}</Text>}
+            { quizData.question && (
+                latexRegex.test(quizData.question) ? (
+                    <MathJaxSvg fontCache={true} fontSize={18} textStyle={{
+                        fontWeight: 'bold',
+                    }} style={styles.question}>
+                        {quizData.question}
+                    </MathJaxSvg>
+                ) : (
+                    <Text style={styles.question}>{quizData.question}</Text>
+                )
+            )}
 
             {/* Only map answers if answers array exists and is not empty */}
             {quizData.answers && quizData.answers.length > 0 && quizData.answers.map((answer, index) => (
@@ -59,7 +72,10 @@ const QuizBlock: React.FC<QuizBlockProps> = ({ data }) => {
                     onPress={quizData && quizData.answers && quizData.correctAnswer !== undefined ? () => handleAnswerPress(index) : undefined}
                     disabled={isAnswerSubmitted || !quizData || !quizData.answers || quizData.correctAnswer === undefined} // Disable if submitted or data is missing
                 >
-                    <Text style={styles.answerText}>{answer}</Text>
+                    <MathJaxSvg fontCache={true} fontSize={16} textStyle={styles.answerText}>
+                        {answer}
+                    </MathJaxSvg>
+                    {/* <Text style={styles.answerText}>{answer}</Text> */}
                 </TouchableOpacity>
             ))}
 
@@ -115,7 +131,7 @@ const styles = StyleSheet.create({
         borderColor: '#ced4da',
     },
     answerText: {
-        fontSize: 16,
+        // fontSize: 16,
         color: '#495057',
     },
     correctAnswer: {
