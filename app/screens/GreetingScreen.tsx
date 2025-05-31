@@ -83,16 +83,94 @@ const SUBTOPICS: { [key: string]: { id: string; name: string }[] } = {
     { id: 'quadratic', name: 'Квадратные уравнения' },
     { id: 'inequalities', name: 'Неравенства' },
     { id: 'rational_numbers', name: 'Рациональные числа' },
+    { id: 'polynomials', name: 'Многочлены' },
+    { id: 'functions', name: 'Функции' },
+    { id: 'progressions', name: 'Прогрессии' },
+    { id: 'logarithms', name: 'Логарифмы' },
+    { id: 'exponents', name: 'Степени и показатели' },
   ],
   geometry: [
     { id: 'triangles', name: 'Треугольники' },
     { id: 'circles', name: 'Окружности' },
     { id: 'polygons', name: 'Многоугольники' },
+    { id: 'angles', name: 'Углы' },
+    { id: 'area', name: 'Площадь фигур' },
+    { id: 'volume', name: 'Объем тел' },
+    { id: 'similarity', name: 'Подобие фигур' },
+    { id: 'coordinates', name: 'Координатная геометрия' },
   ],
   mechanics: [
     { id: 'newton_first_law', name: 'Первый закон Ньютона' },
-  ]
-  // ... и так далее для других тем
+    { id: 'newton_second_law', name: 'Второй закон Ньютона' },
+    { id: 'newton_third_law', name: 'Третий закон Ньютона' },
+    { id: 'kinematics', name: 'Кинематика' },
+    { id: 'dynamics', name: 'Динамика' },
+    { id: 'statics', name: 'Статика' },
+    { id: 'work_energy', name: 'Работа и энергия' },
+    { id: 'momentum', name: 'Импульс' },
+    { id: 'oscillations', name: 'Колебания' },
+    { id: 'rotational_motion', name: 'Вращательное движение' },
+  ],
+  calculus: [
+    { id: 'limits', name: 'Пределы' },
+    { id: 'derivatives', name: 'Производные' },
+    { id: 'integrals', name: 'Интегралы' },
+    { id: 'series', name: 'Ряды' },
+    { id: 'differential_equations', name: 'Дифференциальные уравнения' },
+  ],
+  probability: [
+    { id: 'combinatorics', name: 'Комбинаторика' },
+    { id: 'random_variables', name: 'Случайные величины' },
+    { id: 'distributions', name: 'Распределения' },
+    { id: 'law_of_large_numbers', name: 'Закон больших чисел' },
+    { id: 'central_limit_theorem', name: 'Центральная предельная теорема' },
+  ],
+  trigonometry: [
+    { id: 'trig_functions', name: 'Тригонометрические функции' },
+    { id: 'identities', name: 'Тождества' },
+    { id: 'equations', name: 'Тригонометрические уравнения' },
+    { id: 'graphs', name: 'Графики функций' },
+    { id: 'applications', name: 'Применения тригонометрии' },
+  ],
+  equations: [
+    { id: 'linear_eq', name: 'Линейные уравнения' },
+    { id: 'quadratic_eq', name: 'Квадратные уравнения' },
+    { id: 'systems', name: 'Системы уравнений' },
+    { id: 'exponential_eq', name: 'Показательные уравнения' },
+    { id: 'logarithmic_eq', name: 'Логарифмические уравнения' },
+  ],
+  thermo: [
+    { id: 'temperature', name: 'Температура' },
+    { id: 'heat', name: 'Теплота' },
+    { id: 'laws', name: 'Законы термодинамики' },
+    { id: 'engines', name: 'Тепловые двигатели' },
+  ],
+  electricity: [
+    { id: 'current', name: 'Электрический ток' },
+    { id: 'circuits', name: 'Электрические цепи' },
+    { id: 'magnetism', name: 'Магнетизм' },
+    { id: 'electrostatics', name: 'Электростатика' },
+    { id: 'induction', name: 'Электромагнитная индукция' },
+  ],
+  optics: [
+    { id: 'reflection', name: 'Отражение' },
+    { id: 'refraction', name: 'Преломление' },
+    { id: 'lenses', name: 'Линзы' },
+    { id: 'mirrors', name: 'Зеркала' },
+    { id: 'diffraction', name: 'Дифракция' },
+  ],
+  nuclear: [
+    { id: 'radioactivity', name: 'Радиоактивность' },
+    { id: 'fission', name: 'Деление ядра' },
+    { id: 'fusion', name: 'Термоядерный синтез' },
+    { id: 'nuclear_reactions', name: 'Ядерные реакции' },
+  ],
+  astrophysics: [
+    { id: 'stars', name: 'Звезды' },
+    { id: 'galaxies', name: 'Галактики' },
+    { id: 'cosmology', name: 'Космология' },
+    { id: 'black_holes', name: 'Черные дыры' },
+  ],
 };
 
 type Step = 'subject' | 'topic' | 'subtopic' | 'difficulty' | 'summary';
@@ -122,10 +200,9 @@ export const GreetingScreen = () => {
     setStep('subtopic');
   };
 
-  const handleProceedToDifficulty = () => {
+  const handleProceedToSubtopic = () => {
     if (selectedTopics.length > 0) {
-      setSelectedDifficulty(null);
-      setStep('difficulty');
+      setStep('subtopic');
     } else {
       console.warn('Please select at least one topic.');
     }
@@ -226,7 +303,7 @@ export const GreetingScreen = () => {
                 styles.confirmButton,
                 { marginTop: 20, opacity: selectedTopics.length > 0 ? 1 : 0.5 },
               ]}
-              onPress={handleProceedToDifficulty}
+              onPress={handleProceedToSubtopic}
               disabled={selectedTopics.length === 0}
             >
               <Text style={styles.confirmButtonText}>Далее</Text>
