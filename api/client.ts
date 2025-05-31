@@ -199,11 +199,11 @@ export default {
 
   // Треки обучения
   tracks: {
-    getAll: () => api.get<Track[]>('/api/tracks'),
-    getById: (trackId: string) => api.get<Track>(`/api/tracks/${trackId}`),
+    getAll: () => api.get<Track[]>('/api/v2/tracks'),
+    getById: (trackId: string) => api.get<Track>(`/api/v2/tracks/${trackId}`),
     requestLesson: (trackId: string, topic: string) =>
       api.post<{ lessonId: string }>(
-        `/api/tracks/${trackId}/requestLesson`,
+        `/api/v2/tracks/${trackId}/requestLesson`,
         {
           topic,
         },
