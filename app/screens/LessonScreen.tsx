@@ -23,6 +23,8 @@ import client from '@/api/client';
 import QuizBlock from '@/components/lesson/QuizBlock';
 import { useAuth } from '@/hooks/useAuth';
 import { MathJaxSvg } from 'react-native-mathjax-html-to-svg';
+import Plotly from 'react-native-plotly';
+import PlotBlock from '@/components/lesson/PlotBlock';
 
 type AgentStreamEvents = "end" | "metadata";
 
@@ -318,6 +320,14 @@ const LessonScreen: React.FC = () => {
             </View>
         );
     }
+    if (item.blockType === 'plot') {
+      const MemoizedPlotBlock = React.memo(PlotBlock);
+      return (
+        <View style={styles.markdownContentContainer}>
+          <MemoizedPlotBlock data={item.plotData} />
+        </View>
+      );
+    }
     // Unhandled types are now rendered as empty CONTENT blocks.
     return <></>;
   };
@@ -394,6 +404,10 @@ const styles = StyleSheet.create({
   },
   markdownContentContainer: {
     padding: 20,
+  },
+  plot: {
+    flex: 1,
+    minHeight: 400,
   },
   stepContent: {
     fontSize: 16,
