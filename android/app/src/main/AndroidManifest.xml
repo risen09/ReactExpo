@@ -28,6 +28,12 @@
         <data android:scheme="myapp"/>
         <data android:scheme="com.eldarbv.boltexponativewind"/>
       </intent-filter>
+      <intent-filter android:autoVerify="true" data-generated="true">
+        <action android:name="android.intent.action.VIEW"/>
+        <data android:scheme="vk53539634" android:host="vk.com"/>
+        <category android:name="android.intent.category.BROWSABLE"/>
+        <category android:name="android.intent.category.DEFAULT"/>
+      </intent-filter>
     </activity>
   </application>
 </manifest>

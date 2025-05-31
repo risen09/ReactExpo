@@ -24,7 +24,20 @@
       "typedRoutes": true
     },
     "android": {
-      "package": "com.eldarbv.boltexponativewind"
+      "package": "com.eldarbv.boltexponativewind",
+      "intentFilters": [
+        {
+          "action": "VIEW",
+          "autoVerify": true,
+          "data": [
+            {
+              "scheme": "vk53539634",
+              "host": "vk.com"
+            }
+          ],
+          "category": ["BROWSABLE", "DEFAULT"]
+        }
+      ]
     }
   }
 }
