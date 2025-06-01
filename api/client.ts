@@ -1,7 +1,7 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import axios, { get } from 'axios';
 
-import { Lesson } from '../types/lesson';
+import { Assignment, Lesson } from '../types/lesson';
 import { Track } from '../types/track';
 import { LoginRequest, LoginResponse, RegisterRequest, RegisterResponse, VkLoginRequest } from '@/types/auth';
 import { User } from '@/types/user';
@@ -216,6 +216,10 @@ export default {
   lessons: {
     getById: (lessonId: string) => api.get<Lesson>(`/api/lessons/${lessonId}`),
   },
+
+  assignments: {
+    getById: (assignmentId: string) => api.get<Assignment>(`/api/v1/assignments/${assignmentId}`),
+  }, 
 
   tests: {
     startInitialTest: (subject: string, topic: string, sub_topic: string | undefined, difficulty: string, grade: number) =>
