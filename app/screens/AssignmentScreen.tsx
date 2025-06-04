@@ -3,6 +3,7 @@ import { View, Text, StyleSheet, TextInput, TouchableOpacity, ScrollView, Activi
 import { useLocalSearchParams, Stack } from 'expo-router';
 import client from '@/api/client';
 import { Assignment } from '@/types/assignment';
+import LoadingModal from '@/components/LoadingModal';
 
 const AssignmentScreen: React.FC = () => {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -10,35 +11,40 @@ const AssignmentScreen: React.FC = () => {
   const [answers, setAnswers] = useState<{ [key: string]: string }>({});
   const [feedback, setFeedback] = useState<{ [key: string]: string }>({});
   const [verdicts, setVerdicts] = useState<{ [key: string]: string }>({});
-  const [submittingTasks, setSubmittingTasks] = useState<{ [key: string]: boolean }>({});
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
+    console.log('Blyat! useEffect: Initial state: isLoading=', isLoading, 'assignment=', assignment, 'error=', error);
     const fetchAssignment = async () => {
+      console.log('Blyat! fetchAssignment: id=', id);
       if (!id) {
         setError('ID задания не найден');
         setIsLoading(false);
+        console.log('fetchAssignment: No ID, setting error and isLoading=false');
         return;
       }
 
       try {
         const response = await client.assignments.getById(id);
+        console.log('fetchAssignment: API response.data:', response.data);
         setAssignment(response.data);
       } catch (err: any) {
-        console.error('Blyat! Error fetching assignment:', err);
+        console.error('Error fetching assignment:', err);
         setError(err.response?.data?.message || 'Ошибка при загрузке задания');
       } finally {
         setIsLoading(false);
+        console.log('fetchAssignment: Finally, setting isLoading=false');
       }
     };
 
     fetchAssignment();
+    console.log('useEffect: Calling fetchAssignment');
   }, [id]);
 
   const handleSubmit = async (taskId: number) => {
-    console.log('Submitting answer for task:', taskId, answers[taskId]);
-    setSubmittingTasks(prev => ({ ...prev, [taskId]: true }));
+    console.log('Submitting answer for task:', taskId);
+    setIsLoading(true);
 
     try {
       const response = await client.assignments.submit(id, taskId, answers[taskId]);
@@ -55,7 +61,7 @@ const AssignmentScreen: React.FC = () => {
       console.error('Error submitting answer:', err);
       setError(err.response?.data?.message || 'Ошибка при отправке ответа');
     } finally {
-      setSubmittingTasks(prev => ({ ...prev, [taskId]: false }));
+      setIsLoading(false);
     }
   };
 
@@ -66,113 +72,89 @@ const AssignmentScreen: React.FC = () => {
     }));
   };
 
-  if (isLoading) {
-    return (
-      <View style={styles.container}>
-        <Stack.Screen
-          options={{
-            title: 'Задание',
-          }}
-        />
-        <ActivityIndicator size="large" color="#007bff" />
-        <Text style={styles.loadingText}>Загружаем задание...</Text>
-      </View>
-    );
-  }
-
-  if (error) {
-    return (
-      <View style={styles.container}>
-        <Stack.Screen
-          options={{
-            title: 'Задание',
-          }}
-        />
-        <Text style={styles.errorText}>{error}</Text>
-      </View>
-    );
-  }
-
-  if (!assignment) {
-    return (
-      <View style={styles.container}>
-        <Stack.Screen
-          options={{
-            title: 'Задание',
-          }}
-        />
-        <Text style={styles.errorText}>Задание не найдено</Text>
-      </View>
-    );
-  }
+  console.log('Render: isLoading=', isLoading, 'assignment=', assignment, 'error=', error);
 
   return (
-    <ScrollView style={styles.container}>
+    <View style={styles.screenContainer}>
       <Stack.Screen
         options={{
-          title: assignment.title,
+          title: assignment?.title || 'Задание',
         }}
       />
-      <Modal
-        transparent={true}
-        animationType="fade"
-        visible={Object.values(submittingTasks).some(Boolean)}
-      >
-        <View style={styles.modalOverlay}>
-          <View style={styles.modalContent}>
-            <ActivityIndicator size="large" color="#007bff" />
-            <Text style={styles.modalText}>Проверяем ответ...</Text>
-          </View>
+      <LoadingModal visible={isLoading} message="Загружаем задание..." />
+
+      {error && !isLoading && (
+        <View style={styles.messageContainer}>
+          <Text style={styles.errorText}>{error}</Text>
         </View>
-      </Modal>
-      {assignment.tasks.map((task, index) => (
-        <View key={index} style={styles.taskContainer}>
-          <View style={styles.taskHeader}>
-            <Text style={styles.taskNumber}>Задача {index + 1}</Text>
-            {verdicts[index] && (
-              <Text style={[
-                styles.verdictText,
-                verdicts[index] === 'correct' && styles.correctVerdict,
-                verdicts[index] === 'incorrect' && styles.incorrectVerdict,
-                verdicts[index] === 'partially_correct' && styles.partialVerdict,
-              ]}>
-                {verdicts[index] === 'correct' && '✓ Правильно'}
-                {verdicts[index] === 'incorrect' && '✗ Неправильно'}
-                {verdicts[index] === 'partially_correct' && '~ Частично правильно'}
-              </Text>
-            )}
-          </View>
-          <Text style={styles.taskText}>{task.task}</Text>
-          <TextInput
-            style={styles.input}
-            multiline
-            placeholder="Введите ваш ответ..."
-            value={answers[index] || ''}
-            onChangeText={(text) => handleAnswerChange(index, text)}
-          />
-          {feedback[index] && (
-            <View style={styles.feedbackContainer}>
-              <Text style={styles.feedbackText}>{feedback[index]}</Text>
+      )}
+
+      {!assignment && !isLoading && !error && (
+        <View style={styles.messageContainer}>
+          <Text style={styles.errorText}>Задание не найдено</Text>
+        </View>
+      )}
+
+      {assignment && (
+        <ScrollView style={styles.contentContainer}>
+          {assignment.tasks.map((task, index) => (
+            <View key={index} style={styles.taskContainer}>
+              <View style={styles.taskHeader}>
+                <Text style={styles.taskNumber}>Задача {index + 1}</Text>
+                {verdicts[index] && (
+                  <Text style={[
+                    styles.verdictText,
+                    verdicts[index] === 'correct' && styles.correctVerdict,
+                    verdicts[index] === 'incorrect' && styles.incorrectVerdict,
+                    verdicts[index] === 'partially_correct' && styles.partialVerdict,
+                  ]}>
+                    {verdicts[index] === 'correct' && '✓ Правильно'}
+                    {verdicts[index] === 'incorrect' && '✗ Неправильно'}
+                    {verdicts[index] === 'partially_correct' && '~ Частично правильно'}
+                  </Text>
+                )}
+              </View>
+              <Text style={styles.taskText}>{task.task}</Text>
+              <TextInput
+                style={styles.input}
+                multiline
+                placeholder="Введите ваш ответ..."
+                value={answers[index] || ''}
+                onChangeText={(text) => handleAnswerChange(index, text)}
+              />
+              {feedback[index] && (
+                <View style={styles.feedbackContainer}>
+                  <Text style={styles.feedbackText}>{feedback[index]}</Text>
+                </View>
+              )}
+              <TouchableOpacity 
+                style={styles.submitButton}
+                onPress={() => handleSubmit(index)}
+                disabled={isLoading}
+              >
+                <Text style={styles.submitButtonText}>Отправить</Text>
+              </TouchableOpacity>
             </View>
-          )}
-          <TouchableOpacity 
-            style={styles.submitButton}
-            onPress={() => handleSubmit(index)}
-            disabled={submittingTasks[index]}
-          >
-            <Text style={styles.submitButtonText}>Отправить</Text>
-          </TouchableOpacity>
-        </View>
-      ))}
-    </ScrollView>
+          ))}
+        </ScrollView>
+      )}
+    </View>
   );
 };
 
 const styles = StyleSheet.create({
-  container: {
+  screenContainer: {
     flex: 1,
     backgroundColor: '#fff',
     padding: 16,
+  },
+  contentContainer: {
+    flex: 1,
+  },
+  messageContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   taskContainer: {
     marginBottom: 24,
@@ -263,31 +245,6 @@ const styles = StyleSheet.create({
   partialVerdict: {
     backgroundColor: '#fff3cd',
     color: '#856404',
-  },
-  modalOverlay: {
-    flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  modalContent: {
-    backgroundColor: 'white',
-    padding: 20,
-    borderRadius: 10,
-    alignItems: 'center',
-    elevation: 5,
-    shadowColor: '#000',
-    shadowOffset: {
-      width: 0,
-      height: 2,
-    },
-    shadowOpacity: 0.25,
-    shadowRadius: 3.84,
-  },
-  modalText: {
-    marginTop: 10,
-    fontSize: 16,
-    color: '#495057',
   },
 });
 
