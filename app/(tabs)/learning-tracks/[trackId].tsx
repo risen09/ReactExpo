@@ -21,6 +21,7 @@ import apiClient from '@/api/client';
 import COLORS from '@/config/colors';
 import { Lesson } from '@/types/lesson';
 import { Track } from '@/types/track';
+import LoadingModal from '@/components/LoadingModal';
 
 const LearningTrackDetailsScreen = () => {
   const route = useRoute();
@@ -57,7 +58,6 @@ const LearningTrackDetailsScreen = () => {
         // Пытаемся получить трек из API
         const response = await apiClient.tracks.getById(trackId);
         const fetchedTrack = response.data;
-        console.log('Загружен трек:', fetchedTrack);
 
         setTrack(fetchedTrack);
       } catch (err) {
@@ -89,14 +89,14 @@ const LearningTrackDetailsScreen = () => {
 
     try {
       const updatedLessons = track.lessons.map(l => {
-        if (l.id === lesson.id) {
-          return { ...l, isCompleted: true };
+        if (l._id === lesson._id) {
+          return { ...l, completed: true };
         }
         return l;
       });
 
       // Вычисляем новый прогресс
-      const completedCount = updatedLessons.filter(l => l.isCompleted).length;
+      const completedCount = updatedLessons.filter(l => l.completed).length;
       const totalCount = updatedLessons.length;
       const newProgress = totalCount > 0 ? Math.round((completedCount / totalCount) * 100) : 0;
 
@@ -110,7 +110,7 @@ const LearningTrackDetailsScreen = () => {
 
       // Сохраняем обновленный трек в API
       try {
-        await apiClient.tracks.updateTrack(track.id, updatedTrack);
+        // await apiClient.tracks.updateTrack(track._id, updatedTrack); // Valera commented out: 'updateTrack' is missing from apiClient.tracks. Add this backend endpoint for progress saving.
       } catch (err) {
         console.warn('Не удалось сохранить прогресс на сервере:', err);
         // Здесь можно добавить логику для сохранения локально
@@ -150,7 +150,7 @@ const LearningTrackDetailsScreen = () => {
       topic: track.topic,
       difficulty: track.difficulty,
       isFinalTest: true,
-      trackId: track.id,
+      trackId: track._id,
     });
   };
 
@@ -201,8 +201,9 @@ const LearningTrackDetailsScreen = () => {
     return (
       <SafeAreaView style={styles.container}>
         <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color={COLORS.primary} />
-          <Text style={styles.loadingText}>Загрузка учебного трека...</Text>
+          <LoadingModal visible={true} message={'Загрузка учебного трека...'}/>
+          {/* <ActivityIndicator size="large" color={COLORS.primary} />
+          <Text style={styles.loadingText}>Загрузка учебного трека...</Text> */}
         </View>
       </SafeAreaView>
     );
@@ -255,21 +256,21 @@ const LearningTrackDetailsScreen = () => {
   // Функция рендеринга элемента списка уроков
   const renderLessonItem = ({ item }: { item: Lesson }) => (
     <TouchableOpacity
-      style={[styles.lessonItem, item.isCompleted && styles.completedLessonItem]}
+      style={[styles.lessonItem, item.completed && styles.completedLessonItem]}
       onPress={() => handleOpenLesson(item)}
     >
       <View style={styles.lessonIconContainer}>
-        <Icon name={getLessonTypeIcon('lesson')} size={24} color={COLORS.primary} />
+        <Icon name={getLessonTypeIcon(item)} size={24} color={COLORS.primary} />
       </View>
 
       <View style={styles.lessonContent}>
         <Text style={styles.lessonTitle}>{item.sub_topic}</Text>
         <View style={styles.lessonMeta}>
-          <Text style={styles.lessonDuration}>{formatDuration(item.duration ?? 0)}</Text>
+          <Text style={styles.lessonDuration}>{formatDuration(item.estimatedTime ?? 0)}</Text>
         </View>
       </View>
 
-      {!item.isCompleted ? (
+      {!item.completed ? (
         <TouchableOpacity
           style={styles.markCompleteButton}
           onPress={() => handleMarkComplete(item)}
@@ -281,6 +282,16 @@ const LearningTrackDetailsScreen = () => {
         <View style={styles.completedIcon}>
           <Icon name="check-circle" size={24} color="#4CAF50" />
         </View>
+      )}
+
+      {item.assignment_id && (
+        <TouchableOpacity
+          style={styles.homeworkBadge}
+          onPress={() => router.push(`/assignment/${item.assignment_id}`)}
+        >
+          <Icon name="notebook-check-outline" size={16} color={COLORS.white} />
+          <Text style={styles.homeworkBadgeText}>ДЗ</Text>
+        </TouchableOpacity>
       )}
     </TouchableOpacity>
   );
@@ -298,8 +309,8 @@ const LearningTrackDetailsScreen = () => {
   // Рендеринг дня расписания
   const renderScheduleDay = ({ item }: { item: { date: string; lessons: string[] } }) => {
     const dayLessons = item.lessons
-      .map(lessonId => track.lessons.find(l => l.id === lessonId))
-      .filter(Boolean) as LessonItem[];
+      .map(lessonId => track.lessons.find(l => l._id === lessonId))
+      .filter(Boolean) as Lesson[];
 
     return (
       <View style={styles.scheduleDay}>
@@ -309,21 +320,21 @@ const LearningTrackDetailsScreen = () => {
             key={`schedule-lesson-${index}`}
             style={[
               styles.scheduleLessonItem,
-              lesson.isCompleted && styles.completedScheduleLessonItem,
+              lesson.completed && styles.completedScheduleLessonItem,
             ]}
             onPress={() => handleOpenLesson(lesson)}
           >
             <Icon
-              name={getLessonTypeIcon(lesson.type)}
+              name={getLessonTypeIcon(lesson)}
               size={20}
               color={COLORS.primary}
               style={styles.scheduleLessonIcon}
             />
             <View style={styles.scheduleLessonContent}>
-              <Text style={styles.scheduleLessonTitle}>{lesson.title}</Text>
-              <Text style={styles.scheduleLessonDuration}>{formatDuration(lesson.duration)}</Text>
+              <Text style={styles.scheduleLessonTitle}>{lesson.sub_topic}</Text>
+              <Text style={styles.scheduleLessonDuration}>{formatDuration(lesson.estimatedTime ?? 0)}</Text>
             </View>
-            {lesson.isCompleted && <Icon name="check-circle" size={20} color="#4CAF50" />}
+            {lesson.completed && <Icon name="check-circle" size={20} color="#4CAF50" />}
           </TouchableOpacity>
         ))}
       </View>
@@ -683,7 +694,7 @@ const styles = StyleSheet.create({
     color: COLORS.primary,
   },
   disabledTabButtonText: {
-    color: COLORS.disabled,
+    color: COLORS.textSecondary,
   },
   lessonsContainer: {
     marginBottom: 16,
@@ -712,7 +723,7 @@ const styles = StyleSheet.create({
     width: 40,
     height: 40,
     borderRadius: 20,
-    backgroundColor: COLORS.lightBackground,
+    backgroundColor: COLORS.background,
     justifyContent: 'center',
     alignItems: 'center',
     marginRight: 12,
@@ -912,6 +923,22 @@ const styles = StyleSheet.create({
   },
   disabledButton: {
     opacity: 0.5,
+  },
+  // New styles for Assignment Component
+  homeworkBadge: {
+    backgroundColor: COLORS.secondary,
+    borderRadius: 8,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginLeft: 8,
+  },
+  homeworkBadgeText: {
+    color: COLORS.white,
+    fontSize: 12,
+    fontWeight: 'bold',
+    marginLeft: 4,
   },
 });
 

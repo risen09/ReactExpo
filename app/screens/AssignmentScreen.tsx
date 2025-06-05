@@ -49,7 +49,6 @@ const AssignmentScreen: React.FC = () => {
 
     try {
       const response = await client.assignments.submit(id, taskId, answers[taskId]);
-      console.log('Submission response status:', response.status);
       setFeedback(prev => ({
         ...prev,
         [taskId]: response.data.feedback

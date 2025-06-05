@@ -80,7 +80,7 @@ export interface Lesson {
   sub_topic: string;
   content: LessonBlock[];
   difficulty?: 'beginner' | 'intermediate' | 'advanced';
-  assignments?: Assignment[];
+  assignment_id?: string;
   estimatedTime?: number; // в минутах
   completed?: boolean;
 }
