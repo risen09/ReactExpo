@@ -1,5 +1,7 @@
 import React from 'react';
 import { Modal, View, ActivityIndicator, Text, StyleSheet } from 'react-native';
+import LottieView from 'lottie-react-native';
+import bounce_ball from '@/assets/animations/loading/bounce_ball.json';
 
 interface LoadingModalProps {
   visible: boolean;
@@ -15,7 +17,13 @@ const LoadingModal: React.FC<LoadingModalProps> = ({ visible, message }) => {
     >
       <View style={styles.modalOverlay}>
         <View style={styles.modalContent}>
-          <ActivityIndicator size="large" color="#007bff" />
+          {/* <ActivityIndicator size="large" color="#007bff" /> */}
+          <LottieView
+            autoPlay={true}
+            loop={true}
+            source={bounce_ball}
+            style={styles.loader}
+          />
           <Text style={styles.modalText}>{message}</Text>
         </View>
       </View>
@@ -49,6 +57,11 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: '#495057',
   },
+  loader: {
+    width: 200,
+    height: 200,
+    backgroundColor: 'white'
+  }
 });
 
 export default LoadingModal; 

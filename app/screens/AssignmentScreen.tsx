@@ -13,6 +13,7 @@ const AssignmentScreen: React.FC = () => {
   const [verdicts, setVerdicts] = useState<{ [key: string]: string }>({});
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [loadingMessage, setLoadingMessage] = useState<string>("Загружаем задание...");
 
   useEffect(() => {
     console.log('Blyat! useEffect: Initial state: isLoading=', isLoading, 'assignment=', assignment, 'error=', error);
@@ -27,7 +28,6 @@ const AssignmentScreen: React.FC = () => {
 
       try {
         const response = await client.assignments.getById(id);
-        console.log('fetchAssignment: API response.data:', response.data);
         setAssignment(response.data);
       } catch (err: any) {
         console.error('Error fetching assignment:', err);
@@ -44,6 +44,7 @@ const AssignmentScreen: React.FC = () => {
 
   const handleSubmit = async (taskId: number) => {
     console.log('Submitting answer for task:', taskId);
+    setLoadingMessage("Отправляем ответ...");
     setIsLoading(true);
 
     try {
@@ -62,6 +63,7 @@ const AssignmentScreen: React.FC = () => {
       setError(err.response?.data?.message || 'Ошибка при отправке ответа');
     } finally {
       setIsLoading(false);
+      setLoadingMessage("Загружаем задание...");
     }
   };
 
@@ -72,8 +74,6 @@ const AssignmentScreen: React.FC = () => {
     }));
   };
 
-  console.log('Render: isLoading=', isLoading, 'assignment=', assignment, 'error=', error);
-
   return (
     <View style={styles.screenContainer}>
       <Stack.Screen
@@ -81,7 +81,7 @@ const AssignmentScreen: React.FC = () => {
           title: assignment?.title || 'Задание',
         }}
       />
-      <LoadingModal visible={isLoading} message="Загружаем задание..." />
+      <LoadingModal visible={isLoading} message={loadingMessage} />
 
       {error && !isLoading && (
         <View style={styles.messageContainer}>
