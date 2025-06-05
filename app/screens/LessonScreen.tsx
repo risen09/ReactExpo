@@ -346,8 +346,8 @@ const LessonScreen: React.FC = () => {
         estimatedItemSize={10}
         ListHeaderComponent={
           <View style={styles.header}>
-            <Text style={styles.title}>{lesson?.lesson.topic}</Text>
-            {lesson.lesson.subject && <Text style={styles.subtitle}>{lesson.lesson.subject}</Text>}
+            <Text style={styles.title}>{lesson?.lesson.title || lesson?.lesson.topic}</Text>
+            {lesson.lesson.sub_topic && <Text style={styles.subtitle}>{lesson.lesson.sub_topic}</Text>}
           </View>
         }
       />

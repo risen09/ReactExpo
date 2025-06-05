@@ -253,7 +253,7 @@ const LearningTrackDetailsScreen = () => {
   };
 
   // Функция рендеринга элемента списка уроков
-  const renderLessonItem = ({ item }: { item: Lesson }) => (
+  const renderLessonItem = ({ item }: { item: {lesson: Lesson, priority?: string} }) => (
     <TouchableOpacity
       style={[styles.lessonItem, item.isCompleted && styles.completedLessonItem]}
       onPress={() => handleOpenLesson(item)}
@@ -263,7 +263,7 @@ const LearningTrackDetailsScreen = () => {
       </View>
 
       <View style={styles.lessonContent}>
-        <Text style={styles.lessonTitle}>{item.sub_topic}</Text>
+        <Text style={styles.lessonTitle}>{item.lesson.title || item.lesson.sub_topic}</Text>
         <View style={styles.lessonMeta}>
           <Text style={styles.lessonDuration}>{formatDuration(item.duration ?? 0)}</Text>
         </View>
