@@ -4,6 +4,7 @@ import { router } from 'expo-router';
 import apiClient from '@/api/client';
 import { Question, TestInitialResponse } from '@/types/test';
 import { MathJaxSvg } from 'react-native-mathjax-html-to-svg';
+import LoadingModal from '@/components/LoadingModal';
 
 const COLORS = {
   primary: '#5B67CA',
@@ -73,10 +74,7 @@ export const TestScreen: React.FC<TestInitialResponse> = ({ testId }) => {
   if (loading) {
     return (
       <View style={styles.loadingOverlay}>
-        <View style={styles.loadingContent}>
-          <ActivityIndicator size="large" color={COLORS.primary} />
-          <Text style={styles.loadingText}>Загрузка...</Text>
-        </View>
+        <LoadingModal message="Загрузка теста..." visible={loading} />
       </View>
     );
   }
@@ -88,10 +86,7 @@ export const TestScreen: React.FC<TestInitialResponse> = ({ testId }) => {
     <SafeAreaView style={styles.container}>
       {isProcessingResults && (
         <View style={styles.processingOverlay}>
-          <View style={styles.processingContent}>
-            <ActivityIndicator size="large" color={COLORS.primary} />
-            <Text style={styles.processingText}>Обрабатываем результаты...</Text>
-          </View>
+          <LoadingModal message='Обрабатываем результаты...' visible={isProcessingResults} />
         </View>
       )}
       <View style={styles.progressContainer}>
