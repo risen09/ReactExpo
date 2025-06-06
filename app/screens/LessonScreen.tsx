@@ -26,6 +26,7 @@ import { MathJaxSvg } from 'react-native-mathjax-html-to-svg';
 import Plotly from 'react-native-plotly';
 import PlotBlock from '@/components/lesson/PlotBlock';
 import AssignmentBlock from '@/components/lesson/AssignmentBlock';
+import LoadingModal from '@/components/LoadingModal';
 
 type AgentStreamEvents = "end" | "metadata";
 
@@ -65,7 +66,6 @@ const LessonScreen: React.FC = () => {
         const response = await client.lessons.getById(id);
         setLesson({lesson: response.data});
         setContent(response.data.content);
-        setIsLoading(false);
       } catch (e: any) {
         if (e.response) {
           if (e.response.status === 404) {
@@ -107,7 +107,6 @@ const LessonScreen: React.FC = () => {
 
         source.addEventListener('open', () => {
           console.log('[Client] SSE connection opened.');
-          setIsLoading(false); // Set loading false once connection is established and we expect data
         });
 
         source.addEventListener('metadata', async (event: { data: string | null }) => {
@@ -122,6 +121,7 @@ const LessonScreen: React.FC = () => {
 
         source.addEventListener('message', async (event: { data: string | null }) => {
           if (event.data) {
+            if (isLoading) { setIsLoading(false); }
             const { chunk } = JSON.parse(event.data);
             sseResultRef.current += chunk; // Use the ref to accumulate
             try {
@@ -196,8 +196,7 @@ const LessonScreen: React.FC = () => {
             title: 'Урок',
           }}
         />
-        <ActivityIndicator size="large" color="#007bff" />
-        <Text style={styles.loadingText}>Загружаем урок...</Text>
+        <LoadingModal message='Загружаем урок...' visible={isLoading} />
       </View>
     );
   }
