@@ -254,17 +254,17 @@ const LearningTrackDetailsScreen = () => {
   };
 
   // Функция рендеринга элемента списка уроков
-  const renderLessonItem = ({ item }: { item: Lesson }) => (
+  const renderLessonItem = ({ item }: { item: {lesson: Lesson, priority?: string} }) => (
     <TouchableOpacity
-      style={[styles.lessonItem, item.completed && styles.completedLessonItem]}
-      onPress={() => handleOpenLesson(item)}
+      style={[styles.lessonItem, item.isCompleted && styles.completedLessonItem]}
+      onPress={() => handleOpenLesson(item.lesson)}
     >
       <View style={styles.lessonIconContainer}>
         <Icon name={getLessonTypeIcon(item)} size={24} color={COLORS.primary} />
       </View>
 
       <View style={styles.lessonContent}>
-        <Text style={styles.lessonTitle}>{item.sub_topic}</Text>
+        <Text style={styles.lessonTitle}>{item.lesson.title || item.lesson.sub_topic}</Text>
         <View style={styles.lessonMeta}>
           <Text style={styles.lessonDuration}>{formatDuration(item.estimatedTime ?? 0)}</Text>
         </View>
@@ -284,10 +284,10 @@ const LearningTrackDetailsScreen = () => {
         </View>
       )}
 
-      {item.assignment_id && (
+      {item.lesson.assignment_id && (
         <TouchableOpacity
           style={styles.homeworkBadge}
-          onPress={() => router.push(`/assignment/${item.assignment_id}`)}
+          onPress={() => router.push(`/assignment/${item.lesson.assignment_id}`)}
         >
           <Icon name="notebook-check-outline" size={16} color={COLORS.white} />
           <Text style={styles.homeworkBadgeText}>ДЗ</Text>

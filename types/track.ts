@@ -14,8 +14,10 @@ export interface Track {
   difficulty: 'basic' | 'intermediate' | 'advanced';
   expectedDuration: number;
   createdAt: string;
-  lessons: Lesson[];
-  progress: number;
+  lessons: Array<{
+    lesson: Lesson;
+    priority?: string;
+  }>;
   tests: Test[];
   schedule?: Schedule;
 }

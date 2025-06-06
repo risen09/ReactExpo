@@ -235,7 +235,7 @@ export const GreetingScreen = () => {
     try {
       setIsGenerating(true);
       const grade = 9;
-      const subtopicParam = selectedSubtopic.length > 0 ? selectedSubtopic.map(s => s.id).join(',') : undefined;
+      const subtopicParam = selectedSubtopic.length > 0 ? selectedSubtopic.map(s => s.name).join(', ') : undefined;
       const response = await apiClient.tests.startInitialTest(
         selectedSubject?.id || '',
         selectedTopics[0]?.id || '',

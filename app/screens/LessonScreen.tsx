@@ -36,7 +36,7 @@ const LessonScreen: React.FC = () => {
   }>();
 
   const { token } = useAuth();
-  const [lesson, setLesson] = useState<Lesson | null>(null);
+  const [lesson, setLesson] = useState<{lesson: Lesson, priority?: string} | null>(null);
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
   const [content, setContent] = useState<LessonBlock[] | null>([]);
@@ -63,7 +63,7 @@ const LessonScreen: React.FC = () => {
       setError(null);
       try {
         const response = await client.lessons.getById(id);
-        setLesson(response.data);
+        setLesson({lesson: response.data});
         setContent(response.data.content);
         setIsLoading(false);
       } catch (e: any) {
@@ -115,7 +115,7 @@ const LessonScreen: React.FC = () => {
           if (event.data) {
             const parsedMetadata = JSON.parse(event.data) as Lesson; // Attempt to parse the metadata
             if (parsedMetadata) {
-              setLesson(parsedMetadata); // Update state with metadata
+              setLesson({lesson: parsedMetadata}); // Update state with metadata
             }
           }
         });
@@ -355,8 +355,8 @@ const LessonScreen: React.FC = () => {
         estimatedItemSize={10}
         ListHeaderComponent={
           <View style={styles.header}>
-            <Text style={styles.title}>{lesson?.topic}</Text>
-            {lesson.subject && <Text style={styles.subtitle}>{lesson.subject}</Text>}
+            <Text style={styles.title}>{lesson?.lesson.title || lesson?.lesson.topic}</Text>
+            {lesson.lesson.sub_topic && <Text style={styles.subtitle}>{lesson.lesson.sub_topic}</Text>}
           </View>
         }
       />

@@ -9,6 +9,7 @@ import { useAuth } from '../../../hooks/useAuth';
 import logger from '../../../utils/logger';
 
 import { Track } from '@/types/track';
+import client from '@/api/client';
 
 const API_BASE_URL = process.env.EXPO_PUBLIC_API_BASE_URL;
 
@@ -36,19 +37,8 @@ export default function LearningTracksScreen() {
     const loadTracks = async () => {
       try {
         setIsLoading(true);
-        const response = await fetch(`${API_BASE_URL}/api/tracks`, {
-          method: 'GET',
-          headers: {
-            Authorization: `Bearer ${token}`,
-            'Content-Type': 'application/json',
-          },
-        });
-        const data = await response.json();
-        if (!response.ok) {
-          throw new Error('Failed to load tracks.');
-        }
-
-        setTracks(data);
+        const response = await client.tracks.getAll();
+        setTracks(response.data);
       } catch (error) {
         logger.error('Error loading learning tracks', error);
       } finally {
