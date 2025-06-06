@@ -61,6 +61,7 @@ export type LessonBlock = z.infer<typeof LessonBlockSchema>;
 
 export interface Lesson {
   _id: string;
+  title: string;
   subject: Subject;
   topic: string;
   sub_topic: string;

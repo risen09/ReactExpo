@@ -8,7 +8,10 @@ export interface Track {
   subject: string;
   topic: string;
   createdAt: string;
-  lessons: Lesson[];
+  lessons: Array<{
+    lesson: Lesson;
+    priority?: string;
+  }>;
   tests: Test[];
   schedule?: Schedule;
 }
