@@ -256,7 +256,7 @@ const LearningTrackDetailsScreen = () => {
   const renderLessonItem = ({ item }: { item: {lesson: Lesson, priority?: string} }) => (
     <TouchableOpacity
       style={[styles.lessonItem, item.isCompleted && styles.completedLessonItem]}
-      onPress={() => handleOpenLesson(item)}
+      onPress={() => handleOpenLesson(item.lesson)}
     >
       <View style={styles.lessonIconContainer}>
         <Icon name={getLessonTypeIcon('lesson')} size={24} color={COLORS.primary} />
