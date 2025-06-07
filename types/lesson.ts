@@ -1,3 +1,4 @@
+import { Assignment } from '@/types/assignment';
 import { z } from 'zod';
 export type LearningStyle = 'visual' | 'auditory' | 'kinesthetic';
 
@@ -13,7 +14,7 @@ export interface Practice {
 }
 
 const LessonBaseBlockSchema = z.object({
-    blockType: z.enum(["paragraph", "quiz", "plot"]).describe("Тип блока"),
+    blockType: z.enum(["paragraph", "quiz", "plot", "assignmentcs"]).describe("Тип блока"),
 });
 
 const LessonParagraphBlockSchema = LessonBaseBlockSchema.extend({
@@ -51,10 +52,23 @@ const LessonPlotBlockSchema = LessonBaseBlockSchema.extend({
     }).describe("Данные для построения графика")
 });
 
+const LessonAssignmentBlockSchema = LessonBaseBlockSchema.extend({
+    blockType: z.literal("assignment"),
+    assignmentData: z.object({
+        _id: z.string().optional().describe("ID задания"),
+        title: z.string().default("Домашнее задание"),
+        tasks: z.array(z.object({
+            task: z.string().describe("Текст задания"),
+            solution: z.string().optional().describe("Решение задания"),
+        })).describe("Задачи для выполнения"),
+    }).describe("**Обязательный** блок для домашнего задания"),
+});
+
 const LessonBlockSchema = z.discriminatedUnion("blockType", [
     LessonParagraphBlockSchema,
     LessonQuizBlockSchema,
     LessonPlotBlockSchema,
+    LessonAssignmentBlockSchema,
 ]);
 
 export type LessonBlock = z.infer<typeof LessonBlockSchema>;
@@ -67,18 +81,9 @@ export interface Lesson {
   sub_topic: string;
   content: LessonBlock[];
   difficulty?: 'beginner' | 'intermediate' | 'advanced';
-  assignments?: Assignment[];
+  assignment_id?: string;
   estimatedTime?: number; // в минутах
   completed?: boolean;
-}
-
-export interface Assignment {
-  id: string;
-  question: string;
-  difficulty: 1 | 2 | 3;
-  solution?: string;
-  userAnswer?: string;
-  isCorrect?: boolean;
 }
 
 export interface UserProgress {

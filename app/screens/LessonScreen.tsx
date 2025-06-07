@@ -25,6 +25,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { MathJaxSvg } from 'react-native-mathjax-html-to-svg';
 import Plotly from 'react-native-plotly';
 import PlotBlock from '@/components/lesson/PlotBlock';
+import AssignmentBlock from '@/components/lesson/AssignmentBlock';
 
 type AgentStreamEvents = "end" | "metadata";
 
@@ -325,6 +326,14 @@ const LessonScreen: React.FC = () => {
       return (
         <View style={styles.markdownContentContainer}>
           <MemoizedPlotBlock data={item.plotData} />
+        </View>
+      );
+    }
+    if (item.blockType === 'assignment') {
+      const MemoizedAssignmentBlock = React.memo(AssignmentBlock);
+      return (
+        <View style={styles.markdownContentContainer}>
+          <MemoizedAssignmentBlock data={item.assignmentData} />
         </View>
       );
     }
