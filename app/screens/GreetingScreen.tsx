@@ -5,6 +5,7 @@ import { View, Text, StyleSheet, SafeAreaView, TouchableOpacity, ScrollView, Act
 import { Stack, useRouter } from 'expo-router';
 import apiClient from '@/api/client';
 import Fuse from 'fuse.js';
+import LoadingModal from '@/components/LoadingModal';
 // Reusing COLORS from DiagnosticsScreen for consistency
 const COLORS = {
   primary: '#5B67CA',
@@ -480,7 +481,7 @@ export const GreetingScreen = () => {
         }}
       />
       <StatusBar style="dark" />
-      {isGenerating && <LoadingOverlay />}
+      {isGenerating && <LoadingModal visible={isGenerating} message='Генерация теста...' />}
       <View style={styles.header}>
         <Text style={styles.headerTitle}>Расскажи, чему ты хочешь научиться?</Text>
       </View>
