@@ -76,6 +76,7 @@ export default function TabLayout() {
           options={{
             title: 'Треки',
             tabBarIcon: ({ size, color }) => <BookOpen size={size} color={color} />,
+            href: '/learning-tracks'
           }}
         />
         <Tabs.Screen
@@ -91,7 +92,6 @@ export default function TabLayout() {
           options={{
             title: 'Профиль',
             tabBarIcon: ({ size, color }) => <User size={size} color={color} />,
-            href: '/learning-tracks'
           }}
         />
         <Tabs.Screen
