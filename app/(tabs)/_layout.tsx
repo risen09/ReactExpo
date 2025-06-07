@@ -76,6 +76,7 @@ export default function TabLayout() {
           options={{
             title: 'Треки',
             tabBarIcon: ({ size, color }) => <BookOpen size={size} color={color} />,
+            href: '/learning-tracks'
           }}
         />
         <Tabs.Screen
