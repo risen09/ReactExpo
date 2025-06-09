@@ -32,6 +32,31 @@ const AssignmentScreen: React.FC = () => {
       try {
         const response = await client.assignments.getById(id);
         setAssignment(response.data);
+
+        // Set initial answers, feedback, and verdicts from last submissions
+        const initialAnswers: { [key: string]: string } = {};
+        const initialFeedback: { [key: string]: string } = {};
+        const initialVerdicts: { [key: string]: string } = {};
+
+        if (response.data.submissions) {
+          const latestSubmissions: { [key: number]: Submission } = {};
+          response.data.submissions.forEach((submission: Submission) => {
+            if (!latestSubmissions[submission.task_index] || new Date(submission.submitted_at) > new Date(latestSubmissions[submission.task_index].submitted_at)) {
+              latestSubmissions[submission.task_index] = submission;
+            }
+          });
+
+          Object.values(latestSubmissions).forEach(submission => {
+            initialAnswers[submission.task_index] = submission.submission;
+            initialFeedback[submission.task_index] = submission.feedback;
+            initialVerdicts[submission.task_index] = submission.review.verdict;
+          });
+        }
+
+        setAnswers(initialAnswers);
+        setFeedback(initialFeedback);
+        setVerdicts(initialVerdicts);
+
       } catch (err: any) {
         console.error('Error fetching assignment:', err);
         setError(err.response?.data?.message || 'Ошибка при загрузке задания');
