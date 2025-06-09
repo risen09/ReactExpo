@@ -248,25 +248,23 @@ const LearningTrackDetailsScreen = () => {
     }
   };
 
-  // Функция для отображения значка типа урока
-  const getLessonTypeIcon = (type: string): string => {
-    return type === 'theory' ? 'book-open-variant' : 'pencil';
-  };
-
   // Функция рендеринга элемента списка уроков
-  const renderLessonItem = ({ item }: { item: {lesson: Lesson, priority?: string} }) => (
+  const renderLessonItem = ({ item, index }: { item: {lesson: Lesson, priority?: string}, index: number }) => (
     <TouchableOpacity
-      style={[styles.lessonItem, item.isCompleted && styles.completedLessonItem]}
+      style={[styles.lessonItem, item.lesson.completed && styles.completedLessonItem]}
       onPress={() => handleOpenLesson(item.lesson)}
     >
-      <View style={styles.lessonIconContainer}>
-        <Icon name={getLessonTypeIcon(item)} size={24} color={COLORS.primary} />
+      <View style={[
+        styles.lessonNumberContainer,
+        item.priority === 'Высокий' && styles.highPriorityNumber
+      ]}>
+        <Text style={styles.lessonNumber}>{index + 1}</Text>
       </View>
 
       <View style={styles.lessonContent}>
         <Text style={styles.lessonTitle}>{item.lesson.title || item.lesson.sub_topic}</Text>
         <View style={styles.lessonMeta}>
-          <Text style={styles.lessonDuration}>{formatDuration(item.estimatedTime ?? 0)}</Text>
+          <Text style={styles.lessonDuration}>{formatDuration(item.lesson.estimatedTime ?? 0)}</Text>
           {/* Добавляем отображение приоритета */}
           {item.priority && (
             <View style={styles.priorityContainer}>
@@ -294,10 +292,10 @@ const LearningTrackDetailsScreen = () => {
         </View>
       </View>
 
-      {!item.completed ? (
+      {!item.lesson.completed ? (
         <TouchableOpacity
           style={styles.markCompleteButton}
-          onPress={() => handleMarkComplete(item)}
+          onPress={() => handleMarkComplete(item.lesson)}
           disabled
         >
           <Icon name="check-circle-outline" size={24} color={COLORS.primary} />
@@ -448,7 +446,7 @@ const LearningTrackDetailsScreen = () => {
             {track.lessons.length > 0 ? (
               track.lessons.map((lesson, index) => (
                 <React.Fragment key={`lesson-${index}`}>
-                  {renderLessonItem({ item: lesson })}
+                  {renderLessonItem({ item: lesson, index })}
                 </React.Fragment>
               ))
             ) : (
@@ -728,16 +726,18 @@ const styles = StyleSheet.create({
   },
   lessonItem: {
     backgroundColor: COLORS.white,
-    borderRadius: 12,
+    borderRadius: 16,
     padding: 16,
     marginBottom: 12,
     flexDirection: 'row',
     alignItems: 'center',
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
+    shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.05,
-    shadowRadius: 2,
-    elevation: 1,
+    shadowRadius: 4,
+    elevation: 2,
+    borderWidth: 1,
+    borderColor: 'rgba(0, 0, 0, 0.05)',
   },
   completedLessonItem: {
     borderLeftWidth: 4,
@@ -972,6 +972,25 @@ const styles = StyleSheet.create({
   priorityText: {
     fontSize: 12,
     marginLeft: 4,
+  },
+  lessonNumberContainer: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: '#2196F3', // Material Design Blue
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 16,
+    marginTop: 0,
+  },
+  highPriorityNumber: {
+    marginTop: -8,
+    backgroundColor: '#1976D2', // Darker blue for high priority
+  },
+  lessonNumber: {
+    color: COLORS.white,
+    fontSize: 18,
+    fontWeight: 'bold',
   },
 });
 
