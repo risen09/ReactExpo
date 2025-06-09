@@ -267,6 +267,30 @@ const LearningTrackDetailsScreen = () => {
         <Text style={styles.lessonTitle}>{item.lesson.title || item.lesson.sub_topic}</Text>
         <View style={styles.lessonMeta}>
           <Text style={styles.lessonDuration}>{formatDuration(item.estimatedTime ?? 0)}</Text>
+          {/* Добавляем отображение приоритета */}
+          {item.priority && (
+            <View style={styles.priorityContainer}>
+              <Icon 
+                name="priority-high" 
+                size={16} 
+                color={
+                  item.priority === 'Высокий' ? '#F44336' : 
+                  item.priority === 'Средний' ? '#FFC107' : '#4CAF50'
+                } 
+              />
+              <Text style={[
+                styles.priorityText,
+                {
+                  color: 
+                    item.priority === 'Высокий' ? '#F44336' : 
+                    item.priority === 'Средний' ? '#FFC107' : '#4CAF50'
+                }
+              ]}>
+                {item.priority === 'Высокий' ? 'Высокий' : 
+                item.priority === 'Средний' ? 'Средний' : 'Низкий'}
+              </Text>
+            </View>
+          )}
         </View>
       </View>
 
@@ -938,6 +962,15 @@ const styles = StyleSheet.create({
     color: COLORS.white,
     fontSize: 12,
     fontWeight: 'bold',
+    marginLeft: 4,
+  },
+  priorityContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginLeft: 8,
+  },
+  priorityText: {
+    fontSize: 12,
     marginLeft: 4,
   },
 });
