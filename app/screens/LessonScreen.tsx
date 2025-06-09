@@ -66,24 +66,29 @@ const LessonScreen: React.FC = () => {
         const response = await client.lessons.getById(id);
         setLesson({lesson: response.data});
         setContent(response.data.content);
+        setIsLoading(false);
       } catch (e: any) {
         if (e.response) {
           if (e.response.status === 404) {
             if (e.response.data.error === 'Lesson not found') {
               setError('Урок не найден.');
+              setIsLoading(false);
             } else if (e.response.data.error === 'Lesson content is empty') {
               console.log('Generating lesson')
               setError(null);
               generateLessonStream();
             } else {
               setError('Не удалось получить информацию о предмете.');
+              setIsLoading(false);
             }
           } else {
             setError('An error occurred while fetching the lesson.');
+            setIsLoading(false);
           }
+        } else {
+          setError('An unexpected error occurred.');
+          setIsLoading(false);
         }
-      } finally {
-        setIsLoading(false); 
       }
     };
 
@@ -121,7 +126,6 @@ const LessonScreen: React.FC = () => {
 
         source.addEventListener('message', async (event: { data: string | null }) => {
           if (event.data) {
-            if (isLoading) { setIsLoading(false); }
             const { chunk } = JSON.parse(event.data);
             sseResultRef.current += chunk; // Use the ref to accumulate
             try {
@@ -131,9 +135,12 @@ const LessonScreen: React.FC = () => {
                 lesson?: LessonBlock[]
                };
 
-               if (parsed && parsed.lesson) {
+               if (parsed && parsed.lesson && parsed.lesson.length > 0) {
                  // If parsing is successful and we get lesson blocks, update state
                  setContent(parsed.lesson);
+                 if (isLoading && parsed.lesson.length > 1) {
+                  setIsLoading(false);
+                 }
                }
             } catch (parseError: any) {
                // Handle parsing errors for partial results, maybe log less verbosely
@@ -144,6 +151,7 @@ const LessonScreen: React.FC = () => {
 
         source.addEventListener('error', (error: any) => {
           console.error('Pizdec! SSE Error or connection closed:', error);
+          setContent([]);
           // setError('SSE stream error.'); // Set a more general error if needed, but maybe let the UI handle lack of content
           setIsLoading(false); // Generation failed or finished
           source?.close(); // Ensure cleanup runs on error or close
@@ -188,49 +196,6 @@ const LessonScreen: React.FC = () => {
 
   }, [params.lessonId]); // Dependencies include lessonId and token
 
-  if (isLoading) {
-    return (
-      <View style={styles.centerContainer}>
-        <Stack.Screen
-          options={{
-            title: 'Урок',
-          }}
-        />
-        <LoadingModal message='Загружаем урок...' visible={isLoading} />
-      </View>
-    );
-  }
-
-  if (error) {
-    return (
-      <View style={styles.centerContainer}>
-        <Stack.Screen
-          options={{
-            title: 'Урок',
-          }}
-        />
-        <Text style={styles.errorText}>Ошибка: {error}</Text>
-        {!lesson && (
-          <TouchableOpacity style={styles.retryButton} disabled>
-            <Text style={styles.retryButtonText}>Попробовать снова</Text>
-          </TouchableOpacity>
-        )}
-      </View>
-    );
-  }
-
-  if (!lesson) {
-    return (
-      <View style={styles.centerContainer}>
-        <Stack.Screen
-          options={{
-            title: 'Урок',
-          }}
-        />
-        <Text style={styles.noLessonText}>Урок не найден</Text>
-      </View>
-    );
-  }
 
   const markdownItInstance = new MarkdownIt({
     typographer: true,
@@ -268,9 +233,9 @@ const LessonScreen: React.FC = () => {
 
     try {
       return (
-        <View style={{ flexDirection: "row" }}>
-        <MathJaxSvg style={{marginHorizontal: "auto"}} fontSize={18} fontCache={true} >
-          {`$$ ${content} $$`}
+        <View key={node.key} style={{ flexDirection: "row" }}>
+          <MathJaxSvg style={{marginHorizontal: "auto"}} fontSize={18} fontCache={true} >
+            {`$$ ${content} $$`}
         </MathJaxSvg>
         </View>
       );
@@ -283,7 +248,7 @@ const LessonScreen: React.FC = () => {
     const { content } = node;
 
     try {
-      return (<MathJaxSvg fontSize={14} fontCache={true} >
+      return (<MathJaxSvg key={node.key} fontSize={14} fontCache={true} >
               {`$ ${content} $`}
             </MathJaxSvg>
          );
@@ -303,11 +268,6 @@ const LessonScreen: React.FC = () => {
       const MemoizedMarkdown = React.memo(Markdown)
       return (
         <View style={styles.markdownContentContainer}>
-          <Stack.Screen
-            options={{
-              title: 'Урок',
-            }}
-          />
           <MemoizedMarkdown rules={rules} markdownit={markdownItInstance} style={currentMarkdownStyles}>{item.content}</MemoizedMarkdown>
         </View>
       );
@@ -347,18 +307,29 @@ const LessonScreen: React.FC = () => {
           title: 'Урок',
         }}
       />
-      <FlashList
-        data={deferredContent || []}
-        renderItem={renderBlock}
-        showsVerticalScrollIndicator={true}
-        estimatedItemSize={10}
-        ListHeaderComponent={
-          <View style={styles.header}>
-            <Text style={styles.title}>{lesson?.lesson.title || lesson?.lesson.topic}</Text>
-            {lesson.lesson.sub_topic && <Text style={styles.subtitle}>{lesson.lesson.sub_topic}</Text>}
-          </View>
-        }
-      />
+      { error && !isLoading && (
+        <Text style={styles.errorText}>Ошибка: {error}</Text>
+      )}
+      { !lesson && !isLoading && (
+          <TouchableOpacity style={styles.retryButton} disabled>
+            <Text style={styles.retryButtonText}>Попробовать снова</Text>
+          </TouchableOpacity>
+        )}
+      <LoadingModal message='Загружаем урок...' visible={isLoading} />
+      { lesson && (
+        <FlashList
+          data={deferredContent || []}
+          renderItem={renderBlock}
+          showsVerticalScrollIndicator={true}
+          estimatedItemSize={10}
+          ListHeaderComponent={
+            <View style={styles.header}>
+              <Text style={styles.title}>{lesson?.lesson.title || lesson?.lesson.topic}</Text>
+              {lesson.lesson.sub_topic && <Text style={styles.subtitle}>{lesson.lesson.sub_topic}</Text>}
+            </View>
+          }
+        />
+      )}
     </View>
   );
 };
