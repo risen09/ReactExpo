@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, TextInput, TouchableOpacity, ScrollView, ActivityIndicator, Modal } from 'react-native';
 import { useLocalSearchParams, Stack } from 'expo-router';
 import client from '@/api/client';
-import { Assignment } from '@/types/assignment';
+import { Assignment, Submission } from '@/types/assignment';
 import LoadingModal from '@/components/LoadingModal';
 
 const AssignmentScreen: React.FC = () => {
@@ -11,6 +11,7 @@ const AssignmentScreen: React.FC = () => {
   const [answers, setAnswers] = useState<{ [key: string]: string }>({});
   const [feedback, setFeedback] = useState<{ [key: string]: string }>({});
   const [verdicts, setVerdicts] = useState<{ [key: string]: string }>({});
+  const [expandedTask, setExpandedTask] = useState<number | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [loadingMessage, setLoadingMessage] = useState<string>("Загружаем задание...");
@@ -57,6 +58,29 @@ const AssignmentScreen: React.FC = () => {
         ...prev,
         [taskId]: response.data.verdict
       }));
+
+      // Add new submission to assignment
+      if (assignment) {
+        const newSubmission: Submission = {
+          _id: Date.now().toString(), // Temporary ID until backend provides real one
+          assignment_id: id,
+          task_index: taskId,
+          submission: answers[taskId],
+          review: {
+            verdict: response.data.verdict
+          },
+          feedback: response.data.feedback,
+          submitted_at: new Date()
+        };
+
+        setAssignment(prev => {
+          if (!prev) return null;
+          return {
+            ...prev,
+            submissions: [...prev.submissions, newSubmission]
+          };
+        });
+      }
     } catch (err: any) {
       console.error('Error submitting answer:', err);
       setError(err.response?.data?.message || 'Ошибка при отправке ответа');
@@ -71,6 +95,22 @@ const AssignmentScreen: React.FC = () => {
       ...prev,
       [taskId]: text
     }));
+  };
+
+  const handleSubmissionSelect = (submission: Submission) => {
+    setAnswers(prev => ({
+      ...prev,
+      [submission.task_index]: submission.submission
+    }));
+    setFeedback(prev => ({
+      ...prev,
+      [submission.task_index]: submission.feedback
+    }));
+    setVerdicts(prev => ({
+      ...prev,
+      [submission.task_index]: submission.review.verdict
+    }));
+    setExpandedTask(null); // Close accordion after selection
   };
 
   return (
@@ -114,6 +154,48 @@ const AssignmentScreen: React.FC = () => {
                 )}
               </View>
               <Text style={styles.taskText}>{task.task}</Text>
+              
+              {assignment.submissions?.filter(sub => sub.task_index === index).length > 0 && (
+                <View style={styles.submissionsContainer}>
+                  <TouchableOpacity 
+                    style={styles.submissionsHeader}
+                    onPress={() => setExpandedTask(expandedTask === index ? null : index)}
+                  >
+                    <Text style={styles.submissionsLabel}>
+                      Предыдущие решения {expandedTask === index ? '▼' : '▶'}
+                    </Text>
+                  </TouchableOpacity>
+                  
+                  {expandedTask === index && (
+                    <View style={styles.submissionsList}>
+                      {assignment.submissions
+                        .filter(sub => sub.task_index === index)
+                        .map((submission) => (
+                          <TouchableOpacity
+                            key={submission._id}
+                            style={styles.submissionItem}
+                            onPress={() => handleSubmissionSelect(submission)}
+                          >
+                            <Text style={styles.submissionDate}>
+                              {new Date(submission.submitted_at).toLocaleDateString()}
+                            </Text>
+                            <Text style={[
+                              styles.submissionVerdict,
+                              submission.review.verdict === 'correct' && styles.correctVerdict,
+                              submission.review.verdict === 'incorrect' && styles.incorrectVerdict,
+                              submission.review.verdict === 'partially_correct' && styles.partialVerdict,
+                            ]}>
+                              {submission.review.verdict === 'correct' && '✓'}
+                              {submission.review.verdict === 'incorrect' && '✗'}
+                              {submission.review.verdict === 'partially_correct' && '~'}
+                            </Text>
+                          </TouchableOpacity>
+                      ))}
+                    </View>
+                  )}
+                </View>
+              )}
+
               <TextInput
                 style={styles.input}
                 multiline
@@ -127,11 +209,17 @@ const AssignmentScreen: React.FC = () => {
                 </View>
               )}
               <TouchableOpacity 
-                style={styles.submitButton}
+                style={[
+                  styles.submitButton,
+                  verdicts[index] === 'correct' && styles.disabledSubmitButton,
+                ]}
                 onPress={() => handleSubmit(index)}
-                disabled={isLoading}
+                disabled={isLoading || verdicts[index] === 'correct'}
               >
-                <Text style={styles.submitButtonText}>Отправить</Text>
+                <Text style={[
+                  styles.submitButtonText,
+                  verdicts[index] === 'correct' && styles.disabledSubmitButtonText,
+                ]}>Отправить</Text>
               </TouchableOpacity>
             </View>
           ))}
@@ -244,6 +332,53 @@ const styles = StyleSheet.create({
   partialVerdict: {
     backgroundColor: '#fff3cd',
     color: '#856404',
+  },
+  submissionsContainer: {
+    marginBottom: 12,
+  },
+  submissionsHeader: {
+    padding: 8,
+    backgroundColor: '#f8f9fa',
+    borderRadius: 4,
+    borderWidth: 1,
+    borderColor: '#ced4da',
+  },
+  submissionsLabel: {
+    fontSize: 14,
+    color: '#495057',
+    fontWeight: '500',
+  },
+  submissionsList: {
+    marginTop: 8,
+    borderWidth: 1,
+    borderColor: '#ced4da',
+    borderRadius: 4,
+    backgroundColor: '#ffffff',
+  },
+  submissionItem: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    padding: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: '#e9ecef',
+  },
+  submissionDate: {
+    fontSize: 14,
+    color: '#495057',
+  },
+  submissionVerdict: {
+    fontSize: 16,
+    fontWeight: '600',
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 4,
+  },
+  disabledSubmitButton: {
+    backgroundColor: '#a5d6a7',
+  },
+  disabledSubmitButtonText: {
+    color: '#4caf50',
   },
 });
 
