@@ -104,13 +104,13 @@ export default function LearningTrackCard({ track, onPress }: LearningTrackCardP
   // Определяем градиент для фона карточки на основе предмета
   const getGradient = (subject: string) => {
     switch (subject.toLowerCase()) {
-      case 'математика':
+      case 'math':
         return ['#5B67CA', '#6E78D1'];
-      case 'физика':
+      case 'physics':
         return ['#43C0B4', '#55D1C5'];
-      case 'английский':
+      case 'english':
         return ['#F98D51', '#FFB84D'];
-      case 'информатика':
+      case 'cs':
         return ['#4A7BF7', '#5D8DF8'];
       default:
         return ['#7F8BB7', '#9AA4C8'];
