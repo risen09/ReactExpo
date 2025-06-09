@@ -1,6 +1,7 @@
 import React from 'react';
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { useRouter } from 'expo-router';
+import { MathJaxSvg } from 'react-native-mathjax-html-to-svg';
 
 interface Task {
   task: string;
@@ -18,6 +19,7 @@ interface AssignmentBlockProps {
 
 const AssignmentBlock: React.FC<AssignmentBlockProps> = ({ data }) => {
   const router = useRouter();
+  const latexRegex = /(\\\(.*?\\\)|\\\[.*?\\\]|\$(.*?)\$)/g;
 
   // Check if we have any data at all
   if (!data) {
@@ -47,7 +49,15 @@ const AssignmentBlock: React.FC<AssignmentBlockProps> = ({ data }) => {
         <View key={index} style={styles.taskContainer}>
           <Text style={styles.taskNumber}>Задача {index + 1}</Text>
           <View style={styles.taskContent}>
-            <Text style={styles.taskText}>{task.task}</Text>
+            <Text style={styles.taskText}>{(
+                latexRegex.test(task.task) ? (
+                    <MathJaxSvg fontCache={true} fontSize={16} style={styles.taskText}>
+                        {task.task}
+                    </MathJaxSvg>
+                ) : (
+                    <Text style={styles.taskText}>{task.task}</Text>
+                )
+              )}</Text>
           </View>
         </View>
       ))}

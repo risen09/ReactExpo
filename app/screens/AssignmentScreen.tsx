@@ -4,6 +4,7 @@ import { useLocalSearchParams, Stack } from 'expo-router';
 import client from '@/api/client';
 import { Assignment, Submission } from '@/types/assignment';
 import LoadingModal from '@/components/LoadingModal';
+import { MathJaxSvg } from 'react-native-mathjax-html-to-svg';
 
 const AssignmentScreen: React.FC = () => {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -15,6 +16,7 @@ const AssignmentScreen: React.FC = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [loadingMessage, setLoadingMessage] = useState<string>("Загружаем задание...");
+  const latexRegex = /(\\\(.*?\\\)|\\\[.*?\\\]|\$(.*?)\$)/g;
 
   useEffect(() => {
     console.log('Blyat! useEffect: Initial state: isLoading=', isLoading, 'assignment=', assignment, 'error=', error);
@@ -153,7 +155,15 @@ const AssignmentScreen: React.FC = () => {
                   </Text>
                 )}
               </View>
-              <Text style={styles.taskText}>{task.task}</Text>
+              <Text style={styles.taskText}>{(
+                latexRegex.test(task.task) ? (
+                    <MathJaxSvg fontCache={true} fontSize={16} style={styles.taskText}>
+                        {task.task}
+                    </MathJaxSvg>
+                ) : (
+                    <Text style={styles.taskText}>{task.task}</Text>
+                )
+              )}</Text>
               
               {assignment.submissions?.filter(sub => sub.task_index === index).length > 0 && (
                 <View style={styles.submissionsContainer}>
