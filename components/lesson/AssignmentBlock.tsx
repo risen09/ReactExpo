@@ -62,7 +62,7 @@ const AssignmentBlock: React.FC<AssignmentBlockProps> = ({ data }) => {
         </View>
       ))}
       <TouchableOpacity 
-        style={styles.startButton}
+        style={[styles.startButton, !data._id && styles.startButtonDisabled]}
         onPress={handleStartAssignment}
         disabled={!data._id}
       >
@@ -114,6 +114,9 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     alignItems: 'center',
     marginTop: 16,
+  },
+  startButtonDisabled: {
+    backgroundColor: '#a0c8ed',
   },
   startButtonText: {
     color: '#ffffff',
