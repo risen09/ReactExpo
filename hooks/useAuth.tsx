@@ -397,7 +397,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
-  const updateProfile = async (profileData: Partial<UserProfile>) => {
+  const updateProfile = async (profileData: Partial<User>) => {
     setError(null);
     setIsLoading(true);
 
@@ -442,54 +442,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       console.log('Отправка данных на сервер');
 
       // Используем новый эндпоинт /api/user для обновления данных текущего пользователя
-      const response = await fetch(`${API_BASE_URL}/api/user`, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify(profileData),
-      });
-
-      if (!response.ok) {
-        console.error('Ошибка обновления профиля. Статус:', response.status);
-
-        if (response.status === 401) {
-          console.error(
-            'Ошибка авторизации. Токен:',
-            token ? token.substring(0, 10) + '...' : 'null'
-          );
-          throw new Error('Ошибка авторизации. Пожалуйста, войдите в аккаунт снова.');
-        }
-
-        // Попытка получить текст ошибки
-        try {
-          const errorData = await response.json();
-          console.error('Текст ошибки от сервера:', errorData);
-          throw new Error(errorData.error || 'Не удалось обновить профиль');
-        } catch (jsonError) {
-          console.error('Не удалось прочитать ответ сервера:', jsonError);
-          throw new Error(`Ошибка обновления профиля (${response.status})`);
-        }
-      }
-
+      const response = await client.user.update(profileData);
       // Получаем обновленные данные пользователя
-      const updatedUserData = await response.json();
-
-      console.log(
-        'Профиль успешно обновлен. Новые данные:',
-        JSON.stringify(
-          {
-            ...updatedUserData,
-            email: updatedUserData.email ? `${updatedUserData.email.substring(0, 3)}***` : null,
-          },
-          null,
-          2
-        )
-      );
+      const updatedUserData = await response.data;
 
       setUser(updatedUserData);
-      await AsyncStorage.setItem('user_data', JSON.stringify(updatedUserData));
     } catch (error) {
       console.error('Ошибка при обновлении профиля:', error);
       if (error instanceof Error) {
@@ -551,28 +508,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       console.log('Changing password for user:', user.email);
 
       // Используем эндпоинт /api/user для обновления пароля
-      const response = await fetch(`${API_BASE_URL}/api/user`, {
-        method: 'PUT',
-        headers: {
-          Authorization: `Bearer ${token}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          currentPassword,
-          password: newPassword,
-        }),
+      const response = await client.user.update({
+        password: newPassword
       });
-
-      if (!response.ok) {
-        let errorMessage = 'Не удалось обновить пароль';
-        try {
-          const errorData = await response.json();
-          errorMessage = errorData.error || errorData.message || errorMessage;
-        } catch (error) {
-          console.error('Error parsing error response:', error);
-        }
-        throw new Error(errorMessage);
-      }
 
       Alert.alert('Успех', 'Пароль успешно изменен', [{ text: 'OK' }]);
 

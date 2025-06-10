@@ -157,8 +157,8 @@ export default function ProfileTab() {
         name: formData.name,
         email: formData.email,
         username: formData.username,
-        avatar: avatar || undefined,
-        settings,
+        // avatar: avatar || undefined,
+        // settings,
       });
       Alert.alert('Успешно', 'Профиль успешно обновлен');
       setIsEditing(false);

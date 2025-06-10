@@ -195,7 +195,7 @@ export default {
 
   user: {
     get: () => api.get<User>('/api/v2/user'),
-    update: (userData: Partial<User>) => api.post('/api/v2/user', userData),
+    update: (userData: Partial<User>) => api.post<User>('/api/v2/user', userData),
   },
 
   // Треки обучения
