@@ -330,9 +330,14 @@ const LessonScreen: React.FC = () => {
     }
     if (item.blockType === 'assignment') {
       const MemoizedAssignmentBlock = React.memo(AssignmentBlock);
+      const _id = item.assignmentData._id || lesson.lesson.assignment_id;
+      const data = {
+        ...item.assignmentData,
+        _id
+      };
       return (
         <View style={styles.markdownContentContainer}>
-          <MemoizedAssignmentBlock data={item.assignmentData} />
+          <MemoizedAssignmentBlock data={data} />
         </View>
       );
     }

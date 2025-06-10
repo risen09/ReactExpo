@@ -1,12 +1,12 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import axios, { get } from 'axios';
 
-import { Assignment, Lesson } from '../types/lesson';
+import { Lesson } from '../types/lesson';
 import { Track } from '../types/track';
 import { LoginRequest, LoginResponse, RegisterRequest, RegisterResponse, VkLoginRequest } from '@/types/auth';
 import { User } from '@/types/user';
 import { TestInitialResponse, TestResponse } from '../types/test';
-import { SubmissionResponse } from '@/types/assignment';
+import { Assignment, SubmissionResponse } from '@/types/assignment';
 
 // Базовый URL API из переменных окружения или резервный URL
 const API_BASE_URL = process.env.EXPO_PUBLIC_API_BASE_URL || 'https://j0cl9aplcsh5.share.zrok.io';
