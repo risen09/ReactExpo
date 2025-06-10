@@ -8,6 +8,7 @@ export const UserSchema = z.object({
   avatar: z.string().nullable().optional(),
   personalityType: z.string().nullable().optional(),
   age: z.number(),
+  grade: z.number(),
   createdAt: z.string(),
   vkProfile: z.object({
     id: z.number()

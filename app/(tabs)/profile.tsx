@@ -147,19 +147,29 @@ export default function ProfileTab() {
 
   const handleSaveProfile = async () => {
     // Validation for required fields
-    if (!formData.username || !formData.name || !formData.email) {
+    if (!user?.vkProfile && ( !formData.username || !formData.name || !formData.email )) {
       Alert.alert('Ошибка', 'Пожалуйста, заполните обязательные поля: никнейм, имя и email');
+      return;
+    } else if (user?.vkProfile && !formData.username) {
+      Alert.alert('Ошибка', 'Пожалуйста, заполните обязательное поле: никнейм');
       return;
     }
     setIsSaving(true);
     try {
-      await updateProfile({
-        name: formData.name,
-        email: formData.email,
-        username: formData.username,
-        // avatar: avatar || undefined,
-        // settings,
-      });
+      if (!user?.vkProfile) {
+        await updateProfile({
+          name: formData.name,
+          email: formData.email,
+          username: formData.username,
+          // avatar: avatar || undefined,
+          // settings,
+        });
+
+      } else {
+        await updateProfile({
+          username: formData.username
+        })
+      }
       Alert.alert('Успешно', 'Профиль успешно обновлен');
       setIsEditing(false);
     } catch (err) {

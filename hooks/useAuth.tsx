@@ -203,16 +203,18 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
       await fetchUserProfile();
 
-      console.log('9. User data saved, redirecting to home');
+      console.log('9. User data saved, checking if first time login');
 
-      const personalityType = user?.personalityType
-      if (!personalityType) {
-        // Перенаправляем на тест MBTI
-        router.replace('/mbti');
+      // Check if this is first time login
+      const isFirstTime = await AsyncStorage.getItem('first_time');
+      if (isFirstTime === null) {
+        console.log('First time login detected, redirecting to grade setup');
+        router.replace('/(auth)/grade-setup');
       } else {
-      // Перенаправляем на главную страницу
+        // Перенаправляем на главную страницу
         router.replace('/(tabs)');
       }
+
       console.log('=== LOGIN DEBUG END ===');
     } catch (error) {
       console.error('Login error:', error);
@@ -447,6 +449,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       const updatedUserData = await response.data;
 
       setUser(updatedUserData);
+
+      // Если обновляется класс, сохраняем его в AsyncStorage
+      if ('grade' in profileData) {
+        await AsyncStorage.setItem('user_grade', profileData.grade?.toString() || '');
+      }
     } catch (error) {
       console.error('Ошибка при обновлении профиля:', error);
       if (error instanceof Error) {
@@ -507,9 +514,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     try {
       console.log('Changing password for user:', user.email);
 
-      // Используем эндпоинт /api/user для обновления пароля
-      const response = await client.user.update({
-        password: newPassword
+      // Используем отдельный эндпоинт для смены пароля
+      const response = await client.auth.changePassword({
+        currentPassword,
+        newPassword
       });
 
       Alert.alert('Успех', 'Пароль успешно изменен', [{ text: 'OK' }]);
