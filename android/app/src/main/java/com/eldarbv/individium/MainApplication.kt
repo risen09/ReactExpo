@@ -1,4 +1,4 @@
-package com.eldarbv.boltexponativewind
+package com.eldarbv.individium
 
 import android.app.Application
 import android.content.res.Configuration

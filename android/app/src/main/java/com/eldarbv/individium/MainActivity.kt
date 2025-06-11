@@ -1,4 +1,4 @@
-package com.eldarbv.boltexponativewind
+package com.eldarbv.individium
 import expo.modules.splashscreen.SplashScreenManager
 
 import android.os.Build

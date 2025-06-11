@@ -86,9 +86,9 @@ android {
     buildToolsVersion rootProject.ext.buildToolsVersion
     compileSdk rootProject.ext.compileSdkVersion
 
-    namespace 'com.eldarbv.boltexponativewind'
+    namespace 'com.eldarbv.individium'
     defaultConfig {
-        applicationId 'com.eldarbv.boltexponativewind'
+        applicationId 'com.eldarbv.individium'
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
         versionCode 1

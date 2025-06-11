@@ -1,16 +1,21 @@
 {
   "expo": {
-    "name": "bolt-expo-nativewind",
-    "slug": "bolt-expo-nativewind",
+    "name": "Индивидиум",
+    "slug": "Индивидиум",
     "version": "1.0.0",
     "orientation": "portrait",
-    "icon": "./assets/images/qwen-ai.png",
+    "icon": "./assets/logo.png",
+    "splash": {
+      "image": "./assets/splash-screen.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#ffffff"
+    },
     "scheme": "myapp",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.eldarbv.boltexponativewind"
+      "bundleIdentifier": "com.eldarbv.individium"
     },
     "web": {
       "bundler": "metro",
@@ -24,7 +29,11 @@
       "typedRoutes": true
     },
     "android": {
-      "package": "com.eldarbv.boltexponativewind",
+      "package": "com.eldarbv.individium",
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/adaptive-logo.png",
+        "backgroundColor": "#FFFFFF"
+      },
       "intentFilters": [
         {
           "action": "VIEW",
