@@ -23,6 +23,7 @@ import {
   determineMBTIType,
   calculateProgress,
 } from '../../utils/mbtiCalculator';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const COLORS = {
   primary: '#5B67CA', // Основной синий/фиолетовый
@@ -122,6 +123,7 @@ export default function PersonalityTest() {
       // Сохраняем тип личности в профиле пользователя
       if (type) {
         await updatePersonalityType(type);
+        await AsyncStorage.setItem('first_time', 'false');
       }
 
       setTestComplete(true);
@@ -136,6 +138,7 @@ export default function PersonalityTest() {
 
         setDescription(typeDescription);
         await updatePersonalityType(type);
+        await AsyncStorage.setItem('first_time', 'false');
         setTestComplete(true);
     }
     } catch (error) {
