@@ -206,14 +206,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       console.log('9. User data saved, checking if first time login');
 
       // Check if this is first time login
-      const isFirstTime = await AsyncStorage.getItem('first_time');
-      if (isFirstTime === null) {
-        console.log('First time login detected, redirecting to grade setup');
-        router.replace('/(auth)/grade-setup');
-      } else {
         // Перенаправляем на главную страницу
-        router.replace('/(tabs)');
-      }
+        // router.replace('/(tabs)');
 
       console.log('=== LOGIN DEBUG END ===');
     } catch (error) {

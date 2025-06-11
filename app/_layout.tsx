@@ -18,7 +18,7 @@ SplashScreen.preventAutoHideAsync();
 
 // Функция для перенаправления пользователя в зависимости от статуса авторизации
 function useProtectedRoute() {
-  const { isAuthenticated, isLoading } = useAuth();
+  const { user, isAuthenticated, isLoading } = useAuth();
   const segments = useSegments();
   const router = useRouter();
 
@@ -39,14 +39,15 @@ function useProtectedRoute() {
       } else if (isAuthenticated) {
         // Проверяем, первый ли это вход
         const isFirstTime = await AsyncStorage.getItem('first_time');
+        const grade = user?.grade;
         
-        if (isFirstTime === null) {
+        if (isFirstTime === null && !grade) {
           // Если first_time не установлен, значит это первый вход
           await AsyncStorage.setItem('first_time', 'true');
           if (!inGradeSetup) {
             router.replace('/(auth)/grade-setup');
           }
-        } else if (isFirstTime === 'true' && !inGradeSetup && !inMbtiGroup) {
+        } else if (isFirstTime === 'true' && !grade && !inGradeSetup && !inMbtiGroup) {
           // Если first_time = true и не на странице выбора класса или MBTI,
           // перенаправляем на выбор класса
           router.replace('/(auth)/grade-setup');
