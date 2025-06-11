@@ -76,7 +76,7 @@ export default function UsernameSetupScreen() {
       <ScrollView contentContainerStyle={styles.container}>
         <View style={styles.header}>
           <Image
-            source={require('../../assets/images/logo.png')} // Make sure this path is correct
+            source={require('../../assets/images/qwen-ai.png')} // Make sure this path is correct
             style={styles.logo}
             resizeMode="contain"
           />

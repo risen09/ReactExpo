@@ -2,8 +2,17 @@ import { router } from 'expo-router';
 import { ChevronRight } from 'lucide-react-native';
 import React from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Image } from 'react-native';
+import Svg, { Path } from 'react-native-svg';
 
 import { Track } from '@/types/track';
+
+// Импортируем изображения
+const mathIcon = require('../assets/images/chatgpt-maths-1.png');
+const physicsIcon = require('../assets/images/photo_2025-04-05_15-03-42.jpg');
+const informaticsIcon = require('../assets/images/photo_2025-04-05_15-20-56.jpg');
+const englishIcon = require('../assets/images/english.jpg');
+const biologyIcon = require('../assets/images/biology.png');
+const defaultIcon = require('../assets/images/qwen-ai.png');
 
 // Общая цветовая палитра приложения
 const COLORS = {
@@ -24,29 +33,84 @@ interface LearningTrackCardProps {
   onPress?: () => void;
 }
 
-const subjectIcons: Record<string, any> = {
-  математика: require('@/assets/images/courses/math.svg'),
-  физика: require('@/assets/images/courses/physics.svg'),
-  английский: require('@/assets/images/courses/english.svg'),
-  информатика: require('@/assets/images/courses/python.svg'),
-  // Добавьте другие предметы и соответствующие иконки
+// Иконки для предметов
+const SubjectIcon = ({ subject }: { subject: string }) => {
+  const subjectLower = subject.toLowerCase();
+  
+  if (subjectLower === 'math') {
+    return (
+      <Image
+        source={mathIcon}
+        style={[styles.subjectIcon, { backgroundColor: 'transparent' }]}
+        resizeMode="cover"
+      />
+    );
+  }
+  
+  if (subjectLower === 'physics') {
+    return (
+      <Image
+        source={physicsIcon}
+        style={styles.subjectIcon}
+        resizeMode="cover"
+      />
+    );
+  }
+  
+  if (subjectLower === 'cs') {
+    return (
+      <Image
+        source={informaticsIcon}
+        style={styles.subjectIcon}
+        resizeMode="cover"
+      />
+    );
+  }
+
+  if (subjectLower === 'english') {
+    return (
+      <Image
+        source={englishIcon}
+        style={styles.subjectIcon}
+        resizeMode="cover"
+      />
+    );
+  }
+
+  if (subjectLower === 'biology') {
+    return (
+      <Image
+        source={biologyIcon}
+        style={styles.subjectIcon}
+        resizeMode="cover"
+      />
+    );
+  }
+
+  return (
+    <Image
+      source={defaultIcon}
+      style={styles.subjectIcon}
+      resizeMode="cover"
+    />
+  );
 };
 
 export default function LearningTrackCard({ track, onPress }: LearningTrackCardProps) {
-  const completedLessons = track.lessons.filter(lesson => lesson.completed).length;
+  const completedLessons = track.lessons.filter(item => item.lesson.completed).length;
   const totalLessons = track.lessons.length;
   const progressPercentage = totalLessons > 0 ? (completedLessons / totalLessons) * 100 : 0;
 
   // Определяем градиент для фона карточки на основе предмета
   const getGradient = (subject: string) => {
     switch (subject.toLowerCase()) {
-      case 'математика':
+      case 'math':
         return ['#5B67CA', '#6E78D1'];
-      case 'физика':
+      case 'physics':
         return ['#43C0B4', '#55D1C5'];
-      case 'английский':
+      case 'english':
         return ['#F98D51', '#FFB84D'];
-      case 'информатика':
+      case 'cs':
         return ['#4A7BF7', '#5D8DF8'];
       default:
         return ['#7F8BB7', '#9AA4C8'];
@@ -54,9 +118,6 @@ export default function LearningTrackCard({ track, onPress }: LearningTrackCardP
   };
 
   const [gradientStart, gradientEnd] = getGradient(track.subject);
-
-  // Иконка для предмета
-  const subjectIcon = subjectIcons[track.subject.toLowerCase()] || subjectIcons.математика;
 
   const handlePress = () => {
     if (onPress) {
@@ -69,7 +130,7 @@ export default function LearningTrackCard({ track, onPress }: LearningTrackCardP
   return (
     <TouchableOpacity style={styles.card} onPress={handlePress}>
       <View style={[styles.iconContainer, { backgroundColor: gradientStart }]}>
-        <Image source={subjectIcon} style={styles.icon} />
+        <SubjectIcon subject={track.subject} />
       </View>
 
       <View style={styles.content}>
@@ -116,11 +177,11 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     marginRight: 16,
+    overflow: 'hidden',
   },
-  icon: {
-    width: 24,
-    height: 24,
-    tintColor: '#FFFFFF',
+  subjectIcon: {
+    width: '100%',
+    height: '100%',
   },
   content: {
     flex: 1,

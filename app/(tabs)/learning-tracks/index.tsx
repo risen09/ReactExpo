@@ -51,9 +51,9 @@ export default function LearningTracksScreen() {
 
   const handleTrackPress = (track: Track) => {
     router.push({
-      pathname: `/learning-tracks/${track._id}`,
-      params: { trackId: track._id },
-    } as any);
+      pathname: '/(tabs)/learning-tracks/[trackId]',
+      params: { trackId: track._id }
+    });
   };
 
   const handleCreateTrack = () => {

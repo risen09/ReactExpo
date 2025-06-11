@@ -1,5 +1,5 @@
-import { Tabs } from 'expo-router';
-import { BookOpen, MessageCircle, User, Home, AlignRight } from 'lucide-react-native';
+import { router, Tabs } from 'expo-router';
+import { BookOpen, MessageCircle, User, Home, AlignRight, ArrowLeft } from 'lucide-react-native';
 import React, { useState } from 'react';
 import { View, StyleSheet, TouchableOpacity } from 'react-native';
 
@@ -76,7 +76,8 @@ export default function TabLayout() {
           options={{
             title: 'Треки',
             tabBarIcon: ({ size, color }) => <BookOpen size={size} color={color} />,
-            href: '/learning-tracks'
+            // Уберите headerLeft отсюда, он должен быть в Stack
+            headerShown: false // Скрываем заголовок таба
           }}
         />
         <Tabs.Screen
