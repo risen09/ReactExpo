@@ -449,11 +449,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       const updatedUserData = await response.data;
 
       setUser(updatedUserData);
-
-      // Если обновляется класс, сохраняем его в AsyncStorage
-      if ('grade' in profileData) {
-        await AsyncStorage.setItem('user_grade', profileData.grade?.toString() || '');
-      }
     } catch (error) {
       console.error('Ошибка при обновлении профиля:', error);
       if (error instanceof Error) {

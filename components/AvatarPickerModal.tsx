@@ -30,11 +30,11 @@ const avatars = [
     source: require('@/assets/images/photo_2025-04-05_15-03-42.jpg'),
   },
   {
-    key: 'photo_2025-0/assets4-05_15-04-48.jpg',
+    key: 'photo_2025-04-05_15-04-48.jpg',
     source: require('@/assets/images/photo_2025-04-05_15-04-48.jpg'),
   },
   {
-    key: 'photo_2025-0/assets4-05_15-20-56.jpg',
+    key: 'photo_2025-04-05_15-20-56.jpg',
     source: require('@/assets/images/photo_2025-04-05_15-20-56.jpg'),
   },
 ];

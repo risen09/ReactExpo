@@ -161,13 +161,14 @@ export default function ProfileTab() {
           name: formData.name,
           email: formData.email,
           username: formData.username,
-          // avatar: avatar || undefined,
+          avatar: avatar || undefined,
           // settings,
         });
 
       } else {
         await updateProfile({
-          username: formData.username
+          username: formData.username,
+          avatar: avatar || undefined,
         })
       }
       Alert.alert('Успешно', 'Профиль успешно обновлен');
