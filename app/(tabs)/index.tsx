@@ -28,6 +28,7 @@ import {
   TouchableOpacity,
   ImageBackground,
   Dimensions,
+  Modal,
 } from 'react-native';
 import { Track } from '@/types/track';
 
@@ -53,7 +54,7 @@ export default function HomeScreen() {
   const [recentTracks, setRecentTracks] = useState<Track[]>([]);
   const [tracksLoading, setTracksLoading] = useState(true);
   const [tracksError, setTracksError] = useState<string | null>(null);
-
+  const [showChatModal, setShowChatModal] = useState(false);
 
   useEffect(() => {
     if (!user?.personalityType) {
@@ -85,9 +86,17 @@ export default function HomeScreen() {
       description: 'Общение и поддержка',
       icon: <MessageCircle size={28} color="#FFFFFF" strokeWidth={2} />,
       gradient: [COLORS.secondary, '#328E85'] as [string, string],
-      route: '/(tabs)',
+      route: 'chat',
     },
   ];
+
+  const handleFeaturePress = (route: string) => {
+    if (route === 'chat') {
+      setShowChatModal(true);
+    } else {
+      router.navigate(route as any);
+    }
+  };
 
   return (
     <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
@@ -111,7 +120,7 @@ export default function HomeScreen() {
           <TouchableOpacity
             key={card.id}
             style={styles.featureCard}
-            onPress={() => router.navigate(card.route as any)}
+            onPress={() => handleFeaturePress(card.route)}
           >
             <LinearGradient
               colors={card.gradient}
@@ -129,34 +138,54 @@ export default function HomeScreen() {
         ))}
       </View>
 
-         {/* Recent Tracks Section */}
-   <View style={styles.sectionHeader}>
-     <Text style={[styles.sectionTitle, { paddingHorizontal: 0 }]}>Недавние треки</Text>
-     <TouchableOpacity onPress={() => router.navigate('/(tabs)/learning-tracks' as any)}>
-       <Text style={styles.seeAllLink}>Все треки</Text>
-     </TouchableOpacity>
-   </View>
-   {tracksLoading ? (
-     <View style={{ paddingHorizontal: 20, paddingBottom: 10 }}>
-       <Text style={{ color: COLORS.textSecondary }}>Загрузка...</Text>
-     </View>
-   ) : tracksError ? (
-     <View style={{ paddingHorizontal: 20, paddingBottom: 10 }}>
-       <Text style={{ color: COLORS.textSecondary }}>{tracksError}</Text>
-     </View>
-   ) : (
-     <ScrollView
-       horizontal
-       showsHorizontalScrollIndicator={false}
-       contentContainerStyle={styles.coursesContainer}
-     >
-       {recentTracks.map(track => (
-         <View key={track._id} style={{ marginRight: 16, width: 260 }}>
-           <LearningTrackCard track={track} onPress={() => router.push(`/(tabs)/learning-tracks/${track._id}`)} />
-         </View>
-       ))}
-     </ScrollView>
-   )}
+      {/* Chat Modal */}
+      <Modal
+        visible={showChatModal}
+        transparent={true}
+        animationType="fade"
+        onRequestClose={() => setShowChatModal(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            <Text style={styles.modalText}>Данная функция находится в разработке</Text>
+            <TouchableOpacity
+              style={styles.modalButton}
+              onPress={() => setShowChatModal(false)}
+            >
+              <Text style={styles.modalButtonText}>OK</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
+
+      {/* Recent Tracks Section */}
+      <View style={styles.sectionHeader}>
+        <Text style={[styles.sectionTitle, { paddingHorizontal: 0 }]}>Недавние треки</Text>
+        <TouchableOpacity onPress={() => router.navigate('/(tabs)/learning-tracks' as any)}>
+          <Text style={styles.seeAllLink}>Все треки</Text>
+        </TouchableOpacity>
+      </View>
+      {tracksLoading ? (
+        <View style={{ paddingHorizontal: 20, paddingBottom: 10 }}>
+          <Text style={{ color: COLORS.textSecondary }}>Загрузка...</Text>
+        </View>
+      ) : tracksError ? (
+        <View style={{ paddingHorizontal: 20, paddingBottom: 10 }}>
+          <Text style={{ color: COLORS.textSecondary }}>{tracksError}</Text>
+        </View>
+      ) : (
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={styles.coursesContainer}
+        >
+          {recentTracks.map(track => (
+            <View key={track._id} style={{ marginRight: 16, width: 260 }}>
+              <LearningTrackCard track={track} onPress={() => router.push(`/(tabs)/learning-tracks/${track._id}`)} />
+            </View>
+          ))}
+        </ScrollView>
+      )}
 
       {/* Bottom spacing */}
       <View style={{ height: 30 }} />
@@ -408,5 +437,41 @@ const styles = StyleSheet.create({
     color: COLORS.text,
     textAlign: 'center',
     letterSpacing: -0.2,
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  modalContent: {
+    backgroundColor: COLORS.card,
+    borderRadius: 20,
+    padding: 24,
+    width: '80%',
+    alignItems: 'center',
+    shadowColor: COLORS.text,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.1,
+    shadowRadius: 12,
+    elevation: 5,
+  },
+  modalText: {
+    fontSize: 16,
+    color: COLORS.text,
+    textAlign: 'center',
+    marginBottom: 20,
+    fontWeight: '500',
+  },
+  modalButton: {
+    backgroundColor: COLORS.primary,
+    paddingHorizontal: 32,
+    paddingVertical: 12,
+    borderRadius: 12,
+  },
+  modalButtonText: {
+    color: '#FFFFFF',
+    fontSize: 16,
+    fontWeight: '600',
   },
 });
