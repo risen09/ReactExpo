@@ -264,7 +264,7 @@ const LearningTrackDetailsScreen = () => {
       <View style={styles.lessonContent}>
         <Text style={styles.lessonTitle}>{item.lesson.title || item.lesson.sub_topic}</Text>
         <View style={styles.lessonMeta}>
-          <Text style={styles.lessonDuration}>{formatDuration(item.lesson.estimatedTime ?? 0)}</Text>
+          {/* <Text style={styles.lessonDuration}>{formatDuration(item.lesson.estimatedTime ?? 0)}</Text> */}
           {/* Добавляем отображение приоритета */}
           {item.priority && (
             <View style={styles.priorityContainer}>
