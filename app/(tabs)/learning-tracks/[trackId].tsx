@@ -35,6 +35,7 @@ const LearningTrackDetailsScreen = () => {
   const [error, setError] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<'lessons' | 'schedule'>('lessons');
   const [isModalVisible, setIsModalVisible] = useState(false);
+  const [isScheduleModalVisible, setIsScheduleModalVisible] = useState(false);
   const [lessonTopic, setLessonTopic] = useState('');
   const [isModalLoading, setIsModalLoading] = useState(false);
 
@@ -193,6 +194,14 @@ const LearningTrackDetailsScreen = () => {
       Alert.alert('Ошибка', 'Не удалось запросить урок. Попробуйте еще раз.');
     } finally {
       setIsModalLoading(false);
+    }
+  };
+
+  const handleTabPress = (tab: 'lessons' | 'schedule') => {
+    if (tab === 'schedule') {
+      setIsScheduleModalVisible(true);
+    } else {
+      setActiveTab(tab);
     }
   };
 
@@ -415,7 +424,7 @@ const LearningTrackDetailsScreen = () => {
         <View style={styles.tabsContainer}>
           <TouchableOpacity
             style={[styles.tabButton, activeTab === 'lessons' && styles.activeTabButton]}
-            onPress={() => setActiveTab('lessons')}
+            onPress={() => handleTabPress('lessons')}
           >
             <Text
               style={[styles.tabButtonText, activeTab === 'lessons' && styles.activeTabButtonText]}
@@ -426,14 +435,12 @@ const LearningTrackDetailsScreen = () => {
 
           <TouchableOpacity
             style={[styles.tabButton, activeTab === 'schedule' && styles.activeTabButton]}
-            onPress={() => setActiveTab('schedule')}
-            disabled={!track.schedule}
+            onPress={() => handleTabPress('schedule')}
           >
             <Text
               style={[
                 styles.tabButtonText,
                 activeTab === 'schedule' && styles.activeTabButtonText,
-                !track.schedule && styles.disabledTabButtonText,
               ]}
             >
               Расписание
@@ -539,6 +546,26 @@ const LearningTrackDetailsScreen = () => {
                 </View>
               </>
             )}
+          </View>
+        </View>
+      </Modal>
+
+      {/* Schedule Modal */}
+      <Modal
+        animationType="fade"
+        transparent
+        visible={isScheduleModalVisible}
+        onRequestClose={() => setIsScheduleModalVisible(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContainer}>
+            <Text style={styles.modalTitle}>Данная функция находится в разработке</Text>
+            <TouchableOpacity
+              style={[styles.modalButton, styles.modalButtonSubmit]}
+              onPress={() => setIsScheduleModalVisible(false)}
+            >
+              <Text style={[styles.modalButtonText, { color: '#FFFFFF' }]}>OK</Text>
+            </TouchableOpacity>
           </View>
         </View>
       </Modal>
@@ -913,13 +940,6 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     width: '100%',
   },
-  modalButton: {
-    flex: 1,
-    paddingVertical: 12,
-    borderRadius: 8,
-    alignItems: 'center',
-    marginHorizontal: 5,
-  },
   modalButtonCancel: {
     backgroundColor: COLORS.border,
   },
@@ -931,9 +951,10 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.primary,
   },
   modalButtonText: {
-    color: COLORS.white,
+    color: '#FFFFFF',
     fontSize: 16,
-    fontWeight: 'bold',
+    fontWeight: '600',
+    textAlign: 'center',
   },
   modalLoadingContainer: {
     alignItems: 'center',
@@ -991,6 +1012,12 @@ const styles = StyleSheet.create({
     color: COLORS.white,
     fontSize: 18,
     fontWeight: 'bold',
+  },
+  modalButton: {
+    backgroundColor: COLORS.primary,
+    paddingHorizontal: 32,
+    paddingVertical: 12,
+    borderRadius: 12,
   },
 });
 
