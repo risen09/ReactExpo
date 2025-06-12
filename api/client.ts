@@ -9,9 +9,7 @@ import { TestInitialResponse, TestResponse } from '../types/test';
 import { Assignment, SubmissionResponse } from '@/types/assignment';
 
 // Базовый URL API из переменных окружения или резервный URL
-const API_BASE_URL = process.env.EXPO_PUBLIC_API_BASE_URL || 'https://j0cl9aplcsh5.share.zrok.io';
-const FALLBACK_API_URL = 'https://j0cl9aplcsh5.share.zrok.io';
-const LOCAL_MOCK_API_URL = 'http://localhost:3000'; // Локальный мок-сервер для разработки
+const API_BASE_URL = process.env.EXPO_PUBLIC_API_BASE_URL;
 
 // Функция для проверки доступности сервера
 const checkServerAvailability = async (url: string): Promise<boolean> => {
@@ -37,34 +35,16 @@ const checkServerAvailability = async (url: string): Promise<boolean> => {
   }
 };
 
-// Инициализация с проверкой доступности серверов
-let BASE_URL = API_BASE_URL;
-
 // Проверяем доступность серверов при загрузке
 (async () => {
   try {
-    const isPrimaryAvailable = await checkServerAvailability(API_BASE_URL);
+    if (!API_BASE_URL) {
+      console.warn('API_BASE_URL is not defined.');
+    }
+    const isPrimaryAvailable = await checkServerAvailability(API_BASE_URL!);
 
     if (!isPrimaryAvailable) {
-      console.log('Primary API server is not available, switching to fallback URL');
-      BASE_URL = FALLBACK_API_URL;
-
-      // Проверяем доступность резервного URL
-      const isFallbackAvailable = await checkServerAvailability(FALLBACK_API_URL);
-      if (!isFallbackAvailable) {
-        console.log('Fallback API server is not available, trying local mock server');
-
-        // Проверяем доступность локального мок-сервера
-        const isLocalMockAvailable = await checkServerAvailability(LOCAL_MOCK_API_URL);
-        if (isLocalMockAvailable) {
-          console.log('Connected to local mock server');
-          BASE_URL = LOCAL_MOCK_API_URL;
-        } else {
-          console.error('All API servers are not available. Using fallback but expect errors.');
-        }
-      } else {
-        console.log('Successfully connected to fallback API server');
-      }
+      console.error('Primary API server is not available');
     } else {
       console.log('Successfully connected to primary API server');
     }
@@ -75,7 +55,7 @@ let BASE_URL = API_BASE_URL;
 
 // Создаем инстанс axios с настройками
 const api = axios.create({
-  baseURL: BASE_URL,
+  baseURL: API_BASE_URL,
   timeout: 30000,
   headers: {
     'Content-Type': 'application/json',
@@ -144,7 +124,7 @@ api.interceptors.response.use(
           throw new Error('No refresh token available');
         }
 
-        const response = await axios.post(`${BASE_URL}/api/auth/refresh`, {
+        const response = await axios.post(`${API_BASE_URL}/api/auth/refresh`, {
           refresh_token: refreshToken,
         });
 

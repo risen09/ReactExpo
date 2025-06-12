@@ -17,6 +17,7 @@ import {
   Alert,
   ScrollView,
   Linking,
+  ToastAndroid,
 } from 'react-native';
 import crypto from 'react-native-quick-crypto';
 import * as WebBrowser from 'expo-web-browser';

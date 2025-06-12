@@ -301,7 +301,7 @@ const LearningTrackDetailsScreen = () => {
         </View>
       </View>
 
-      {!item.lesson.completed ? (
+      {/* {!item.lesson.completed ? (
         <TouchableOpacity
           style={styles.markCompleteButton}
           onPress={() => handleMarkComplete(item.lesson)}
@@ -313,7 +313,7 @@ const LearningTrackDetailsScreen = () => {
         <View style={styles.completedIcon}>
           <Icon name="check-circle" size={24} color="#4CAF50" />
         </View>
-      )}
+      )} */}
 
       {item.lesson.assignment_id && (
         <TouchableOpacity
@@ -382,7 +382,7 @@ const LearningTrackDetailsScreen = () => {
               <Text style={styles.trackSubject}>
                 {track.subject}: {track.topic}
               </Text>
-              <View style={styles.badgeRow}>
+              {/* <View style={styles.badgeRow}>
                 <View style={styles.difficultyBadge}>
                   <Text style={styles.difficultyText}>{getDifficultyText(track.difficulty)}</Text>
                 </View>
@@ -397,7 +397,7 @@ const LearningTrackDetailsScreen = () => {
                     {formatDuration(track.expectedDuration ?? 60)}
                   </Text>
                 </View>
-              </View>
+              </View> */}
             </View>
           </View>
 
