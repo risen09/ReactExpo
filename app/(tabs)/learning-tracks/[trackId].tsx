@@ -1,4 +1,4 @@
-import { useRoute, useNavigation } from '@react-navigation/native';
+import { useRoute, useNavigation, useFocusEffect } from '@react-navigation/native';
 import { router } from 'expo-router';
 import React, { useState, useEffect } from 'react';
 import {
@@ -39,38 +39,38 @@ const LearningTrackDetailsScreen = () => {
   const [lessonTopic, setLessonTopic] = useState('');
   const [isModalLoading, setIsModalLoading] = useState(false);
 
-  // Загружаем данные трека, если они не были переданы через параметры
-  useEffect(() => {
-    const fetchTrackData = async () => {
-      if (trackData) {
-        setTrack(trackData);
-        return;
-      }
+  // Загружаем данные трека, когда экран в фокусе
+  useFocusEffect(
+    React.useCallback(() => {
+      const fetchTrackData = async () => {
+        if (!trackId) {
+          setError('Идентификатор учебного трека не найден');
+          setIsLoading(false);
+          return;
+        }
 
-      if (!trackId) {
-        setError('Идентификатор учебного трека не найден');
-        setIsLoading(false);
-        return;
-      }
+        try {
+          setIsLoading(true);
 
-      try {
-        setIsLoading(true);
+          // Пытаемся получить трек из API
+          const response = await apiClient.tracks.getById(trackId);
+          const fetchedTrack = response.data;
 
-        // Пытаемся получить трек из API
-        const response = await apiClient.tracks.getById(trackId);
-        const fetchedTrack = response.data;
+          setTrack(fetchedTrack);
+        } catch (err) {
+          console.error('Ошибка при загрузке учебного трека:', err);
+          setError('Не удалось загрузить учебный трек. Пожалуйста, попробуйте позже.');
+        } finally {
+          setIsLoading(false);
+        }
+      };
 
-        setTrack(fetchedTrack);
-      } catch (err) {
-        console.error('Ошибка при загрузке учебного трека:', err);
-        setError('Не удалось загрузить учебный трек. Пожалуйста, попробуйте позже.');
-      } finally {
-        setIsLoading(false);
-      }
-    };
+      fetchTrackData();
 
-    fetchTrackData();
-  }, [trackId, trackData]);
+      // No cleanup needed for useFocusEffect with a simple fetch
+      return () => {};
+    }, [trackId])
+  );
 
   // Обработчик открытия урока
   const handleOpenLesson = (lesson: Lesson) => {
@@ -90,14 +90,14 @@ const LearningTrackDetailsScreen = () => {
 
     try {
       const updatedLessons = track.lessons.map(l => {
-        if (l._id === lesson._id) {
-          return { ...l, completed: true };
+        if (l.lesson._id === lesson._id) {
+          return { ...l, lesson: { ...l.lesson, completed: true } };
         }
         return l;
       });
 
       // Вычисляем новый прогресс
-      const completedCount = updatedLessons.filter(l => l.completed).length;
+      const completedCount = updatedLessons.filter(l => l.lesson.completed).length;
       const totalCount = updatedLessons.length;
       const newProgress = totalCount > 0 ? Math.round((completedCount / totalCount) * 100) : 0;
 
@@ -184,7 +184,7 @@ const LearningTrackDetailsScreen = () => {
 
       const updatedTrack = {
         ...track,
-        lessons: [...track.lessons, lessonData],
+        lessons: [...track.lessons, { lesson: lessonData }],
       };
       setTrack(updatedTrack);
       setLessonTopic(''); // Очищаем поле ввода
@@ -340,32 +340,32 @@ const LearningTrackDetailsScreen = () => {
   // Рендеринг дня расписания
   const renderScheduleDay = ({ item }: { item: { date: string; lessons: string[] } }) => {
     const dayLessons = item.lessons
-      .map(lessonId => track.lessons.find(l => l._id === lessonId))
-      .filter(Boolean) as Lesson[];
+      .map(lessonId => track.lessons.find(l => l.lesson._id === lessonId))
+      .filter(Boolean) as { lesson: Lesson; priority?: string }[];
 
     return (
       <View style={styles.scheduleDay}>
         <Text style={styles.scheduleDayDate}>{formatDate(item.date)}</Text>
-        {dayLessons.map((lesson, index) => (
+        {dayLessons.map((lessonItem, index) => (
           <TouchableOpacity
             key={`schedule-lesson-${index}`}
             style={[
               styles.scheduleLessonItem,
-              lesson.completed && styles.completedScheduleLessonItem,
+              lessonItem.lesson.completed && styles.completedScheduleLessonItem,
             ]}
-            onPress={() => handleOpenLesson(lesson)}
+            onPress={() => handleOpenLesson(lessonItem.lesson)}
           >
             <Icon
-              name={getLessonTypeIcon(lesson)}
+              name="book-open-outline" // Replaced getLessonTypeIcon with a generic icon
               size={20}
               color={COLORS.primary}
               style={styles.scheduleLessonIcon}
             />
             <View style={styles.scheduleLessonContent}>
-              <Text style={styles.scheduleLessonTitle}>{lesson.sub_topic}</Text>
-              <Text style={styles.scheduleLessonDuration}>{formatDuration(lesson.estimatedTime ?? 0)}</Text>
+              <Text style={styles.scheduleLessonTitle}>{lessonItem.lesson.sub_topic}</Text>
+              <Text style={styles.scheduleLessonDuration}>{formatDuration(lessonItem.lesson.estimatedTime ?? 0)}</Text>
             </View>
-            {lesson.completed && <Icon name="check-circle" size={20} color="#4CAF50" />}
+            {lessonItem.lesson.completed && <Icon name="check-circle" size={20} color="#4CAF50" />}
           </TouchableOpacity>
         ))}
       </View>
@@ -382,7 +382,7 @@ const LearningTrackDetailsScreen = () => {
               <Text style={styles.trackSubject}>
                 {track.subject}: {track.topic}
               </Text>
-              {/* <View style={styles.badgeRow}>
+              {/* <View style={styles.badgeRow>
                 <View style={styles.difficultyBadge}>
                   <Text style={styles.difficultyText}>{getDifficultyText(track.difficulty)}</Text>
                 </View>
@@ -402,12 +402,12 @@ const LearningTrackDetailsScreen = () => {
           </View>
 
           {/*
-          <View style={styles.progressSection}>
-            <View style={styles.progressHeader}>
-              <Text style={styles.progressTitle}>Общий прогресс</Text>
-              <Text style={styles.progressPercentage}>{track.progress}%</Text>
+          <View style={styles.progressSection>
+            <View style={styles.progressHeader>
+              <Text style={styles.progressTitle>Общий прогресс</Text>
+              <Text style={styles.progressPercentage>{track.progress}%</Text>
             </View>
-            <View style={styles.progressBarContainer}>
+            <View style={styles.progressBarContainer>
               <View 
                 style={[
                   styles.progressBar,
