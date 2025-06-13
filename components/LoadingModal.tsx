@@ -9,6 +9,8 @@ import dna from '@/assets/animations/loading/dna.json'
 interface LoadingModalProps {
   visible: boolean;
   message: string;
+  longLoadDelayMs?: number;
+  longLoadMessage?: string;
 }
 
 const funFacts = [
@@ -44,11 +46,19 @@ const animations = [
   { source: dna, name: 'DNA' },
 ];
 
-const LoadingModal: React.FC<LoadingModalProps> = ({ visible, message }) => {
+const LoadingModal: React.FC<LoadingModalProps> = ({ 
+  visible, 
+  message,
+  longLoadDelayMs = 5000,
+  longLoadMessage = 'Нужно еще чуть-чуть подождать...',
+}) => {
   const [currentFact, setCurrentFact] = useState('');
   const [currentAnimation, setCurrentAnimation] = useState(animations[0]);
+  const [showLongLoadMessage, setShowLongLoadMessage] = useState(false);
 
   useEffect(() => {
+    let timer: NodeJS.Timeout;
+
     if (visible) {
       // Select random category and fact
       const randomCategory = funFacts[Math.floor(Math.random() * funFacts.length)];
@@ -58,8 +68,23 @@ const LoadingModal: React.FC<LoadingModalProps> = ({ visible, message }) => {
       // Select random animation
       const randomAnimation = animations[Math.floor(Math.random() * animations.length)];
       setCurrentAnimation(randomAnimation);
+
+      // Start timer for long loading message
+      setShowLongLoadMessage(false);
+      timer = setTimeout(() => {
+        if (visible) {
+          setShowLongLoadMessage(true);
+        }
+      }, longLoadDelayMs);
+    } else {
+      // Clear timer and reset message when modal is hidden
+      setShowLongLoadMessage(false);
     }
-  }, [visible]);
+
+    return () => {
+      clearTimeout(timer);
+    };
+  }, [visible, longLoadDelayMs]);
 
   return (
     <Modal
@@ -78,6 +103,9 @@ const LoadingModal: React.FC<LoadingModalProps> = ({ visible, message }) => {
           />
           <Text style={styles.funFact}>{currentFact}</Text>
           <Text style={styles.modalText}>{message}</Text>
+          {showLongLoadMessage && (
+            <Text style={styles.modalText}>{longLoadMessage}</Text>
+          )}
         </View>
       </View>
     </Modal>

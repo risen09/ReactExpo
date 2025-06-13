@@ -1,15 +1,18 @@
 export interface PersonalityType {
   code: string;
+  id: string;
   name: string;
   description: string;
   strengths: string[];
   weaknesses: string[];
   careerOptions: string[];
+  imagePath: any;
 }
 
 export const personalityTypes: PersonalityType[] = [
   {
     code: 'INTJ',
+    id: 'INTJ',
     name: 'Стратег',
     description:
       'Творческие перфекционисты, которые любят разрабатывать теории и планы. Они аналитичны, скептичны и независимы, часто имеют высокие стандарты для себя и других.',
@@ -28,9 +31,11 @@ export const personalityTypes: PersonalityType[] = [
       'Трудности в выражении чувств',
     ],
     careerOptions: ['Ученый', 'Инженер', 'Программист', 'Финансовый аналитик', 'Стратег'],
+    imagePath: require('../assets/images/INTJ.png'),
   },
   {
     code: 'INTP',
+    id: 'INTP',
     name: 'Логик',
     description:
       'Изобретательные мыслители с тягой к логике и творчеству. Они ценят знания, компетентность и логику, часто увлечены теоретическими концепциями и абстрактными идеями.',
@@ -49,9 +54,11 @@ export const personalityTypes: PersonalityType[] = [
       'Склонность к социальной изоляции',
     ],
     careerOptions: ['Программист', 'Системный аналитик', 'Ученый', 'Философ', 'Математик'],
+    imagePath: require('../assets/images/INTP.png'),
   },
   {
     code: 'ENTJ',
+    id: 'ENTJ',
     name: 'Командир',
     description:
       'Смелые, решительные лидеры, которые всегда находят путь вперед. Они харизматичны и уверены в себе, стремятся к эффективности и организованности во всем, что делают.',
@@ -70,9 +77,11 @@ export const personalityTypes: PersonalityType[] = [
       'Агрессивность в конфликтах',
     ],
     careerOptions: ['CEO', 'Предприниматель', 'Юрист', 'Консультант по управлению', 'Политик'],
+    imagePath: require('../assets/images/ENTJ.png'),
   },
   {
     code: 'ENTP',
+    id: 'ENTP',
     name: 'Новатор',
     description:
       'Умные и любознательные мыслители, которые не могут устоять перед интеллектуальным вызовом. Они креативны, остроумны и любят участвовать в дебатах и решать сложные проблемы.',
@@ -91,9 +100,11 @@ export const personalityTypes: PersonalityType[] = [
       'Неорганизованность',
     ],
     careerOptions: ['Предприниматель', 'Адвокат', 'Креативный директор', 'Инженер', 'Изобретатель'],
+    imagePath: require('../assets/images/ENTP.png'),
   },
   {
     code: 'INFJ',
+    id: 'INFJ',
     name: 'Советник',
     description:
       'Тихие и мистические, но очень вдохновляющие люди с сильными идеалами. Они творческие, трудолюбивые и глубоко преданные тому, во что верят.',
@@ -118,9 +129,11 @@ export const personalityTypes: PersonalityType[] = [
       'HR-специалист',
       'Социальный работник',
     ],
+    imagePath: require('../assets/images/INFJ.png'),
   },
   {
     code: 'INFP',
+    id: 'INFP',
     name: 'Посредник',
     description:
       'Поэтичные, добрые и альтруистичные люди, всегда готовые помочь хорошему делу. Они идеалистичны, руководствуются принципами и стремятся увидеть лучшее в людях.',
@@ -133,9 +146,11 @@ export const personalityTypes: PersonalityType[] = [
       'Трудности с практическими задачами',
     ],
     careerOptions: ['Писатель', 'Психолог', 'Художник', 'Преподаватель', 'Социальный работник'],
+    imagePath: require('../assets/images/INFP.png'),
   },
   {
     code: 'ENFJ',
+    id: 'ENFJ',
     name: 'Вдохновитель',
     description:
       'Харизматичные и вдохновляющие лидеры, способные очаровать своих слушателей. Они общительны, заботливы и ориентированы на потребности и мотивации других людей.',
@@ -148,9 +163,11 @@ export const personalityTypes: PersonalityType[] = [
       'Потребность в одобрении',
     ],
     careerOptions: ['Учитель', 'Психолог', 'HR-специалист', 'Политик', 'Консультант'],
+    imagePath: require('../assets/images/ENFJ.png'),
   },
   {
     code: 'ENFP',
+    id: 'ENFP',
     name: 'Борец',
     description:
       'Энтузиасты, креативные и общительные люди, которые всегда могут найти причину для улыбки. Они теплые, энергичные и очень изобретательные.',
@@ -163,9 +180,11 @@ export const personalityTypes: PersonalityType[] = [
       'Избегание конфликтов',
     ],
     careerOptions: ['Психолог', 'Журналист', 'Актер', 'Журналист', 'PR-специалист'],
+    imagePath: require('../assets/images/ENFP.png'),
   },
   {
     code: 'ISTJ',
+    id: 'ISTJ',
     name: 'Инспектор',
     description:
       'Практичные и ориентированные на факты люди, надежность которых неоспорима. Они ответственны, организованы и серьезно относятся к своим обязательствам.',
@@ -178,9 +197,11 @@ export const personalityTypes: PersonalityType[] = [
       'Трудности с абстрактным мышлением',
     ],
     careerOptions: ['Бухгалтер', 'Аудитор', 'Военный', 'Менеджер проектов', 'Администратор'],
+    imagePath: require('../assets/images/ISTJ.png'),
   },
   {
     code: 'ISFJ',
+    id: 'ISFJ',
     name: 'Защитник',
     description:
       'Очень ответственные и теплые защитники, которые всегда готовы защищать любимых людей. Они скромны, преданны и часто берут на себя роль заботливого смотрителя.',
@@ -199,9 +220,11 @@ export const personalityTypes: PersonalityType[] = [
       'Административный помощник',
       'Домашний врач',
     ],
+    imagePath: require('../assets/images/ISFJ.png'),
   },
   {
     code: 'ESTJ',
+    id: 'ESTJ',
     name: 'Администратор',
     description:
       'Отличные администраторы, необычайно хорошие в налаживании систем и процессов. Они практичны, ориентированы на правила и традиции, ценят стабильность и безопасность.',
@@ -214,9 +237,11 @@ export const personalityTypes: PersonalityType[] = [
       'Потребность в контроле',
     ],
     careerOptions: ['Менеджер', 'Банкир', 'Судья', 'Военный офицер', 'Бизнес-администратор'],
+    imagePath: require('../assets/images/ESTJ.png'),
   },
   {
     code: 'ESFJ',
+    id: 'ESFJ',
     name: 'Консул',
     description:
       'Заботливые, общительные люди, которые всеми силами поддерживают тех, кого ценят. Они гостеприимны, внимательны и всегда готовы помочь другим.',
@@ -241,9 +266,11 @@ export const personalityTypes: PersonalityType[] = [
       'Медсестра',
       'Представитель по обслуживанию клиентов',
     ],
+    imagePath: require('../assets/images/ESFJ.png'),
   },
   {
     code: 'ISTP',
+    id: 'ISTP',
     name: 'Виртуоз',
     description:
       'Смелые и практичные экспериментаторы, мастера всех видов инструментов. Они независимы, адаптивны и любят решать конкретные проблемы.',
@@ -256,9 +283,11 @@ export const personalityTypes: PersonalityType[] = [
       'Трудности с планированием',
     ],
     careerOptions: ['Инженер', 'Механик', 'Пилот', 'Фотограф', 'Хирург'],
+    imagePath: require('../assets/images/ISTP.png'),
   },
   {
     code: 'ISFP',
+    id: 'ISFP',
     name: 'Композитор',
     description:
       'Гибкие, харизматичные художники, которые всегда готовы исследовать и испытывать что-то новое. Они творческие, спонтанные и живут настоящим моментом.',
@@ -271,9 +300,11 @@ export const personalityTypes: PersonalityType[] = [
       'Чрезмерная скромность',
     ],
     careerOptions: ['Художник', 'Музыкант', 'Ландшафтный дизайнер', 'Модельер', 'Флорист'],
+    imagePath: require('../assets/images/ISFP.png'),
   },
   {
     code: 'ESTP',
+    id: 'ESTP',
     name: 'Делец',
     description:
       'Умные, энергичные и очень восприимчивые люди, которые по-настоящему наслаждаются жизнью. Они спонтанные, прагматичные и любят действовать, а не планировать.',
@@ -286,9 +317,11 @@ export const personalityTypes: PersonalityType[] = [
       'Скука от рутины',
     ],
     careerOptions: ['Предприниматель', 'Маркетолог', 'Детектив', 'Агент по продажам', 'Спортсмен'],
+    imagePath: require('../assets/images/ESTP.png'),
   },
   {
     code: 'ESFP',
+    id: 'ESFP',
     name: 'Развлекатель',
     description:
       'Спонтанные, энергичные и неудержимые люди, которые всегда находятся в центре внимания. Они общительны, практичны и наслаждаются жизнью здесь и сейчас.',
@@ -307,5 +340,6 @@ export const personalityTypes: PersonalityType[] = [
       'Ведущий мероприятий',
       'Туристический агент',
     ],
+    imagePath: require('../assets/images/ESFP.png'),
   },
 ];

@@ -150,7 +150,7 @@ const LessonScreen: React.FC = () => {
         });
 
         source.addEventListener('error', (error: any) => {
-          console.error('Pizdec! SSE Error or connection closed:', error);
+          console.error('SSE Error or connection closed:', error);
           setContent([]);
           // setError('SSE stream error.'); // Set a more general error if needed, but maybe let the UI handle lack of content
           setIsLoading(false); // Generation failed or finished
@@ -320,7 +320,7 @@ const LessonScreen: React.FC = () => {
             <Text style={styles.retryButtonText}>Попробовать снова</Text>
           </TouchableOpacity>
         )}
-      <LoadingModal message='Загружаем урок...' visible={isLoading} />
+      <LoadingModal message='Загружаем урок...' visible={isLoading} longLoadDelayMs={15000} />
       { lesson && (
         <FlashList
           data={deferredContent || []}

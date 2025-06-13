@@ -15,7 +15,8 @@ import {
 } from 'react-native';
 
 import { useAuth } from '../../hooks/useAuth';
-
+import { personalityTypes as allPersonalityTypes } from '../../data/personalityTypes';
+import { MbtiPersonalityType } from '../../types/MbtiPersonalityType'
 const COLORS = {
   primary: '#5B67CA',
   secondary: '#43C0B4',
@@ -28,124 +29,30 @@ const COLORS = {
   border: '#EAEDF5',
 };
 
-interface PersonalityType {
-  id: string;
-  name: string;
-  description: string;
-  strengths: string[];
-  weaknesses: string[];
-  career: string[];
-  image: any;
-  bgGradient: [string, string];
-}
+const personalityTypesMap: { [key: string]: MbtiPersonalityType } =
+  allPersonalityTypes.reduce((acc, type) => {
+    let bgGradient: [string, string];
+    switch (type.code.charAt(0)) {
+      case 'I':
+        bgGradient = ['#43C0B4', '#2C8A81']; // Бирюзовый для Интровертов
+        break;
+      case 'E':
+        bgGradient = ['#F98D51', '#E16F33']; // Оранжевый для Экстравертов
+        break;
+      default:
+        bgGradient = ['#5B67CA', '#424D9D']; // По умолчанию синий
+    }
 
-// Используем одно доступное изображение для всех типов личности
-const defaultImage = require('../../assets/images/logo.png');
-
-const personalityTypes: { [key: string]: PersonalityType } = {
-  analytical: {
-    id: 'analytical',
-    name: 'Аналитический тип',
-    description:
-      'Вы отличаетесь логическим мышлением, объективностью и стремлением к совершенству. Вы тщательно анализируете информацию перед принятием решений и всегда ищете оптимальные решения.',
-    strengths: [
-      'Логическое мышление',
-      'Внимание к деталям',
-      'Объективность',
-      'Системный подход к решению проблем',
-      'Стремление к совершенству',
-    ],
-    weaknesses: [
-      'Склонность к перфекционизму',
-      'Медлительность в принятии решений',
-      'Избегание риска',
-      'Излишняя критичность',
-      'Трудности с эмоциональной коммуникацией',
-    ],
-    career: ['Программист', 'Аналитик данных', 'Исследователь', 'Инженер', 'Ученый'],
-    image: defaultImage,
-    bgGradient: ['#5B67CA', '#424D9D'],
-  },
-  creative: {
-    id: 'creative',
-    name: 'Креативный тип',
-    description:
-      'Вы обладаете богатым воображением, оригинальным мышлением и способностью видеть необычные связи между вещами. Вас привлекают нестандартные задачи и возможность самовыражения.',
-    strengths: [
-      'Богатое воображение',
-      'Оригинальное мышление',
-      'Гибкость',
-      'Открытость новому',
-      'Способность к самовыражению',
-    ],
-    weaknesses: [
-      'Отвлекаемость',
-      'Непрактичность',
-      'Нестабильность',
-      'Избегание рутинных задач',
-      'Чувствительность к критике',
-    ],
-    career: ['Дизайнер', 'Писатель', 'Художник', 'Маркетолог', 'Предприниматель'],
-    image: defaultImage,
-    bgGradient: ['#43C0B4', '#2C8A81'],
-  },
-  social: {
-    id: 'social',
-    name: 'Социальный тип',
-    description:
-      'Вы обладаете развитым эмоциональным интеллектом, эмпатией и коммуникативными навыками. Вас вдохновляет взаимодействие с людьми и возможность помогать другим.',
-    strengths: [
-      'Эмоциональный интеллект',
-      'Эмпатия',
-      'Коммуникативные навыки',
-      'Командная работа',
-      'Способность вдохновлять других',
-    ],
-    weaknesses: [
-      'Зависимость от одобрения',
-      'Избегание конфликтов',
-      'Эмоциональная перегрузка',
-      'Трудности с границами',
-      'Сложности с объективной оценкой',
-    ],
-    career: [
-      'Психолог',
-      'Педагог',
-      'HR-специалист',
-      'Социальный работник',
-      'Менеджер по работе с клиентами',
-    ],
-    image: defaultImage,
-    bgGradient: ['#F98D51', '#E16F33'],
-  },
-  practical: {
-    id: 'practical',
-    name: 'Практический тип',
-    description:
-      'Вы ориентированы на результат, организованы и надежны. Вы цените конкретику, предпочитаете действовать методично и доводить дела до конца.',
-    strengths: [
-      'Ориентация на результат',
-      'Организованность',
-      'Надежность',
-      'Практичность',
-      'Эффективность',
-    ],
-    weaknesses: [
-      'Негибкость',
-      'Консерватизм',
-      'Сопротивление изменениям',
-      'Недооценка эмоциональных факторов',
-      'Нетерпение к теоретизированию',
-    ],
-    career: ['Менеджер проектов', 'Администратор', 'Бухгалтер', 'Технический специалист', 'Логист'],
-    image: defaultImage,
-    bgGradient: ['#EC575B', '#C73A3E'],
-  },
-};
+    acc[type.code] = {
+      ...type,
+      bgGradient: bgGradient,
+    };
+    return acc;
+  }, {} as { [key: string]: MbtiPersonalityType });
 
 export default function TestResultScreen() {
   const { type } = useLocalSearchParams<{ type: string }>();
-  const [personalityType, setPersonalityType] = useState<PersonalityType | null>(null);
+  const [personalityType, setPersonalityType] = useState<MbtiPersonalityType | null>(null);
   const [loading, setLoading] = useState(false);
   const [saved, setSaved] = useState(false);
   const { updatePersonalityType, user } = useAuth();
@@ -183,14 +90,14 @@ export default function TestResultScreen() {
   useEffect(() => {
     console.log('=== TEST RESULT SCREEN COMPONENT DEBUG ===');
     console.log('Received type parameter:', type);
-    console.log('Available personality types:', Object.keys(personalityTypes));
-    console.log('Type exists in dictionary:', type ? !!personalityTypes[type] : false);
+    console.log('Available personality types:', Object.keys(personalityTypesMap));
+    console.log('Type exists in dictionary:', type ? !!personalityTypesMap[type] : false);
 
     if (type) {
-      if (personalityTypes[type]) {
+      if (personalityTypesMap[type]) {
         // Если тип найден в нашем словаре
         console.log('Setting personality type from dictionary');
-        setPersonalityType(personalityTypes[type]);
+        setPersonalityType(personalityTypesMap[type]);
 
         // Проверяем, совпадает ли тип личности с сохраненным в профиле
         if (user?.personalityType === type) {
@@ -206,8 +113,9 @@ export default function TestResultScreen() {
         if (type.startsWith('E')) gradient = ['#F98D51', '#E16F33']; // Оранжевый для Экстравертов
         if (type.startsWith('I')) gradient = ['#43C0B4', '#2C8A81']; // Бирюзовый для Интровертов
 
-        const tempType: PersonalityType = {
+        const tempType: MbtiPersonalityType = {
           id: type,
+          code: type,
           name: `Тип личности ${type}`,
           description: `Это ваш результат теста личности MBTI: ${type}. Более подробное описание данного типа личности будет добавлено позже.`,
           strengths: [
@@ -224,14 +132,14 @@ export default function TestResultScreen() {
             'Трудности с принятием неопределенности',
             'Может быть сложно работать в хаотичных условиях',
           ],
-          career: [
+          careerOptions: [
             'Аналитические профессии',
             'Исследовательская деятельность',
             'Консультирование',
             'Проектная работа',
             'Стратегическое планирование',
           ],
-          image: defaultImage,
+          imagePath: require('../../assets/images/logo.png'),
           bgGradient: gradient,
         };
 
@@ -254,7 +162,7 @@ export default function TestResultScreen() {
 
     setLoading(true);
     try {
-      await updatePersonalityType(personalityType.id);
+      await updatePersonalityType(personalityType.code);
       setSaved(true);
       Alert.alert('Успешно сохранено', 'Тип личности сохранен в вашем профиле.');
     } catch (error) {
@@ -303,7 +211,7 @@ export default function TestResultScreen() {
         end={{ x: 1, y: 1 }}
       >
         <View style={styles.imageContainer}>
-          <Image source={personalityType.image} style={styles.image} resizeMode="contain" />
+          <Image source={personalityType.imagePath} style={styles.image} resizeMode="cover" />
         </View>
         <Text style={styles.headerTitle}>{personalityType.name}</Text>
       </LinearGradient>
@@ -338,7 +246,7 @@ export default function TestResultScreen() {
 
         <Text style={styles.sectionTitle}>Рекомендуемые профессии</Text>
         <View style={styles.listContainer}>
-          {personalityType.career.map((career, index) => (
+          {personalityType.careerOptions.map((career, index) => (
             <View key={`career-${index}`} style={styles.listItem}>
               <View style={[styles.bulletPoint, styles.careerBullet]}>
                 <Check size={14} color="#FFFFFF" />
@@ -409,18 +317,18 @@ const styles = StyleSheet.create({
     borderBottomRightRadius: 30,
   },
   imageContainer: {
-    width: 100,
-    height: 100,
+    width: 150,
+    height: 150,
     backgroundColor: 'rgba(255, 255, 255, 0.2)',
-    borderRadius: 50,
+    borderRadius: 75,
     justifyContent: 'center',
     alignItems: 'center',
     marginBottom: 16,
     overflow: 'hidden',
   },
   image: {
-    width: 60,
-    height: 60,
+    width: '100%',
+    height: '100%',
   },
   headerTitle: {
     fontSize: 24,
@@ -515,5 +423,25 @@ const styles = StyleSheet.create({
     color: COLORS.primary,
     fontWeight: '600',
     fontSize: 16,
+  },
+  errorContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 20,
+    backgroundColor: COLORS.background,
+  },
+  errorTitle: {
+    fontSize: 22,
+    fontWeight: 'bold',
+    color: COLORS.accent2,
+    marginBottom: 10,
+    textAlign: 'center',
+  },
+  errorMessage: {
+    fontSize: 16,
+    color: COLORS.textSecondary,
+    textAlign: 'center',
+    lineHeight: 24,
   },
 });

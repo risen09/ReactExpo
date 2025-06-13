@@ -17,6 +17,7 @@ import {
   Alert,
   ScrollView,
   Linking,
+  ToastAndroid,
 } from 'react-native';
 import crypto from 'react-native-quick-crypto';
 import * as WebBrowser from 'expo-web-browser';
@@ -71,16 +72,33 @@ export default function LoginScreen() {
     try {
       await login({email: email.trim(), password: password.trim()});
       // После успешного входа редирект произойдет автоматически в хуке useEffect
-    } catch (err) {
+    } catch (err: any) {
       // Ошибка уже будет обработана в хуке useAuth
       console.error('Ошибка входа:', err);
+
+      let errorMessage = 'Ошибка входа. Проверьте свои данные.'; // Default message
+
+      // First, check error from useAuth hook
+      if (typeof error === 'string') {
+        errorMessage = error;
+      } else if (error && typeof error === 'object' && 'message' in error && typeof (error as any).message === 'string') {
+        errorMessage = (error as any).message;
+      }
+      // If error from useAuth didn't provide a good message, check the caught err
+      else if (typeof err === 'string') {
+        errorMessage = err;
+      } else if (err && typeof err === 'object' && 'message' in err && typeof (err as any).message === 'string') {
+        errorMessage = (err as any).message;
+      }
+
+      Alert.alert('Ошибка входа', errorMessage);
     }
   };
 
   return (
     <KeyboardAvoidingView
       style={{ flex: 1 }}
-      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
     >
       <StatusBar style="dark" />
       <ScrollView contentContainerStyle={styles.container}>
