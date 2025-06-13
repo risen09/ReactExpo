@@ -212,6 +212,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       console.log('=== LOGIN DEBUG END ===');
     } catch (error) {
       console.error('Login error:', error);
+      Alert.alert('Ошибка', 'Ошибка при входе в систему');
       setError(error instanceof Error ? error.message : 'Failed to login');
       console.log('=== LOGIN DEBUG FAILED ===');
     } finally {
@@ -239,7 +240,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       router.replace('/(tabs)');
     } catch (error) {
       console.error('Error exchanging code:', error);
-      Alert.alert('Pizdec!', 'Network error or backend is sleeping.');
+      Alert.alert('Network error or backend is sleeping.');
     } finally {
       setIsLoading(false);
     }
