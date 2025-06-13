@@ -320,7 +320,7 @@ const LessonScreen: React.FC = () => {
             <Text style={styles.retryButtonText}>Попробовать снова</Text>
           </TouchableOpacity>
         )}
-      <LoadingModal message='Загружаем урок...' visible={isLoading} />
+      <LoadingModal message='Загружаем урок...' visible={isLoading} longLoadDelayMs={15000} />
       { lesson && (
         <FlashList
           data={deferredContent || []}
