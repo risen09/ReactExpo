@@ -120,7 +120,7 @@ export default function RegisterScreen() {
       <ScrollView contentContainerStyle={styles.container}>
         <View style={styles.header}>
           <Image
-            source={require('../../assets/images/qwen-ai.png')}
+            source={require('@/assets/logo.jpg')}
             style={styles.logo}
             resizeMode="contain"
           />

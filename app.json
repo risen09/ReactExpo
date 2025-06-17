@@ -4,9 +4,9 @@
     "slug": "Индивидиум",
     "version": "1.0.0",
     "orientation": "portrait",
-    "icon": "./assets/logo.png",
+    "icon": "./assets/logo.jpg",
     "splash": {
-      "image": "./assets/splash-screen.png",
+      "image": "./assets/splash-screen.jpg",
       "resizeMode": "contain",
       "backgroundColor": "#ffffff"
     },
@@ -32,7 +32,7 @@
     "android": {
       "package": "com.eldarbv.individium",
       "adaptiveIcon": {
-        "foregroundImage": "./assets/adaptive-logo.png",
+        "foregroundImage": "./assets/adaptive-logo.jpg",
         "backgroundColor": "#FFFFFF"
       },
       "intentFilters": [

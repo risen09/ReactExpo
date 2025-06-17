@@ -505,10 +505,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       console.log('Changing password for user:', user.email);
 
       // Используем отдельный эндпоинт для смены пароля
-      const response = await client.auth.changePassword({
+      const response = await client.user.changePassword(
         currentPassword,
         newPassword
-      });
+      );
 
       Alert.alert('Успех', 'Пароль успешно изменен', [{ text: 'OK' }]);
 

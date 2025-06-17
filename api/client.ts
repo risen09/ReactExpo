@@ -176,6 +176,7 @@ export default {
   user: {
     get: () => api.get<User>('/api/v2/user'),
     update: (userData: Partial<User>) => api.post<User>('/api/v2/user', userData),
+    changePassword: (oldPassword: string, newPassword: string) => api.post(`/api/v2/user`, { password: newPassword }),
   },
 
   // Треки обучения
